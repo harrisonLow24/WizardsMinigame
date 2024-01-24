@@ -3,6 +3,21 @@ version: 1.0
 main: WizardsGame.WizardsPlugin
 description: Wizards Minigame
 author: hareesun
+commands:
+  toggleinfinitemana:
+    description: toggle infinite mana
+    aliases: mana
+    permission: op
+    permission-message: You do not have permission!
+    usage: /togglemana
+  togglecooldowns:
+    description: toggle infinite mana
+    aliases: cooldowns
+    permission: op
+    permission-message: You do not have permission!
+    usage: /togglecooldowns
+
+
 #load: POSTWORLD
 
 #depend:

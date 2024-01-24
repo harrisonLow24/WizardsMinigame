@@ -12,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -21,21 +22,28 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     SpellCastingManager Cast = new SpellCastingManager();
     CooldownManager Cooldown = new CooldownManager();
     TeleportationManager Teleport = new TeleportationManager();
+    private final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
 
-//    private final Map<UUID, Long> manaLastUpdate = new HashMap<>();
-
-//    private final double manaRegenRate = 1.0;
     private final Map<UUID, BossBar> manaBossBars = new HashMap<>(); // hashmap of all players' mana bars
     private final Map<UUID, Double> playerMana = new HashMap<>(); // hashmap of all players' current mana
 
+
+
+    private final Map<UUID, Boolean> infiniteManaMap = new HashMap<>();
+    private final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
+
     final Map<UUID, Double> spellManaCost = new HashMap<>(); // hashmap of all spells' mana costs
     private final double maxMana = 100.0; // mana pool
-    private final double manaRegenRate = 5.0; // regen rate
 
     @Override
     public void onEnable() {
         getLogger().info("WizardsPlugin has been enabled!");
         getServer().getPluginManager().registerEvents(this, this);
+
+        // commands
+        Objects.requireNonNull(getCommand("toggleinfinitemana")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("togglecooldowns")).setExecutor(new WizardCommands(this));
+
 
         // mana bar updated every 20 ticks / 1 second
 
@@ -90,9 +98,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //        double teleportCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
 //        double lightningCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
         double fireballCost = 15.0;
-        double teleportCost = 20.0;
-        double lightningCost = 5.0;
-
+        double teleportCost = 10.0;
+        double lightningCost = 20.0;
+        double gustCost = 25.0;
 
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
@@ -136,14 +144,29 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                         Cast.castLightningSpell(playerId);      // lightning is cast, and a cooldown + mana reduction is set
                         Cooldown.setLightningCooldown(playerId);
                         deductMana(playerId, lightningCost);
+                        startLightningEffect(playerId);
                     }else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Teleport.");
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Lightning.");
                     }
                 } else {
                     int remainingSeconds = Cooldown.getRemainingLightningCooldownSeconds(playerId);
                     player.sendMessage(ChatColor.RED + "Lightning on cooldown. Please wait " + remainingSeconds + " seconds.");
                 }
 
+            }
+            if (wand.getType() == Material.FEATHER) {
+                if (!Cooldown.isOnGustCooldown(playerId)) {  // Check if gust spell is not on cooldown
+                    if (hasEnoughMana(playerId, gustCost)) { // AND if player has enough mana
+                        Cast.castGustSpell(player);          // gust is cast, and a cooldown + mana reduction is set
+                        Cooldown.setGustCooldown(playerId);
+                        deductMana(playerId, gustCost);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Gust.");
+                    }
+                } else {
+                    int remainingSeconds = Cooldown.getRemainingGustCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Gust spell on cooldown. Please wait " + remainingSeconds + " seconds.");
+                }
             }
         }
     }
@@ -187,9 +210,75 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             UUID playerId = onlinePlayer.getUniqueId();
             double currentMana = getCurrentMana(playerId);
-            double newMana = Math.min(currentMana + manaRegenRate, maxMana);
-            playerMana.put(playerId, newMana);
+            if (hasInfiniteMana(playerId)) {
+                // Set the player's mana to the maximum value
+                setPlayerMana(playerId, maxMana);
+            }else {
+                // regen rate
+                double manaRegenRate = 5.0;
+                double newMana = Math.min(currentMana + manaRegenRate, maxMana);
+                playerMana.put(playerId, newMana);
+            }
         }
     }
 
+    private void startLightningEffect(UUID playerId) {
+        // Set the initial duration
+        int maxLightningEffectDuration = 100;
+        lightningEffectDuration.put(playerId, maxLightningEffectDuration);
+
+        // Schedule a task to decrease the duration every tick
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            int remainingDuration = lightningEffectDuration.getOrDefault(playerId, 0);
+
+            if (remainingDuration <= 0) {
+                // Remove the player's UUID from the map when the duration is over
+                lightningEffectDuration.remove(playerId);
+                return;
+            }
+
+            // Simulate the longer-lasting lightning effect here
+            // You can implement your custom lightning effect logic
+
+            // Decrease the remaining duration
+            lightningEffectDuration.put(playerId, remainingDuration - 1);
+
+        }, 0, 1);
+    }
+    public void toggleInfiniteMana(UUID playerId) {
+        boolean currentStatus = infiniteManaMap.getOrDefault(playerId, false);
+        infiniteManaMap.put(playerId, !currentStatus);
+
+        // If infinite mana is toggled, set the player's mana to the maximum value
+        if (hasInfiniteMana(playerId)) {
+            setPlayerMana(playerId, maxMana);
+        }
+    }
+
+    public boolean hasInfiniteMana(UUID playerId) {
+        return infiniteManaMap.getOrDefault(playerId, false);
+    }
+    public void toggleCooldowns(UUID playerId) {
+        boolean currentStatus = cooldownsDisabledMap.getOrDefault(playerId, false);
+        cooldownsDisabledMap.put(playerId, !currentStatus);
+
+        // If cooldowns are disabled, clear existing cooldowns for the player
+        if (hasCooldownsDisabled(playerId)) {
+            Cooldown.clearCooldowns(playerId);
+        }
+    }
+
+    public boolean hasCooldownsDisabled(UUID playerId) {
+        return cooldownsDisabledMap.getOrDefault(playerId, false);
+    }
+    public void setPlayerMana(UUID playerId, double newMana) {
+        // Set the mana for the specified player
+        playerMana.put(playerId, Math.min(newMana, maxMana));
+
+        // Update the mana display for the player
+        Player player = getPlayerById(playerId);
+        if (player != null) {
+            updateManaActionBar(player);
+        }
+    }
 }

@@ -23,7 +23,7 @@ public class TeleportationManager {
         Location safeLocation = findSafeLocation(player.getLocation(), destination);// find nearest safe teleportation location
         playTeleportSound(safeLocation);// teleportation sound effect
         player.teleport(safeLocation); // teleport player to safe location
-        player.sendMessage(ChatColor.BLUE + "You cast the Teleportation spell!");
+        player.sendMessage(ChatColor.BLUE.toString() + ChatColor.BOLD + "You cast the Teleportation spell!");
     }
 
     private void playTeleportSound(Location location) {
