@@ -7,8 +7,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+
 public class CooldownManager {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final Map<UUID, Long> minecartCooldowns = new HashMap<>();
+    private final long minecartCooldownDuration = 30 * 1000; // 30 seconds
     public CooldownManager() {
 
         // schedule the task to run every second
@@ -30,6 +33,9 @@ public class CooldownManager {
             clearCooldowns(playerId);
         }
         for (UUID playerId : iceSphereCooldowns.keySet()) {
+            clearCooldowns(playerId);
+        }
+        for (UUID playerId : minecartCooldowns.keySet()) {
             clearCooldowns(playerId);
         }
     }
@@ -75,6 +81,11 @@ public class CooldownManager {
         long remainingCooldown = iceSphereCooldownDuration - (System.currentTimeMillis() - iceSphereCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
+    int getRemainingMinecartCooldownSeconds(UUID playerId) {
+        long remainingCooldown = minecartCooldownDuration - (System.currentTimeMillis() - minecartCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
+
 
 
     // check if spells are on cooldown
@@ -97,7 +108,9 @@ public class CooldownManager {
     boolean isOnIceSphereCooldown(UUID playerId) {
         return iceSphereCooldowns.containsKey(playerId) && System.currentTimeMillis() - iceSphereCooldowns.get(playerId) < iceSphereCooldownDuration;
     }
-
+    boolean isOnMinecartCooldown(UUID playerId) {
+        return minecartCooldowns.containsKey(playerId) && System.currentTimeMillis() - minecartCooldowns.get(playerId) < minecartCooldownDuration;
+    }
 
 
     // sets the cooldown of spells
@@ -118,6 +131,10 @@ public class CooldownManager {
     void setIceSphereCooldown(UUID playerId) {
         iceSphereCooldowns.put(playerId, System.currentTimeMillis());
     }
+    void setMinecartCooldown(UUID playerId) {
+        minecartCooldowns.put(playerId, System.currentTimeMillis());
+    }
+
 
 
     void clearCooldowns(UUID playerId) {
@@ -126,5 +143,6 @@ public class CooldownManager {
         lightningCooldowns.remove(playerId);
         gustCooldowns.remove(playerId);
         iceSphereCooldowns.remove(playerId);
+        minecartCooldowns.remove(playerId);
     }
 }

@@ -19,11 +19,16 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 
+import org.bukkit.entity.Minecart;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.util.Vector;
+
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
+    private static WizardsPlugin instance;
     SpellCastingManager Cast = new SpellCastingManager();
     CooldownManager Cooldown = new CooldownManager();
     TeleportationManager Teleport = new TeleportationManager();
@@ -42,6 +47,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        instance = this;
         getLogger().info("WizardsPlugin has been enabled!");
         getServer().getPluginManager().registerEvents(this, this);
 
@@ -69,6 +75,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }
         }, 0, 20);
 
+    }
+
+    public static WizardsPlugin getInstance() {
+        return instance;
     }
 
     @Override
@@ -101,6 +111,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         UUID playerId = player.getUniqueId();
         ItemStack wand = player.getInventory().getItemInMainHand();
 
+
 //        double fireballCost = spellManaCost.getOrDefault(playerId, 10.0); // mana cost
 //        double teleportCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
 //        double lightningCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
@@ -108,7 +119,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         double teleportCost = 10.0;
         double lightningCost = 20.0;
         double gustCost = 25.0;
-
+        double minecartCost = 30.0;
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
             // fireball cast
@@ -176,54 +187,38 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 }
             }
             if (wand.getType() == Material.MINECART) {
-
+                // minecart spell cast
+                if (!Cooldown.isOnMinecartCooldown(playerId)) {
+                    if (hasEnoughMana(playerId, minecartCost)) {
+                        Cast.launchMinecart(player);  // Implement a method to launch the minecart with the player inside
+                        Cooldown.setMinecartCooldown(playerId);
+                        deductMana(playerId, minecartCost);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Minecart spell.");
+                    }
+                } else {
+                    int remainingSeconds = Cooldown.getRemainingMinecartCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Minecart spell on cooldown. Please wait " + remainingSeconds + " seconds.");
+                }
             }
-//            if (wand.getType() == Material.IRON_AXE) {
-//                    double iceSphereCost = 20.0;
-//                    if (!Cooldown.isOnIceSphereCooldown(playerId)) {
-//                        if (hasEnoughMana(playerId, iceSphereCost)) {
-//                            Cast.castIceSphere(playerId);
-//                            deductMana(playerId, iceSphereCost);
-//                            Cooldown.setIceSphereCooldown(playerId);
-//
-//                        } else {
-//                            player.sendMessage(ChatColor.RED + "Not enough mana to cast Ice Sphere.");
-//                        }
-//                    } else {
-//                        int remainingSeconds = Cooldown.getRemainingIceSphereCooldownSeconds(playerId);
-//                        player.sendMessage(ChatColor.RED + "Ice Sphere on cooldown. Please wait " + remainingSeconds + " seconds.");
-//                    }
-//            }
+            if (wand.getType() == Material.IRON_INGOT) {
+                // minecart spell cast
+                if (!Cooldown.isOnMinecartCooldown(playerId)) {
+                    if (hasEnoughMana(playerId, minecartCost)) {
+                        Cast.castGroundPoundSpell(playerId);  // Implement a method to launch the minecart with the player inside
+                        Cooldown.setMinecartCooldown(playerId);
+                        deductMana(playerId, minecartCost);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Minecart spell.");
+                    }
+                } else {
+                    int remainingSeconds = Cooldown.getRemainingMinecartCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Minecart spell on cooldown. Please wait " + remainingSeconds + " seconds.");
+                }
+            }
         }
     }
 
-//    @EventHandler
-//    public void onEntitySpawn(EntitySpawnEvent event){
-//        World world = getServer().getWorld();
-//        Entity ent = event.getEntity();
-//        Location location = ent.getLocation();
-//        if (event.getEntity().getType() == EntityType.SILVERFISH) {
-//            boolean a = true;
-//            UUID id = event.getEntity().getUniqueId();
-//            if(a){
-//                Minecart minecart = world.spawn(location, Minecart.class);
-//            }
-//        }
-//
-//
-//    }
-//    @EventHandler
-//    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-//        Player player = event.getPlayer();
-//        UUID playerId = player.getUniqueId();
-//        ItemStack axe = player.getInventory().getItemInMainHand();
-//
-//        // Check if the player right-clicked with an iron axe
-//        if (event.getRightClicked() instanceof LivingEntity && axe.getType() == Material.IRON_AXE) {
-//            // Cast the ice sphere spell
-//            Cast.castIceSphere(playerId);
-//        }
-//    }
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
         if (event.getEntity() instanceof Snowball) {
