@@ -9,21 +9,13 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 public class SpellCastingManager {
-//    Mana Mana = new Mana();
+//    WizardsPlugin Wiz = new WizardsPlugin();
     // fireball cast
     void castFireball(Player player) {
-//        player.sendMessage(ChatColor.GREEN + "before");
-//        if (Mana.hasEnoughMana(player, 10)){
-//            player.sendMessage(ChatColor.GREEN + "yes");
-            // Deduct mana cost
-//            Mana.setCurrentMana(player,(Mana.getCurrentMana(player) - 10));
-            double speed = 1;
-            Vector direction = player.getLocation().getDirection().multiply(speed);
-            player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
-            player.sendMessage(ChatColor.GREEN + "You cast the Fireball spell!");
-//        }else {
-//            player.sendMessage(ChatColor.RED + "Not enough mana to cast Fireball.");
-//        }
+        double speed = 1;
+        Vector direction = player.getLocation().getDirection().multiply(speed);
+        player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
+        player.sendMessage(ChatColor.GREEN + "You cast the Fireball spell!");
     }
     ///using a fireball as the lightning strike spot
 //    private void castLightningSpell(Player player) {

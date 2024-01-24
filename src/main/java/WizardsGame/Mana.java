@@ -8,45 +8,35 @@
 //import java.util.Map;
 //
 //public class Mana {
-//    WizardsPlugin Wiz = new WizardsPlugin();
+//    private final Map<Player, Long> manaLastUpdate = new HashMap<>();
 //    private final Map<Player, Double> playerMana = new HashMap<>();
-//    final double maxMana = 100.0; // Set the maximum mana value
-//    private final double manaRegenRate = 2.0; // Set the mana regeneration rate per second
+//    private final double maxMana = 100.0;
+//    private final double manaRegenRate = 1.0;
+//    private final Map<Player, Double> spellManaCost = new HashMap<>(); // Map to store mana costs for each spell
 //
-//    public double getManaCost(Material wandType) {
-//        // You can adjust these values based on your balancing needs
-//        switch (wandType) {
-//            case IRON_PICKAXE:
-//                return 20.0;
-//            case IRON_SWORD:
-//                return 30.0;
-//            case BLAZE_ROD:
-//                return 15.0;
-//            // Add more cases for other wand types if needed
-//            default:
-//                return 0.0;
-//        }
-//    }
-//    public double getCurrentMana(Player player) {
-//        return playerMana.getOrDefault(player, maxMana);
-//    }
-//    public void setCurrentMana(Player player, double newMana) {
-//        if (newMana >= 0 && newMana <= maxMana) {
+//    double fireballCost = spellManaCost.getOrDefault(player, 10.0); // Example mana cost for Fireball
+//    WizardsPlugin Wiz = new WizardsPlugin();
+//
+//
+//    public void regenerateMana() {
+//        for (Player player : Bukkit.getServer().getOnlinePlayers()) {
+//            double currentMana = playerMana.getOrDefault(player, maxMana);
+//            double newMana = Math.min(currentMana + manaRegenRate, maxMana);
 //            playerMana.put(player, newMana);
-//        } else {
-//            Bukkit.getLogger().warning("Invalid mana value set for player " + player.getName());
+//            manaLastUpdate.put(player, System.currentTimeMillis());
 //        }
 //    }
-//    public boolean hasEnoughMana(Player player, double manaCost) {
-//        return playerMana.getOrDefault(player, maxMana) >= manaCost;
+//
+//    // Method to check if a player has enough mana for a spell
+//    private boolean hasEnoughMana(Player player, double spellCost) {
+//        double currentMana = playerMana.getOrDefault(player, maxMana);
+//        return currentMana >= spellCost;
 //    }
 //
-////    void regenerateMana(Player player) {
-////        double currentMana = playerMana.getOrDefault((Object) player, 0);
-////        if (currentMana < maxMana) {
-////            double newMana = Math.min(currentMana + manaRegenRate, maxMana);
-////            playerMana.put(player, newMana);
-////        }
-////    }
-//
+//    // Method to deduct mana for casting a spell
+//    private void deductMana(Player player, double spellCost) {
+//        double currentMana = playerMana.getOrDefault(player, maxMana);
+//        double newMana = Math.max(currentMana - spellCost, 0);
+//        playerMana.put(player, newMana);
+//    }
 //}
