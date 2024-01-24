@@ -15,7 +15,7 @@ public class SpellCastingManager {
     void castFireball(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
         if (player != null) {
-            double speed = 1;
+            double speed = 1; // speed of fireball
             Vector direction = player.getLocation().getDirection().multiply(speed);
             player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
             player.sendMessage(ChatColor.GREEN + "You cast the Fireball spell!");
@@ -26,14 +26,14 @@ public class SpellCastingManager {
     void castLightningSpell(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
         if (player != null) {
-            double particleDistance = 1000;
+            double particleDistance = 500; // length of the particle trail
             Vector direction = player.getLocation().getDirection().multiply(particleDistance);
             Location destination = player.getLocation().add(direction);
 
-            // Find the first block in the spell's path
+            // find first block in spell's path
             Location blockLocation = findSolidBlockInPath(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0));
 
-            // if a solid block is found, strike lightning where particle ends
+            // if solid block is found, strike lightning where particle ends
             if (blockLocation != null) {
                 destination = blockLocation;
                 spawnAndMoveParticleTrail(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0)); // particle adjustment to look better
@@ -42,13 +42,13 @@ public class SpellCastingManager {
         }
     }
 
-    // Adjusted methods to use UUID instead of Player
     private void strikeLightning(Location location) {
         location.getWorld().strikeLightning(location); // Summon lightning at the location
     }
 
+    // particle generation between player and strike area
     private void spawnAndMoveParticleTrail(Location startLocation, Location endLocation) {
-        int particleCount = 100; // number of generated trail particles
+        int particleCount = 100000; // number of generated trail particles
         Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
         double distanceBetweenParticles = startLocation.distance(endLocation) / particleCount;
 
@@ -57,9 +57,9 @@ public class SpellCastingManager {
             startLocation.getWorld().spawnParticle(Particle.CRIT, particleLocation, 1, 0, 0, 0, 0);
         }
     }
-
+    // check for blocks in path of the particles
     private Location findSolidBlockInPath(Location startLocation, Location endLocation) {
-        // Check for the first non-air block in spell's path
+        // check for first non-air block in spell's path
         RayTraceResult result = startLocation.getWorld().rayTraceBlocks(startLocation, endLocation.toVector().subtract(startLocation.toVector()).normalize(),
                 startLocation.distance(endLocation), FluidCollisionMode.NEVER, true);
 
@@ -67,6 +67,6 @@ public class SpellCastingManager {
             return result.getHitBlock().getLocation(); //returns location of block in spells path
         }
 
-        return null; // No solid block found
+        return null; // no solid block found
     }
 }

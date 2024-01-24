@@ -16,7 +16,7 @@ public class CooldownManager {
     private final long teleportCooldownDuration = 1 * 1000; //15
     private final long lightningCooldownDuration = 1 * 1000; //15
 
-    // Returns the remaining cooldown left
+    // returns the remaining cooldown left
     int getRemainingFireballCooldownSeconds(UUID playerId) {
         // remaining fireball cooldown
         long remainingCooldown = fireballCooldownDuration - (System.currentTimeMillis() - fireballCooldowns.getOrDefault(playerId, 0L));
@@ -35,7 +35,7 @@ public class CooldownManager {
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
 
-    // Check if spells are on cooldown
+    // check if spells are on cooldown
     boolean isOnFireballCooldown(UUID playerId) {
         // Check if player is on fireball cooldown
         return fireballCooldowns.containsKey(playerId) && System.currentTimeMillis() - fireballCooldowns.get(playerId) < fireballCooldownDuration;
@@ -50,7 +50,7 @@ public class CooldownManager {
         return lightningCooldowns.containsKey(playerId) && System.currentTimeMillis() - lightningCooldowns.get(playerId) < lightningCooldownDuration;
     }
 
-    // Sets the cooldown of spells
+    // sets the cooldown of spells
     void setFireballCooldown(UUID playerId) {
         fireballCooldowns.put(playerId, System.currentTimeMillis());
     }

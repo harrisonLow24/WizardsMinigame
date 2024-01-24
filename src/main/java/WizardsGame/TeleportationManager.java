@@ -14,11 +14,10 @@ public class TeleportationManager {
     void teleportSpell(UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);
         if (player == null) {
-            // Player not online or not found, handle accordingly
             return;
         }
 
-        double teleportDistance = 10.0; // Set the teleportation distance in blocks
+        double teleportDistance = 10.0; // teleport distance in blocks
         Vector direction = player.getLocation().getDirection().multiply(teleportDistance);
         Location destination = player.getLocation().add(direction);
         Location safeLocation = findSafeLocation(player.getLocation(), destination);// find nearest safe teleportation location
