@@ -1,11 +1,7 @@
 package WizardsGame;
 
-import org.bukkit.ChatColor;
-import org.bukkit.FluidCollisionMode;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
+import org.bukkit.*;
+import org.bukkit.entity.*;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -72,7 +68,8 @@ public class SpellCastingManager {
         return null; // no solid block found
     }
 
-    void castGustSpell(Player player) {
+    void castGustSpell(UUID playerId) {
+        Player player = WizardsPlugin.getPlayerById(playerId);
         double gustRadius = 5.0; // radius of the gust spell
         double gustStrength = 2.0; // strength of the gust spell
 
@@ -91,7 +88,67 @@ public class SpellCastingManager {
         }
 
         player.sendMessage( ChatColor.WHITE.toString() + ChatColor.BOLD +"Gust spell cast!");
-
-
     }
+//    void createMinecart(UUID playerId){
+//        Player player = WizardsPlugin.getPlayerById(playerId);
+//
+//        if (player != null) {
+//            double speed = 1; // speed of fireball
+//            Vector direction = player.getLocation().getDirection().multiply(speed);
+////            player.addPassenger(org.bukkit.entity.Vehicle.Minecart.class, direction);
+//
+//            player.sendMessage(ChatColor.GREEN.toString() + ChatColor.BOLD + "" + "You cast the Fireball spell!");
+//        }
+//    }
+
+//    void castIceSphere(UUID playerId) {
+//        Player player = WizardsPlugin.getPlayerById(playerId);
+//        double iceSphereCost = 20.0;
+//
+//        if (player != null) {
+//            if (WizardsPlugin.getPlayerMana(player) >= iceSphereCost) {
+//                Snowball snowball = player.launchProjectile(Snowball.class);
+//                // customize  snowball behavior
+//
+//                new BukkitRunnable() {
+//                    @Override
+//                    public void run() {
+//                        if (snowball.isValid()) {
+//                            Location snowballLocation = snowball.getLocation();
+//
+//                            // check if snowball is close to the ground
+//                            if (snowballLocation.getBlock().getType() != Material.AIR) {
+//                                createIceSphere(snowballLocation);
+//                                this.cancel(); // Stop the task once the snowball hits a block
+//                            }
+//                        } else {
+//                            this.cancel(); // Stop the task if the snowball is no longer valid
+//                        }
+//                    }
+//                }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
+//            } else {
+//                player.sendMessage(ChatColor.RED.toString() + ChatColor.BOLD + "Not enough mana to cast Ice Sphere!");
+//            }
+//        }
+//    }
+
+
+
+    private void createIceSphere(Location location) {
+        double sphereRadius = 3.0; // Radius of the ice sphere
+        int sphereParticles = 1000; // Number of particles in the sphere
+
+        for (double phi = 0; phi <= Math.PI; phi += Math.PI / sphereParticles) {
+            double y = sphereRadius * Math.cos(phi);
+            for (double theta = 0; theta <= 2 * Math.PI; theta += Math.PI / sphereParticles) {
+                double x = sphereRadius * Math.sin(phi) * Math.cos(theta);
+                double z = sphereRadius * Math.sin(phi) * Math.sin(theta);
+
+                location.getWorld().spawnParticle(Particle.SNOW_SHOVEL, location.clone().add(x, y, z), 1, 0, 0, 0, 0);
+            }
+        }
+
+        // Optionally, you can add more effects or modify the surroundings based on the ice sphere creation.
+    }
+
 }

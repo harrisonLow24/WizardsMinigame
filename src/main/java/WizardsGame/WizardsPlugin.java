@@ -1,10 +1,11 @@
 package WizardsGame;
 
 import org.bukkit.*;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
@@ -17,6 +18,10 @@ import java.util.UUID;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
     SpellCastingManager Cast = new SpellCastingManager();
@@ -63,12 +68,14 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 updateManaActionBar(onlinePlayer);
             }
         }, 0, 20);
+
     }
 
     @Override
     public void onDisable() {
         getLogger().info("WizardsPlugin has been disabled!");
     }
+
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -157,7 +164,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             if (wand.getType() == Material.FEATHER) {
                 if (!Cooldown.isOnGustCooldown(playerId)) {  // Check if gust spell is not on cooldown
                     if (hasEnoughMana(playerId, gustCost)) { // AND if player has enough mana
-                        Cast.castGustSpell(player);          // gust is cast, and a cooldown + mana reduction is set
+                        Cast.castGustSpell(playerId);          // gust is cast, and a cooldown + mana reduction is set
                         Cooldown.setGustCooldown(playerId);
                         deductMana(playerId, gustCost);
                     } else {
@@ -166,6 +173,84 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 } else {
                     int remainingSeconds = Cooldown.getRemainingGustCooldownSeconds(playerId);
                     player.sendMessage(ChatColor.RED + "Gust spell on cooldown. Please wait " + remainingSeconds + " seconds.");
+                }
+            }
+            if (wand.getType() == Material.MINECART) {
+
+            }
+//            if (wand.getType() == Material.IRON_AXE) {
+//                    double iceSphereCost = 20.0;
+//                    if (!Cooldown.isOnIceSphereCooldown(playerId)) {
+//                        if (hasEnoughMana(playerId, iceSphereCost)) {
+//                            Cast.castIceSphere(playerId);
+//                            deductMana(playerId, iceSphereCost);
+//                            Cooldown.setIceSphereCooldown(playerId);
+//
+//                        } else {
+//                            player.sendMessage(ChatColor.RED + "Not enough mana to cast Ice Sphere.");
+//                        }
+//                    } else {
+//                        int remainingSeconds = Cooldown.getRemainingIceSphereCooldownSeconds(playerId);
+//                        player.sendMessage(ChatColor.RED + "Ice Sphere on cooldown. Please wait " + remainingSeconds + " seconds.");
+//                    }
+//            }
+        }
+    }
+
+//    @EventHandler
+//    public void onEntitySpawn(EntitySpawnEvent event){
+//        World world = getServer().getWorld();
+//        Entity ent = event.getEntity();
+//        Location location = ent.getLocation();
+//        if (event.getEntity().getType() == EntityType.SILVERFISH) {
+//            boolean a = true;
+//            UUID id = event.getEntity().getUniqueId();
+//            if(a){
+//                Minecart minecart = world.spawn(location, Minecart.class);
+//            }
+//        }
+//
+//
+//    }
+//    @EventHandler
+//    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+//        Player player = event.getPlayer();
+//        UUID playerId = player.getUniqueId();
+//        ItemStack axe = player.getInventory().getItemInMainHand();
+//
+//        // Check if the player right-clicked with an iron axe
+//        if (event.getRightClicked() instanceof LivingEntity && axe.getType() == Material.IRON_AXE) {
+//            // Cast the ice sphere spell
+//            Cast.castIceSphere(playerId);
+//        }
+//    }
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent event) {
+        if (event.getEntity() instanceof Snowball) {
+            Location hitLocation = event.getEntity().getLocation();
+
+            // Check if the snowball hit a block
+            if (hitLocation.getBlock().getType() != Material.AIR) {
+                // Create a temporary sphere of ice
+                createIceSphere(hitLocation);
+            }
+        }
+    }
+
+
+    private void createIceSphere(Location location) {
+        World world = location.getWorld();
+        double radius = 3.0; // Set the desired radius of the ice sphere
+
+        // Iterate through the blocks within the specified radius
+        for (double x = -radius; x <= radius; x++) {
+            for (double y = -radius; y <= radius; y++) {
+                for (double z = -radius; z <= radius; z++) {
+                    if (Math.sqrt(x * x + y * y + z * z) <= radius) {
+                        Location iceBlockLocation = location.clone().add(x, y, z);
+                        world.getBlockAt(iceBlockLocation).setType(Material.ICE);
+                        // You can customize the appearance or behavior of the ice block if needed
+                    }
                 }
             }
         }
@@ -281,4 +366,5 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             updateManaActionBar(player);
         }
     }
+
 }

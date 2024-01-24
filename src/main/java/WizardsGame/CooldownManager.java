@@ -29,18 +29,23 @@ public class CooldownManager {
         for (UUID playerId : gustCooldowns.keySet()) {
             clearCooldowns(playerId);
         }
+        for (UUID playerId : iceSphereCooldowns.keySet()) {
+            clearCooldowns(playerId);
+        }
     }
     // store cooldowns in hashmaps
     private final Map<UUID, Long> fireballCooldowns = new HashMap<>();
     private final Map<UUID, Long> teleportCooldowns = new HashMap<>();
     private final Map<UUID, Long> lightningCooldowns = new HashMap<>();
     private final Map<UUID, Long> gustCooldowns = new HashMap<>();
+    private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>();
 
     // cooldown duration in milliseconds
     private final long fireballCooldownDuration = 10 * 1000; //10
     private final long teleportCooldownDuration = 15 * 1000; //15
     private final long lightningCooldownDuration = 15 * 1000; //15
     private final long gustCooldownDuration = 15 * 1000; // 15
+    private final long iceSphereCooldownDuration = 20 * 1000; // 20 seconds
 
 
 
@@ -66,7 +71,10 @@ public class CooldownManager {
         long remainingCooldown = gustCooldownDuration - (System.currentTimeMillis() - gustCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
-
+    int getRemainingIceSphereCooldownSeconds(UUID playerId) {
+        long remainingCooldown = iceSphereCooldownDuration - (System.currentTimeMillis() - iceSphereCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
 
 
     // check if spells are on cooldown
@@ -86,6 +94,9 @@ public class CooldownManager {
     boolean isOnGustCooldown(UUID playerId) {
         return gustCooldowns.containsKey(playerId) && System.currentTimeMillis() - gustCooldowns.get(playerId) < gustCooldownDuration;
     }
+    boolean isOnIceSphereCooldown(UUID playerId) {
+        return iceSphereCooldowns.containsKey(playerId) && System.currentTimeMillis() - iceSphereCooldowns.get(playerId) < iceSphereCooldownDuration;
+    }
 
 
 
@@ -104,11 +115,16 @@ public class CooldownManager {
     void setGustCooldown(UUID playerId) {
         gustCooldowns.put(playerId, System.currentTimeMillis());
     }
+    void setIceSphereCooldown(UUID playerId) {
+        iceSphereCooldowns.put(playerId, System.currentTimeMillis());
+    }
+
 
     void clearCooldowns(UUID playerId) {
         fireballCooldowns.remove(playerId);
         teleportCooldowns.remove(playerId);
         lightningCooldowns.remove(playerId);
         gustCooldowns.remove(playerId);
+        iceSphereCooldowns.remove(playerId);
     }
 }
