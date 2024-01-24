@@ -12,9 +12,9 @@ public class SpellCastingManager {
 //    Mana Mana = new Mana();
     // fireball cast
     void castFireball(Player player) {
-        player.sendMessage(ChatColor.GREEN + "before");
+//        player.sendMessage(ChatColor.GREEN + "before");
 //        if (Mana.hasEnoughMana(player, 10)){
-            player.sendMessage(ChatColor.GREEN + "yes");
+//            player.sendMessage(ChatColor.GREEN + "yes");
             // Deduct mana cost
 //            Mana.setCurrentMana(player,(Mana.getCurrentMana(player) - 10));
             double speed = 1;
