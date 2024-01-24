@@ -8,52 +8,45 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.UUID;
+
 public class SpellCastingManager {
-//    WizardsPlugin Wiz = new WizardsPlugin();
     // fireball cast
-    void castFireball(Player player) {
-        double speed = 1;
-        Vector direction = player.getLocation().getDirection().multiply(speed);
-        player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
-        player.sendMessage(ChatColor.GREEN + "You cast the Fireball spell!");
+    void castFireball(UUID playerId) {
+        Player player = WizardsPlugin.getPlayerById(playerId);
+        if (player != null) {
+            double speed = 1;
+            Vector direction = player.getLocation().getDirection().multiply(speed);
+            player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
+            player.sendMessage(ChatColor.GREEN + "You cast the Fireball spell!");
+        }
     }
-    ///using a fireball as the lightning strike spot
-//    private void castLightningSpell(Player player) {
-//        double projectileSpeed = 0.5; // Adjust the speed as needed
-//        Vector direction = player.getLocation().getDirection().multiply(projectileSpeed);
-//        player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
-//    }
 
-//    @EventHandler
-//    public void onProjectileHit(ProjectileHitEvent event) {
-//        if (event.getEntity() instanceof Fireball) {
-//            Fireball fireball = (Fireball) event.getEntity();
-//            Location hitLocation = fireball.getLocation();
-//
-//            // Perform lightning strike at the hit location
-//            Cast.strikeLightning(hitLocation);
-//        }
-//    }
 
-    void strikeLightning(Location location) {
+    void castLightningSpell(UUID playerId) {
+        Player player = WizardsPlugin.getPlayerById(playerId);
+        if (player != null) {
+            double particleDistance = 1000;
+            Vector direction = player.getLocation().getDirection().multiply(particleDistance);
+            Location destination = player.getLocation().add(direction);
+
+            // Find the first block in the spell's path
+            Location blockLocation = findSolidBlockInPath(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0));
+
+            // if a solid block is found, strike lightning where particle ends
+            if (blockLocation != null) {
+                destination = blockLocation;
+                spawnAndMoveParticleTrail(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0)); // particle adjustment to look better
+                strikeLightning(destination);
+            }
+        }
+    }
+
+    // Adjusted methods to use UUID instead of Player
+    private void strikeLightning(Location location) {
         location.getWorld().strikeLightning(location); // Summon lightning at the location
     }
 
-    void castLightningSpell(Player player) {
-        double particleDistance = 1000;
-        Vector direction = player.getLocation().getDirection().multiply(particleDistance);
-        Location destination = player.getLocation().add(direction);
-
-        // Find the first block in the spell's path
-        Location blockLocation = findSolidBlockInPath(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0));
-
-        // if a solid block is found, strike lightning where particle ends
-        if (blockLocation != null) {
-            destination = blockLocation;
-            spawnAndMoveParticleTrail(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0)); // particle adjustment to look better
-            strikeLightning(destination);
-        }
-    }
     private void spawnAndMoveParticleTrail(Location startLocation, Location endLocation) {
         int particleCount = 100; // number of generated trail particles
         Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
@@ -64,6 +57,7 @@ public class SpellCastingManager {
             startLocation.getWorld().spawnParticle(Particle.CRIT, particleLocation, 1, 0, 0, 0, 0);
         }
     }
+
     private Location findSolidBlockInPath(Location startLocation, Location endLocation) {
         // Check for the first non-air block in spell's path
         RayTraceResult result = startLocation.getWorld().rayTraceBlocks(startLocation, endLocation.toVector().subtract(startLocation.toVector()).normalize(),
@@ -75,5 +69,4 @@ public class SpellCastingManager {
 
         return null; // No solid block found
     }
-
 }

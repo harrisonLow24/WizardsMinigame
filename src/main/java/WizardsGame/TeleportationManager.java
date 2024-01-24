@@ -1,14 +1,22 @@
 package WizardsGame;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import java.util.UUID;
+
 public class TeleportationManager {
     // teleportation
-    void teleportSpell(Player player) {
+    void teleportSpell(UUID playerId) {
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null) {
+            // Player not online or not found, handle accordingly
+            return;
+        }
 
         double teleportDistance = 10.0; // Set the teleportation distance in blocks
         Vector direction = player.getLocation().getDirection().multiply(teleportDistance);

@@ -13,20 +13,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
     SpellCastingManager Cast = new SpellCastingManager();
     CooldownManager Cooldown = new CooldownManager();
     TeleportationManager Teleport = new TeleportationManager();
-//    Mana Mana = new Mana();
 
-
-private final Map<Player, Long> manaLastUpdate = new HashMap<>();
-    private final Map<Player, Double> playerMana = new HashMap<>();
+//    private final Map<UUID, Long> manaLastUpdate = new HashMap<>();
+    private final Map<UUID, Double> playerMana = new HashMap<>();
     private final double maxMana = 100.0;
-    private final double manaRegenRate = 1.0;
-    final Map<Player, Double> spellManaCost = new HashMap<>(); // Map to store mana costs for each spell
-
+//    private final double manaRegenRate = 1.0;
+    final Map<UUID, Double> spellManaCost = new HashMap<>();
     @Override
     public void onEnable() {
         getLogger().info("WizardsPlugin has been enabled!");
@@ -42,12 +40,15 @@ private final Map<Player, Long> manaLastUpdate = new HashMap<>();
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        player.sendMessage("Welcome!");
         player.getInventory().addItem(new ItemStack(Material.BLAZE_ROD));
         player.getInventory().addItem(new ItemStack(Material.IRON_SWORD));
         player.getInventory().addItem(new ItemStack(Material.IRON_PICKAXE));
+        // Initialize player-specific data on join
+        playerMana.put(playerId, maxMana);
+        spellManaCost.put(playerId, 10.0); // Set default spell mana cost
     }
-
-
 
 
 
@@ -55,31 +56,36 @@ private final Map<Player, Long> manaLastUpdate = new HashMap<>();
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
         ItemStack wand = player.getInventory().getItemInMainHand();
 
+        double fireballCost = spellManaCost.getOrDefault(playerId, 10.0); // mana cost
+        double teleportCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
+        double lightningCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
+
+
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            // Check if the player used a wand
-
+            // Check if the player used a wandz
             if (wand.getType() == Material.BLAZE_ROD) {
-                double spellCost = spellManaCost.getOrDefault(player, 10.0); //mana cost
                 // Fireball spell
-
-                if (!Cooldown.isOnFireballCooldown(player)) {
+                if (!Cooldown.isOnFireballCooldown(playerId)) {
                     // Implement fireball abilities
-                    if (hasEnoughMana(player, spellCost)) {
-                        Cast.castFireball(player);
-                        Cooldown.setFireballCooldown(player);
-                        deductMana(player, spellCost);
-                        player.sendMessage("You have " + playerMana + " mana remaining");
+                    if (hasEnoughMana(playerId, fireballCost)) {
+
+                        Cast.castFireball(playerId);
+                        Cooldown.setFireballCooldown(playerId);
+                        deductMana(playerId, fireballCost);
+                        player.sendMessage("You have " + getCurrentMana(playerId) + " mana remaining");
+
                     } else {
                         player.sendMessage(ChatColor.RED + "Not enough mana to cast Fireball.");
                     }
+                }else{
+                    // Player is on fireball cooldown
+                    int remainingSeconds = Cooldown.getRemainingFireballCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Fireball on cooldown. Please wait " + remainingSeconds + " seconds before casting again.");
                 }
-            } else{
-                // Player is on fireball cooldown
-                int remainingSeconds = Cooldown.getRemainingFireballCooldownSeconds(player);
-                player.sendMessage(ChatColor.RED + "Fireball on cooldown. Please wait " + remainingSeconds + " seconds before casting again.");
-                }
+            }
 //            if (wand.getType() == Material.BLAZE_ROD) {
 //                double spellCost = spellManaCost.getOrDefault(player, 10.0); //mana cost
 //                // Fireball spell
@@ -99,42 +105,61 @@ private final Map<Player, Long> manaLastUpdate = new HashMap<>();
 //            }
             if (wand.getType() == Material.IRON_SWORD) {
                 // Teleportation spell
-                if (!Cooldown.isOnTeleportCooldown(player)) {
+                if (!Cooldown.isOnTeleportCooldown(playerId)) {
                     // Implement teleportation abilities
-                    Teleport.teleportSpell(player);
-
-                    // Set the teleportation cooldown for the player
-                    Cooldown.setTeleportCooldown(player);
+                    if (hasEnoughMana(playerId, teleportCost)){
+                        Teleport.teleportSpell(playerId); // Set the teleportation cooldown for the player
+                        Cooldown.setTeleportCooldown(playerId);
+                        deductMana(playerId, teleportCost);
+                        player.sendMessage("You have " + getCurrentMana(playerId) + " mana remaining");
+                    }else {
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Teleport.");
+                    }
                 } else {
-                    // Player is on teleportation cooldown
-                    int remainingSeconds = Cooldown.getRemainingTeleportCooldownSeconds(player);
+                    // Player is on teleport cooldown
+                    int remainingSeconds = Cooldown.getRemainingTeleportCooldownSeconds(playerId);
                     player.sendMessage(ChatColor.RED + "Teleportation on cooldown. Please wait " + remainingSeconds + " seconds.");
                 }
             }
             if (wand.getType() == Material.IRON_PICKAXE) {
                 // Lightning spell
-                if (!Cooldown.isOnLightningCooldown(player)) {
-                    Cast.castLightningSpell(player);
-
-                    Cooldown.setLightningCooldown(player);
+                if (!Cooldown.isOnLightningCooldown(playerId)) {
+                    if (hasEnoughMana(playerId, lightningCost)) {
+                        Cast.castLightningSpell(playerId);
+                        Cooldown.setLightningCooldown(playerId);
+                        deductMana(playerId, lightningCost);
+                        player.sendMessage("You have " + getCurrentMana(playerId) + " mana remaining");
+                    }
                 } else {
                     // Player is on teleportation cooldown
-                    int remainingSeconds = Cooldown.getRemainingLightningCooldownSeconds(player);
-                    player.sendMessage(ChatColor.RED + "Lightning on cooldownb. Please wait " + remainingSeconds + " seconds.");
+                    int remainingSeconds = Cooldown.getRemainingLightningCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Lightning on cooldown. Please wait " + remainingSeconds + " seconds.");
                 }
 
             }
         }
     }
     // Method to check if a player has enough mana for a spell
-    private boolean hasEnoughMana(Player player, double spellCost) {
-        double currentMana = playerMana.getOrDefault(player, maxMana);
+    public boolean hasEnoughMana(UUID playerId, double spellCost) {
+        double currentMana = playerMana.getOrDefault(playerId, maxMana);
         return currentMana >= spellCost;
     }
     // Method to deduct mana for casting a spell
-    private void deductMana(Player player, double spellCost) {
-        double currentMana = playerMana.getOrDefault(player, maxMana);
+    private void deductMana(UUID playerId, double spellCost) {
+        double currentMana = playerMana.getOrDefault(playerId, maxMana);
         double newMana = Math.max(currentMana - spellCost, 0);
-        playerMana.put(player, newMana);
+        playerMana.put(playerId, newMana);
     }
+    public double getCurrentMana(UUID playerId) {
+        return playerMana.getOrDefault(playerId, maxMana);
+    }
+    public static Player getPlayerById(UUID playerId) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (onlinePlayer.getUniqueId().equals(playerId)) {
+                return onlinePlayer;
+            }
+        }
+        return null; // Player with the specified UUID not found
+    }
+
 }
