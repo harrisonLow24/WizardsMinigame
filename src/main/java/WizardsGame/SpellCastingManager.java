@@ -3,6 +3,9 @@ package WizardsGame;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -124,7 +127,10 @@ public class SpellCastingManager {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
     }
-
+    private void playGPSound(Location location) {
+        // custom sound effect at teleportation location
+        location.getWorld().playSound(location, Sound.ENTITY_IRON_GOLEM_HURT, 1.0f, 1.0f);
+    }
     void castGroundPoundSpell(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
         if (player != null) {
@@ -180,6 +186,7 @@ public class SpellCastingManager {
                     // Apply upward velocity to cancel fall velocity
                     player.setVelocity(new Vector(0, -1, 0));
                 }
+                playGPSound(location);
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 10L, 1L); // Delay for 1 second (20 ticks) before starting the descent
     }
@@ -202,7 +209,7 @@ public class SpellCastingManager {
                             FallingBlock fallingBlock = world.spawnFallingBlock(block.getLocation(), block.getBlockData());
 
                             // Set the falling block's velocity to simulate launching blocks upward
-                            Vector velocity = new Vector(.5, 1, .5); // Adjust the velocity as needed
+                            Vector velocity = new Vector(.75, 1, .75); // Adjust the velocity as needed
                             fallingBlock.setVelocity(velocity);
 
                             // Remove the original block
@@ -213,6 +220,17 @@ public class SpellCastingManager {
             }
         }
     }
+    int porkchopSpeed = 2;
+    public void castPorkchopSpell(Player player) {
+        // create and launch porkchop
+        ItemStack porkchopItem = new ItemStack(Material.PORKCHOP);
+        Item porkchopEntity = player.getWorld().dropItem(player.getEyeLocation(), porkchopItem);
+        porkchopEntity.setVelocity(player.getLocation().getDirection().multiply(porkchopSpeed)); // Porkchop speed
 
+        // store player's UUID in item's metadata
+        ItemMeta itemMeta = porkchopItem.getItemMeta();
+        itemMeta.getPersistentDataContainer().set(new NamespacedKey(String.valueOf(this), "caster"), PersistentDataType.STRING, player.getUniqueId().toString());
+        porkchopItem.setItemMeta(itemMeta);
+    }
 
 }

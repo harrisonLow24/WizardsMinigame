@@ -5,10 +5,13 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
@@ -18,13 +21,13 @@ import java.util.UUID;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-
-import org.bukkit.entity.Minecart;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.util.Vector;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.Sound;
+import org.bukkit.Material;
+import org.bukkit.entity.Item;
 
 import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
@@ -32,6 +35,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     SpellCastingManager Cast = new SpellCastingManager();
     CooldownManager Cooldown = new CooldownManager();
     TeleportationManager Teleport = new TeleportationManager();
+    SquidFlight Squid = new SquidFlight();
     private final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
 
     private final Map<UUID, BossBar> manaBossBars = new HashMap<>(); // hashmap of all players' mana bars
@@ -44,6 +48,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     final Map<UUID, Double> spellManaCost = new HashMap<>(); // hashmap of all spells' mana costs
     private final double maxMana = 100.0; // mana pool
+
+    // porkchop variables
+    private final double porkchopDamage = 5.0;
+    private final double healAmount = 4.0;
 
     @Override
     public void onEnable() {
@@ -111,7 +119,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         UUID playerId = player.getUniqueId();
         ItemStack wand = player.getInventory().getItemInMainHand();
 
-
 //        double fireballCost = spellManaCost.getOrDefault(playerId, 10.0); // mana cost
 //        double teleportCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
 //        double lightningCost = spellManaCost.getOrDefault(playerId, 15.0); // mana cost
@@ -120,6 +127,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         double lightningCost = 20.0;
         double gustCost = 25.0;
         double minecartCost = 30.0;
+        double flyingManaCostPerTick = 1.5;
+        double porkchopCost = 10;
+
+
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
             // fireball cast
@@ -173,7 +184,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
             }
             if (wand.getType() == Material.FEATHER) {
-                if (!Cooldown.isOnGustCooldown(playerId)) {  // Check if gust spell is not on cooldown
+                if (!Cooldown.isOnGustCooldown(playerId)) {  // if gust spell is not on cooldown
                     if (hasEnoughMana(playerId, gustCost)) { // AND if player has enough mana
                         Cast.castGustSpell(playerId);          // gust is cast, and a cooldown + mana reduction is set
                         Cooldown.setGustCooldown(playerId);
@@ -187,10 +198,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 }
             }
             if (wand.getType() == Material.MINECART) {
-                // minecart spell cast
+                // minecart spell
                 if (!Cooldown.isOnMinecartCooldown(playerId)) {
                     if (hasEnoughMana(playerId, minecartCost)) {
-                        Cast.launchMinecart(player);  // Implement a method to launch the minecart with the player inside
+                        Cast.launchMinecart(player);  // launch the minecart with the player inside
                         Cooldown.setMinecartCooldown(playerId);
                         deductMana(playerId, minecartCost);
                     } else {
@@ -205,7 +216,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 // minecart spell cast
                 if (!Cooldown.isOnMinecartCooldown(playerId)) {
                     if (hasEnoughMana(playerId, minecartCost)) {
-                        Cast.castGroundPoundSpell(playerId);  // Implement a method to launch the minecart with the player inside
+                        Cast.castGroundPoundSpell(playerId);
                         Cooldown.setMinecartCooldown(playerId);
                         deductMana(playerId, minecartCost);
                     } else {
@@ -216,6 +227,56 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "Minecart spell on cooldown. Please wait " + remainingSeconds + " seconds.");
                 }
             }
+            if (wand.getType() == Material.SHIELD) {
+                if (!Cooldown.isOnSquidFlyingCooldown(playerId)) {
+                    if (hasEnoughMana(playerId, flyingManaCostPerTick)) {
+                        // flying spell
+                        Squid.startFlyingSpell(player);
+
+                        // initial mana cost
+                        deductMana(playerId, flyingManaCostPerTick);
+
+                        // schedule a task to consume mana over time
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                if (!player.isOnline() || !Squid.isFlying(playerId) || !hasEnoughMana(playerId, flyingManaCostPerTick)) {
+                                    // stop flying if player is offline, no longer flying, or not enough enough mana
+                                    Squid.stopFlyingSpell(player);
+                                    this.cancel();
+                                    return;
+                                }
+
+                                // deduct mana per tick
+                                deductMana(playerId, flyingManaCostPerTick);
+                            }
+                        }.runTaskTimer(this, 0, 20); // Run every second (20 ticks)
+
+                        // squid sound effect
+                        player.playSound(player.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.0F, 1.0F);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Flying.");
+                    }
+                } else {
+                    int remainingSeconds = Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Flying spell on cooldown. Please wait " + remainingSeconds + " seconds.");
+                }
+            }
+            if (wand.getType() == Material.IRON_SHOVEL) {
+                // porkchop spell
+                if (!Cooldown.isOnPorkchopCooldown(playerId)) {
+                    if (hasEnoughMana(playerId, porkchopCost)) {
+                        Cast.castPorkchopSpell(player);
+                        Cooldown.setPorkchopCooldown(playerId);
+                        deductMana(playerId, porkchopCost);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Porkchop spell.");
+                    }
+                } else {
+                    int remainingSeconds = Cooldown.getRemainingPorkchopCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Porkchop spell on cooldown. Please wait " + remainingSeconds + " seconds.");
+                }
+            }
         }
     }
 
@@ -224,10 +285,48 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         if (event.getEntity() instanceof Snowball) {
             Location hitLocation = event.getEntity().getLocation();
 
-            // Check if the snowball hit a block
+            // check if snowball hit a block
             if (hitLocation.getBlock().getType() != Material.AIR) {
-                // Create a temporary sphere of ice
+                // create a temporary sphere of ice
                 createIceSphere(hitLocation);
+            }
+        }
+    }
+
+    // porkchop hit event
+    @EventHandler
+    public void onPorkchopHit(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Item && event.getEntity() instanceof LivingEntity) {
+            Item porkchopEntity = (Item) event.getDamager();
+            LivingEntity targetEntity = (LivingEntity) event.getEntity();
+
+            if (porkchopEntity.getItemStack().getType() == Material.PORKCHOP) {
+                // Check if the Porkchop was cast by a player
+                PersistentDataContainer container = porkchopEntity.getItemStack().getItemMeta().getPersistentDataContainer();
+                if (container.has(new NamespacedKey(this, "caster"), PersistentDataType.STRING)) {
+                    UUID casterId = UUID.fromString(container.get(new NamespacedKey(this, "caster"), PersistentDataType.STRING));
+                    Player caster = getPlayerById(casterId);
+
+                    // Check if the caster is online
+                    if (caster != null) {
+                        // Convert the Porkchop to a cooked Porkchop
+                        porkchopEntity.setItemStack(new ItemStack(Material.COOKED_PORKCHOP));
+
+                        // Return the cooked Porkchop to the caster
+                        ItemStack cookedPorkchop = porkchopEntity.getItemStack();
+                        if (caster.getInventory().addItem(cookedPorkchop).isEmpty()) {
+                            // Remove the cooked Porkchop from the ground
+                            porkchopEntity.remove();
+
+                            // Heal the caster
+                            double currentHealth = caster.getHealth();
+                            double maxHealth = caster.getMaxHealth();
+                            double newHealth = Math.min(currentHealth + healAmount, maxHealth);
+                            caster.setHealth(newHealth);
+                            caster.sendMessage(ChatColor.GREEN + "You've been healed for " + healAmount + " hearts!");
+                        }
+                    }
+                }
             }
         }
     }
@@ -235,16 +334,13 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     private void createIceSphere(Location location) {
         World world = location.getWorld();
-        double radius = 3.0; // Set the desired radius of the ice sphere
-
-        // Iterate through the blocks within the specified radius
+        double radius = 3.0; //radius of the ice sphere
         for (double x = -radius; x <= radius; x++) {
             for (double y = -radius; y <= radius; y++) {
                 for (double z = -radius; z <= radius; z++) {
                     if (Math.sqrt(x * x + y * y + z * z) <= radius) {
                         Location iceBlockLocation = location.clone().add(x, y, z);
                         world.getBlockAt(iceBlockLocation).setType(Material.ICE);
-                        // You can customize the appearance or behavior of the ice block if needed
                     }
                 }
             }
@@ -256,7 +352,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         return currentMana >= spellCost;
     }
     // deduct mana for spell cast
-    private void deductMana(UUID playerId, double spellCost) {
+    public void deductMana(UUID playerId, double spellCost) {
         double currentMana = playerMana.getOrDefault(playerId, maxMana);
         double newMana = Math.max(currentMana - spellCost, 0);
         playerMana.put(playerId, newMana);
@@ -291,7 +387,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             UUID playerId = onlinePlayer.getUniqueId();
             double currentMana = getCurrentMana(playerId);
             if (hasInfiniteMana(playerId)) {
-                // Set the player's mana to the maximum value
+                // set player's mana to maximum value
                 setPlayerMana(playerId, maxMana);
             }else {
                 // regen rate
@@ -302,34 +398,59 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
+    // exaggerated lightning effect
     private void startLightningEffect(UUID playerId) {
-        // Set the initial duration
+        Player player = getPlayerById(playerId);
+        if (player == null) {
+            return;
+        }
+
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0F, 1.0F);
+        player.getWorld().strikeLightningEffect(player.getLocation());
+        new BukkitRunnable() {
+            double radius = 3.0;
+            double height = 5.0;
+            double angle = 0;
+
+            @Override
+            public void run() {
+                if (angle >= 360) {
+                    this.cancel();
+                    return;
+                }
+
+                double x = radius * Math.cos(Math.toRadians(angle));
+                double z = radius * Math.sin(Math.toRadians(angle));
+
+                Location particleLocation = player.getLocation().clone().add(x, height, z);
+                player.getWorld().spawnParticle(Particle.CRIT, particleLocation, 10, 0.2, 0.2, 0.2, 0.1);
+
+                angle += 10;
+            }
+        }.runTaskTimer(this, 0, 1);
+
+        // schedule task to simulate longer-lasting lightning effect
         int maxLightningEffectDuration = 100;
         lightningEffectDuration.put(playerId, maxLightningEffectDuration);
 
-        // Schedule a task to decrease the duration every tick
         getServer().getScheduler().runTaskTimer(this, () -> {
             int remainingDuration = lightningEffectDuration.getOrDefault(playerId, 0);
 
             if (remainingDuration <= 0) {
-                // Remove the player's UUID from the map when the duration is over
                 lightningEffectDuration.remove(playerId);
                 return;
             }
 
-            // Simulate the longer-lasting lightning effect here
-            // You can implement your custom lightning effect logic
-
-            // Decrease the remaining duration
+            // secrease remaining duration
             lightningEffectDuration.put(playerId, remainingDuration - 1);
-
         }, 0, 1);
     }
+
     public void toggleInfiniteMana(UUID playerId) {
         boolean currentStatus = infiniteManaMap.getOrDefault(playerId, false);
         infiniteManaMap.put(playerId, !currentStatus);
 
-        // If infinite mana is toggled, set the player's mana to the maximum value
+        // if infinite mana is toggled, set player's mana to maximum value
         if (hasInfiniteMana(playerId)) {
             setPlayerMana(playerId, maxMana);
         }
@@ -342,7 +463,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         boolean currentStatus = cooldownsDisabledMap.getOrDefault(playerId, false);
         cooldownsDisabledMap.put(playerId, !currentStatus);
 
-        // If cooldowns are disabled, clear existing cooldowns for the player
+        // if cooldowns are disabled, clear cooldowns for the player
         if (hasCooldownsDisabled(playerId)) {
             Cooldown.clearCooldowns(playerId);
         }
@@ -352,10 +473,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         return cooldownsDisabledMap.getOrDefault(playerId, false);
     }
     public void setPlayerMana(UUID playerId, double newMana) {
-        // Set the mana for the specified player
+        // set mana for the specified player
         playerMana.put(playerId, Math.min(newMana, maxMana));
 
-        // Update the mana display for the player
+        // opdate  mana display for the player
         Player player = getPlayerById(playerId);
         if (player != null) {
             updateManaActionBar(player);

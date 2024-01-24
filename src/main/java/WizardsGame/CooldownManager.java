@@ -11,7 +11,13 @@ import java.util.concurrent.TimeUnit;
 public class CooldownManager {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Map<UUID, Long> minecartCooldowns = new HashMap<>();
+    private final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
+    private final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
+
     private final long minecartCooldownDuration = 30 * 1000; // 30 seconds
+    private final long squidFlyingCooldownDuration = 25 * 1000; // 25 seconds
+    private final long porkchopCooldownDuration = 12 * 1000; // 12 seconds
+
     public CooldownManager() {
 
         // schedule the task to run every second
@@ -36,6 +42,12 @@ public class CooldownManager {
             clearCooldowns(playerId);
         }
         for (UUID playerId : minecartCooldowns.keySet()) {
+            clearCooldowns(playerId);
+        }
+        for (UUID playerId : squidFlyingCooldowns.keySet()) {
+            clearCooldowns(playerId);
+        }
+        for (UUID playerId : porkchopCooldowns.keySet()) {
             clearCooldowns(playerId);
         }
     }
@@ -85,6 +97,14 @@ public class CooldownManager {
         long remainingCooldown = minecartCooldownDuration - (System.currentTimeMillis() - minecartCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
+    int getRemainingSquidFlyingCooldownSeconds(UUID playerId) {
+        long remainingCooldown = squidFlyingCooldownDuration - (System.currentTimeMillis() - squidFlyingCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
+    int getRemainingPorkchopCooldownSeconds(UUID playerId) {
+        long remainingCooldown = porkchopCooldownDuration - (System.currentTimeMillis() - porkchopCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
 
 
 
@@ -111,6 +131,12 @@ public class CooldownManager {
     boolean isOnMinecartCooldown(UUID playerId) {
         return minecartCooldowns.containsKey(playerId) && System.currentTimeMillis() - minecartCooldowns.get(playerId) < minecartCooldownDuration;
     }
+    boolean isOnSquidFlyingCooldown(UUID playerId) {
+        return squidFlyingCooldowns.containsKey(playerId) && System.currentTimeMillis() - squidFlyingCooldowns.get(playerId) < squidFlyingCooldownDuration;
+    }
+    boolean isOnPorkchopCooldown(UUID playerId) {
+        return porkchopCooldowns.containsKey(playerId) && System.currentTimeMillis() - porkchopCooldowns.get(playerId) < porkchopCooldownDuration;
+    }
 
 
     // sets the cooldown of spells
@@ -134,6 +160,12 @@ public class CooldownManager {
     void setMinecartCooldown(UUID playerId) {
         minecartCooldowns.put(playerId, System.currentTimeMillis());
     }
+    void setSquidFlyingCooldown(UUID playerId) {
+        squidFlyingCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    void setPorkchopCooldown(UUID playerId) {
+        porkchopCooldowns.put(playerId, System.currentTimeMillis());
+    }
 
 
 
@@ -144,5 +176,7 @@ public class CooldownManager {
         gustCooldowns.remove(playerId);
         iceSphereCooldowns.remove(playerId);
         minecartCooldowns.remove(playerId);
+        squidFlyingCooldowns.remove(playerId);
+        porkchopCooldowns.remove(playerId);
     }
 }
