@@ -2,7 +2,9 @@ package WizardsGame;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.type.TNT;
 import org.bukkit.entity.*;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -12,10 +14,7 @@ import org.bukkit.util.Vector;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Particle;
 
@@ -29,10 +28,9 @@ public class SpellCastingManager {
             Vector direction = player.getLocation().getDirection().multiply(speed);
             player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
             player.sendMessage(ChatColor.GREEN.toString() + ChatColor.BOLD + "" + "You cast the Fireball spell!");
+            player.getWorld().playSound(player, Sound.ENTITY_GHAST_SHOOT, 1.0f, 1.0f);
         }
     }
-
-
 
     void castLightningSpell(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
@@ -109,12 +107,11 @@ public class SpellCastingManager {
     void launchMinecart(Player player) {
         // create and launch the minecart with player inside
         Minecart minecart = player.getWorld().spawn(player.getLocation(), Minecart.class);
-
+        minecart.addPassenger();
         // set the minecart's velocity
         Vector direction = player.getLocation().getDirection().multiply(5);  // adjust the launch speed
-        direction.setX(direction.getX() * 100);  // adjust the x velocity
+        direction.setX(direction.getX() * 10);  // adjust the x velocity
         minecart.setVelocity(direction);
-
 
         minecart.setPassenger(player); // sets player as passenger
 

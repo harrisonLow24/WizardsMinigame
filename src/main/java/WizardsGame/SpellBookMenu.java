@@ -40,9 +40,9 @@ public class SpellBookMenu implements Listener {
 
         // spell button creation with custom names
         ItemStack fireballButton = createSpellButton("Fiery Wand", Material.BLAZE_ROD);
-        ItemStack teleportButton = createSpellButton("Teleportation Blade", Material.IRON_SWORD);
-        ItemStack lightningButton = createSpellButton("Thunder Hammer", Material.IRON_PICKAXE);
-        ItemStack minecartButton = createSpellButton("Magical Minecart", Material.MINECART);
+        ItemStack teleportButton = createSpellButton("Shrouded Step", Material.IRON_SWORD);
+        ItemStack lightningButton = createSpellButton("Mjölnir", Material.IRON_PICKAXE);
+        ItemStack minecartButton = createSpellButton("The Great Escape", Material.MINECART);
         ItemStack gustButton = createSpellButton("Gust Feather", Material.FEATHER);
         ItemStack flyButton = createSpellButton("Winged Shield", Material.SHIELD);
         ItemStack GPButton = createSpellButton("Big Man Slam", Material.IRON_INGOT);
@@ -119,11 +119,11 @@ public class SpellBookMenu implements Listener {
             case BLAZE_ROD:
                 return "Fiery Wand";
             case IRON_SWORD:
-                return "Teleportation Blade";
+                return "Shrouded Step";
             case IRON_PICKAXE:
-                return "Thunder Hammer";
+                return "Mjölnir";
             case MINECART:
-                return "Magical Minecart";
+                return "The Great Escape";
             case FEATHER:
                 return "Gust Feather";
             case SHIELD:
@@ -180,13 +180,13 @@ public class SpellBookMenu implements Listener {
             case "Fiery Wand":
                 lore.add("Cast powerful fireballs.");
                 break;
-            case "Teleportation Blade":
+            case "Shrouded Step":
                 lore.add("Teleport to a targeted location.");
                 break;
-            case "Thunder Hammer":
+            case "Mjölnir":
                 lore.add("Summon lightning with a mighty hammer swing.");
                 break;
-            case "Magical Minecart":
+            case "The Great Escape":
                 lore.add("Ride a magical minecart to travel quickly.");
                 break;
             case "Gust Feather":
@@ -243,9 +243,9 @@ public class SpellBookMenu implements Listener {
                     // Add spell to player's inventory only if the spell book is in hand
                     switch (spellName) {
                         case "Fiery Wand":
-                        case "Teleportation Blade":
-                        case "Thunder Hammer":
-                        case "Magical Minecart":
+                        case "Shrouded Step":
+                        case "Mjölnir":
+                        case "The Great Escape":
                         case "Gust Feather":
                         case "Winged Shield":
                         case "Big Man Slam":

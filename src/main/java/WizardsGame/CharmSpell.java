@@ -32,10 +32,10 @@ public class CharmSpell implements Listener {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
 
-        // check if player right-clicked with beetroot
+        // check if player right-clicked with a beetroot
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             if (item.getType() == Material.BEETROOT) {
-                // check charm cooldown
+                // check charm spell cooldown
                 if (charmCooldowns.containsKey(player.getUniqueId())) {
                     long lastTime = charmCooldowns.get(player.getUniqueId());
                     long currentTime = System.currentTimeMillis() / 1000;
@@ -45,8 +45,8 @@ public class CharmSpell implements Listener {
                     }
                 }
 
-                // cast charm spell
-                castCharmSpell(player.getUniqueId());
+                // Cast charm spell as a projectile
+                castCharmProjectile(player);
                 charmCooldowns.put(player.getUniqueId(), System.currentTimeMillis() / 1000);
             }
         }
@@ -74,38 +74,39 @@ public class CharmSpell implements Listener {
         }
     }
     void castCharmProjectile(Player caster) {
-        Location casterLocation = caster.getEyeLocation();
-        Vector direction = casterLocation.getDirection().normalize();
+        Location startLocation = caster.getEyeLocation();
+        Vector direction = startLocation.getDirection().normalize();
 
-        // create particle projectile
+        // particle projectile
         new BukkitRunnable() {
-            int timer = 0;
+            int distance = 0;
 
             @Override
             public void run() {
-                if (timer >= 20 * charmDuration) {
+                if (distance >= charmRadius * 20) {
                     this.cancel();
                     return;
                 }
 
-                // update projectile location
-                casterLocation.add(direction);
-                caster.getWorld().spawnParticle(Particle.HEART, casterLocation, 1, 0, 0, 0, 0.1);
+                Location particleLocation = startLocation.clone().add(direction.multiply(distance / 20.0));
 
-                // check for entities within charm radius
-                for (Entity entity : casterLocation.getWorld().getNearbyEntities(casterLocation, charmRadius, charmRadius, charmRadius)) {
-                    if (entity instanceof LivingEntity && !(entity instanceof Player && entity.getUniqueId().equals(caster.getUniqueId()))) {
-                        // ap[ply charm effect to entity
-                        applyCharmEffect(entity.getUniqueId());
+                // spawn particle projectile
+                caster.getWorld().spawnParticle(Particle.HEART, particleLocation, 1, 0, 0, 0, 0.1);
+
+                // check for entities in charm radius
+                for (Entity entity : caster.getWorld().getNearbyEntities(particleLocation, 0.5, 0.5, 0.5)) {
+                    if (entity instanceof LivingEntity) {
+                        applyCharmEffect(((LivingEntity) entity).getUniqueId());
                         this.cancel();
                         return;
                     }
                 }
 
-                timer++;
+                distance++;
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
     }
+
 
     void applyCharmEffect(UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);

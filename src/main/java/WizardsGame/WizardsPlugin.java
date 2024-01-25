@@ -56,6 +56,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         getLogger().info("WizardsPlugin has been enabled!");
         getServer().getPluginManager().registerEvents(this, this);
         SpellBookMenu spellBookMenu = new SpellBookMenu(this);
+        getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
 
         // commands
         Objects.requireNonNull(getCommand("toggleinfinitemana")).setExecutor(new WizardCommands(this));
@@ -147,7 +148,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 // teleport cast
                 if (!Cooldown.isOnTeleportCooldown(playerId)) { // if teleport is not on cooldown
                     if (Mana.hasEnoughMana(playerId, teleportCost)){ // AND if player has enough mana
-                        Teleport.teleportSpell(playerId);       // teleport is cast, and a cooldown + mana reduction is set
+                        Teleport.castTeleportSpell(playerId, 2.5); // teleport is cast, and a cooldown + mana reduction is set
                         Cooldown.setTeleportCooldown(playerId);
                         Mana.deductMana(playerId, teleportCost);
                     }else {
