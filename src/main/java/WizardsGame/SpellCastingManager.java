@@ -9,11 +9,18 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
-import org.bukkit.util.BlockIterator;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import org.bukkit.Particle;
 
 public class SpellCastingManager {
+
     // fireball cast
     void castFireball(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
@@ -24,6 +31,8 @@ public class SpellCastingManager {
             player.sendMessage(ChatColor.GREEN.toString() + ChatColor.BOLD + "" + "You cast the Fireball spell!");
         }
     }
+
+
 
     void castLightningSpell(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
@@ -44,11 +53,9 @@ public class SpellCastingManager {
             }
         }
     }
-
     private void strikeLightning(Location location) {
         location.getWorld().strikeLightning(location);
     }
-
     // particle generation between player and strike area
     private void spawnAndMoveParticleTrail(Location startLocation, Location endLocation) {
         int particleCount = 100000; // number of generated trail particles
@@ -72,6 +79,7 @@ public class SpellCastingManager {
 
         return null; // no solid block found
     }
+
 
     void castGustSpell(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
@@ -128,6 +136,9 @@ public class SpellCastingManager {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
     }
+
+
+
     private void playGPSound(Location location) {
         // custom sound effect at teleportation location
         location.getWorld().playSound(location, Sound.ENTITY_IRON_GOLEM_HURT, 1.0f, 1.0f);
@@ -139,7 +150,6 @@ public class SpellCastingManager {
             player.sendMessage(ChatColor.RED.toString() + ChatColor.BOLD + "Ground Pound spell cast!");
         }
     }
-
     private void groundPound(Player player) {
         World world = player.getWorld();
         Location initialLocation = player.getLocation();
@@ -199,11 +209,6 @@ public class SpellCastingManager {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 10L, 1L); // delay1 second = 20 ticks
     }
-
-
-
-
-
     private Vector getRandomVelocity(double minVelocity, double maxVelocity) {
         double randomX = minVelocity + Math.random() * (maxVelocity - minVelocity);
         double randomY = minVelocity + Math.random() * (maxVelocity - minVelocity);
@@ -211,9 +216,6 @@ public class SpellCastingManager {
 
         return new Vector(randomX, randomY, randomZ);
     }
-
-
-
     private void scatterBlocks(Location location) {
         World world = location.getWorld();
         double scatterRadius = 5.0;
@@ -243,7 +245,6 @@ public class SpellCastingManager {
             }
         }
     }
-
 
 
     int porkchopSpeed = 2;

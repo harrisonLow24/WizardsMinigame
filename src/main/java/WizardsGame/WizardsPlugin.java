@@ -37,6 +37,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     TeleportationManager Teleport = new TeleportationManager();
     SquidFlight Squid = new SquidFlight();
     ManaManager Mana = new ManaManager();
+    CharmSpell Charm = new CharmSpell();
+
+
     private final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
 
     private final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
@@ -116,6 +119,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         double gustCost = 25.0;
         double minecartCost = 30.0;
         double flyingManaCostPerTick = 1.5;
+        double charmCost = 15.0;
         double porkchopCost = 10;
 
 
@@ -264,6 +268,22 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "Porkchop spell on cooldown. Please wait " + remainingSeconds + " seconds.");
                 }
             }
+            if (wand.getType() == Material.BEETROOT) {
+                // charm spell cast
+                if (!Cooldown.isOnCharmCooldown(playerId)) {
+                    if (Mana.hasEnoughMana(playerId, charmCost)) {
+                        Charm.castCharmSpell(playerId);
+                        Cooldown.setCharmCooldown(playerId);
+                        Mana.deductMana(playerId, charmCost);
+                    } else {
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Charm spell.");
+                    }
+                } else {
+                    int remainingSeconds = Cooldown.getRemainingCharmCooldownSeconds(playerId);
+                    player.sendMessage(ChatColor.RED + "Charm spell on cooldown. Please wait " + remainingSeconds + " seconds.");
+                }
+            }
+
         }
     }
 

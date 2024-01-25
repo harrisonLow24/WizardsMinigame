@@ -13,6 +13,7 @@ public class CooldownManager {
     private final Map<UUID, Long> minecartCooldowns = new HashMap<>();
     private final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
     private final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
+    private final Map<UUID, Long> charmCooldowns = new HashMap<>();
 
     public CooldownManager() {
 
@@ -44,6 +45,9 @@ public class CooldownManager {
             clearCooldowns(playerId);
         }
         for (UUID playerId : porkchopCooldowns.keySet()) {
+            clearCooldowns(playerId);
+        }
+        for (UUID playerId : charmCooldowns.keySet()) {
             clearCooldowns(playerId);
         }
     }
@@ -103,6 +107,17 @@ public class CooldownManager {
         long remainingCooldown = porkchopCooldownDuration - (System.currentTimeMillis() - porkchopCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
+    public int getRemainingCharmCooldownSeconds(UUID playerId) {
+        if (!charmCooldowns.containsKey(playerId)) {
+            return 0;
+        }
+
+        long cooldownEndTime = charmCooldowns.get(playerId);
+        long currentTime = System.currentTimeMillis();
+
+        int remainingSeconds = (int) Math.max(0, (cooldownEndTime - currentTime) / 1000);
+        return remainingSeconds;
+    }
 
 
 
@@ -114,7 +129,6 @@ public class CooldownManager {
     boolean isOnTeleportCooldown(UUID playerId) {
         return teleportCooldowns.containsKey(playerId) && System.currentTimeMillis() - teleportCooldowns.get(playerId) < teleportCooldownDuration;
     }
-
     boolean isOnLightningCooldown(UUID playerId) {
         return lightningCooldowns.containsKey(playerId) && System.currentTimeMillis() - lightningCooldowns.get(playerId) < lightningCooldownDuration;
     }
@@ -133,7 +147,16 @@ public class CooldownManager {
     boolean isOnPorkchopCooldown(UUID playerId) {
         return porkchopCooldowns.containsKey(playerId) && System.currentTimeMillis() - porkchopCooldowns.get(playerId) < porkchopCooldownDuration;
     }
+    public boolean isOnCharmCooldown(UUID playerId) {
+        if (!charmCooldowns.containsKey(playerId)) {
+            return false;
+        }
 
+        long cooldownEndTime = charmCooldowns.get(playerId);
+        long currentTime = System.currentTimeMillis();
+
+        return currentTime < cooldownEndTime;
+    }
 
     // sets the cooldown of spells
     void setFireballCooldown(UUID playerId) {
@@ -162,6 +185,10 @@ public class CooldownManager {
     void setPorkchopCooldown(UUID playerId) {
         porkchopCooldowns.put(playerId, System.currentTimeMillis());
     }
+    void setCharmCooldown(UUID playerId) {
+        double charmDuration = 10;
+        charmCooldowns.put(playerId, (long) (System.currentTimeMillis() + (charmDuration * 1000)));
+    }
 
 
 
@@ -174,5 +201,6 @@ public class CooldownManager {
         minecartCooldowns.remove(playerId);
         squidFlyingCooldowns.remove(playerId);
         porkchopCooldowns.remove(playerId);
+        charmCooldowns.remove(playerId);
     }
 }

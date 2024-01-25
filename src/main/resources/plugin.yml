@@ -12,7 +12,7 @@ commands:
     permission-message: You do not have permission!
     usage: /togglemana
   togglecooldowns:
-    description: toggle infinite mana
+    description: toggle cooldowns
     aliases: cooldowns
     permission: op
     permission-message: You do not have permission!
