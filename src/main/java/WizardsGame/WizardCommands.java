@@ -21,10 +21,10 @@ public class WizardCommands implements CommandExecutor {
         if (command.getName().equalsIgnoreCase("toggleinfinitemana")) {
             if (sender.hasPermission("wizardsplugin.toggleinfinitemana")) {
                 if (sender instanceof Player) {
-                    Player player = (Player) sender;  // Cast once to avoid multiple castings
+                    Player player = (Player) sender;  // cast once to avoid multiple castings
                     UUID playerId = player.getUniqueId();
-                    plugin.toggleInfiniteMana(playerId);
-                    sender.sendMessage(ChatColor.GREEN + "Infinite Mana " + (plugin.hasInfiniteMana(playerId) ? "enabled" : "disabled"));
+                    plugin.Mana.toggleInfiniteMana(playerId);
+                    sender.sendMessage(ChatColor.GREEN + "Infinite Mana " + (plugin.Mana.hasInfiniteMana(playerId) ? "enabled" : "disabled"));
                 } else {
                     sender.sendMessage(ChatColor.RED + "This command can only be used by a player.");
                 }

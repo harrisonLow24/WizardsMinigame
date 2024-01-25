@@ -28,7 +28,7 @@ public class SpellCastingManager {
     void castLightningSpell(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
         if (player != null) {
-            double particleDistance = 1000; // length of the particle trail
+            double particleDistance = 1000; // length of particle trail
             Vector direction = player.getLocation().getDirection().multiply(particleDistance);
             Location destination = player.getLocation().add(direction);
 
@@ -46,7 +46,7 @@ public class SpellCastingManager {
     }
 
     private void strikeLightning(Location location) {
-        location.getWorld().strikeLightning(location); // Summon lightning at the location
+        location.getWorld().strikeLightning(location);
     }
 
     // particle generation between player and strike area
@@ -79,16 +79,17 @@ public class SpellCastingManager {
         double gustStrength = 2.0; // strength of the gust spell
 
         // push all nearby entities
+        assert player != null;
         for (Entity entity : player.getNearbyEntities(gustRadius, gustRadius, gustRadius)) {
 //            if (entity instanceof Player) {
-//                // can add special case for if player is detected
+//                // can add case for if player is detected
 //                continue;
 //            }
 
-            // calculate direction vector from player to the entity
+            // calculate direction vector from player to entity
             org.bukkit.util.Vector direction = entity.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
 
-            // apply gust by pushing entity away
+            // apply gust by pushing entities away
             entity.setVelocity(direction.multiply(gustStrength));
         }
 
@@ -98,31 +99,31 @@ public class SpellCastingManager {
 
 
     void launchMinecart(Player player) {
-        // create and launch the minecart with the player inside
+        // create and launch the minecart with player inside
         Minecart minecart = player.getWorld().spawn(player.getLocation(), Minecart.class);
 
-        // Set the minecart's velocity to a high value
+        // set the minecart's velocity
         Vector direction = player.getLocation().getDirection().multiply(5);  // adjust the launch speed
         direction.setX(direction.getX() * 100);  // adjust the x velocity
         minecart.setVelocity(direction);
 
-        // Set the player as the passenger
-        minecart.setPassenger(player);
 
-        // Schedule a task to check for the minecart landing
+        minecart.setPassenger(player); // sets player as passenger
+
+        // schedule task to check for minecart landing
         new BukkitRunnable() {
             @Override
             public void run() {
                 if (!minecart.isValid() || minecart.isOnGround()) {
-                    // Eject the player from the minecart when it lands
+                    // eject the player from the minecart when landing
                     if (minecart.getPassenger() != null && minecart.getPassenger() instanceof Player) {
                         Player passenger = (Player) minecart.getPassenger();
                         passenger.leaveVehicle();
                     }
 
-                    // Optionally, you can add more effects or actions when the minecart lands
+                    // note to self: can add effects or actions for minecart landing
                     minecart.remove();
-                    this.cancel(); // Stop the task once the minecart lands
+                    this.cancel();
                 }
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
@@ -141,78 +142,100 @@ public class SpellCastingManager {
 
     private void groundPound(Player player) {
         World world = player.getWorld();
-        Location location = player.getLocation();
+        Location initialLocation = player.getLocation();
 
-        // Play particle effects
-        world.spawnParticle(Particle.EXPLOSION_LARGE, location, 1, 0, 0, 0, 0);
+        // particle effects at initial location
+        world.spawnParticle(Particle.EXPLOSION_LARGE, initialLocation, 1, 0, 0, 0, 0);
 
-        // Launch the player up before bringing them down
+        // launch the player up before bringing them down
         player.setVelocity(new Vector(0, 1, 0)); // Adjust the upward velocity
 
-        // Wait for a moment before starting the descent
+        // delay before descent
         new BukkitRunnable() {
             @Override
             public void run() {
-                // Create a circular impact on the terrain
-                double radius = 5.0;
-                for (double x = -radius; x <= radius; x += 0.5) {
-                    for (double z = -radius; z <= radius; z += 0.5) {
-                        if (Math.sqrt(x * x + z * z) <= radius) {
-                            Block block = world.getBlockAt(location.clone().add(x, -1, z));
-                            if (block.getType() != Material.BEDROCK) {
-                                // Create a falling block entity for each block
-                                FallingBlock fallingBlock = world.spawnFallingBlock(block.getLocation(), block.getBlockData());
+                // check if the player is on a block
+                if (player.isOnGround()) {
+                    // create a circular impact
+                    double radius = 5.0;
+                    Location landingLocation = player.getLocation();
 
-                                // Set the falling block's velocity to simulate scattering
-                                Vector velocity = new Vector(0, 2, 0); // Adjust the velocity as needed
-                                fallingBlock.setVelocity(velocity);
+                    // particle effects for descent
+                    for (double y = 0; y <= 10; y += 0.5) {
+                        world.spawnParticle(Particle.CLOUD, landingLocation.clone().add(0, y, 0), 1, 0, 0, 0, 0);
+                    }
 
-                                // Remove the original block
-                                block.setType(Material.AIR);
+                    scatterBlocks(landingLocation); // scatter blocks relative to landing location
+
+                    for (double x = -radius; x <= radius; x += 0.5) {
+                        for (double z = -radius; z <= radius; z += 0.5) {
+                            if (Math.sqrt(x * x + z * z) <= radius) {
+                                Block block = world.getBlockAt(initialLocation.clone().add(x, -1, z));
+                                if (block.getType() != Material.BEDROCK) {
+                                    // create a falling block entity for each block
+                                    FallingBlock fallingBlock = world.spawnFallingBlock(block.getLocation(), block.getBlockData());
+
+                                    // set the falling block's velocity
+                                    Vector velocity = new Vector(0, 2, 0);
+                                    fallingBlock.setVelocity(velocity);
+
+                                    block.setType(Material.AIR); // remove original block
+                                }
                             }
                         }
                     }
-                }
 
-                // Make the player fall faster without taking fall damage
-                player.setFallDistance(0); // Reset fall distance to prevent fall damage
+                    // make player fall faster without taking fall damage
+                    player.setFallDistance(0); // Reset fall distance to prevent fall damage
 
-                // Check if the player is on the ground
-                if (player.isOnGround()) {
-                    // Launch blocks upward when the player touches the ground
-                    scatterBlocks(location);
-                    this.cancel(); // Stop the task once the blocks are launched
+                    // launch blocks upward when player touches ground
+                    this.cancel();
+                    playGPSound(landingLocation);
                 } else {
-                    // Apply upward velocity to cancel fall velocity
-                    player.setVelocity(new Vector(0, -1, 0));
+                    // apply upward velocity to cancel fall velocity
+                    player.setVelocity(new Vector(0, -5, 0));
+                    player.setFallDistance(0);
                 }
-                playGPSound(location);
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 10L, 1L); // Delay for 1 second (20 ticks) before starting the descent
+        }.runTaskTimer(WizardsPlugin.getInstance(), 10L, 1L); // delay1 second = 20 ticks
     }
 
+
+
+
+
+    private Vector getRandomVelocity(double minVelocity, double maxVelocity) {
+        double randomX = minVelocity + Math.random() * (maxVelocity - minVelocity);
+        double randomY = minVelocity + Math.random() * (maxVelocity - minVelocity);
+        double randomZ = minVelocity + Math.random() * (maxVelocity - minVelocity);
+
+        return new Vector(randomX, randomY, randomZ);
+    }
 
 
 
     private void scatterBlocks(Location location) {
         World world = location.getWorld();
         double scatterRadius = 5.0;
+        double minVelocity = 0.5;
+        double maxVelocity = 1.5;
 
-        // Iterate through blocks in a spherical pattern
+        // iterate through blocks in a sphere
         for (double x = -scatterRadius; x <= scatterRadius; x += 3) {
             for (double y = -scatterRadius; y <= scatterRadius; y += 2) {
                 for (double z = -scatterRadius; z <= scatterRadius; z += 2) {
                     if (Math.sqrt(x * x + y * y + z * z) <= scatterRadius) {
+                        assert world != null;
                         Block block = world.getBlockAt(location.clone().add(x, y, z));
                         if (block.getType() != Material.BEDROCK) {
-                            // Create a falling block entity for each block
+                            // create falling block for each block
                             FallingBlock fallingBlock = world.spawnFallingBlock(block.getLocation(), block.getBlockData());
 
-                            // Set the falling block's velocity to simulate launching blocks upward
-                            Vector velocity = new Vector(.75, 1, .75); // Adjust the velocity as needed
+                            // set random velocity
+                            Vector velocity = getRandomVelocity(minVelocity, maxVelocity); // Use the random velocity
                             fallingBlock.setVelocity(velocity);
 
-                            // Remove the original block
+                            // remove original block
                             block.setType(Material.AIR);
                         }
                     }
@@ -220,6 +243,9 @@ public class SpellCastingManager {
             }
         }
     }
+
+
+
     int porkchopSpeed = 2;
     public void castPorkchopSpell(Player player) {
         // create and launch porkchop
@@ -231,6 +257,6 @@ public class SpellCastingManager {
         ItemMeta itemMeta = porkchopItem.getItemMeta();
         itemMeta.getPersistentDataContainer().set(new NamespacedKey(String.valueOf(this), "caster"), PersistentDataType.STRING, player.getUniqueId().toString());
         porkchopItem.setItemMeta(itemMeta);
+        player.getWorld().playSound(player, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0f, 1.0f);
     }
-
 }

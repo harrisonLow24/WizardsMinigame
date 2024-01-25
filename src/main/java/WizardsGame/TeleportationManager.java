@@ -44,6 +44,6 @@ public class TeleportationManager {
             }
         }
 
-        return startLocation; // if no safe location is found, return the original starting location
+        return startLocation; // if no safe location is found, return original starting location
     }
 }

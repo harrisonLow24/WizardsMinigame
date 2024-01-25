@@ -14,10 +14,6 @@ public class CooldownManager {
     private final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
     private final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
 
-    private final long minecartCooldownDuration = 30 * 1000; // 30 seconds
-    private final long squidFlyingCooldownDuration = 25 * 1000; // 25 seconds
-    private final long porkchopCooldownDuration = 12 * 1000; // 12 seconds
-
     public CooldownManager() {
 
         // schedule the task to run every second
@@ -64,7 +60,9 @@ public class CooldownManager {
     private final long lightningCooldownDuration = 15 * 1000; //15
     private final long gustCooldownDuration = 15 * 1000; // 15
     private final long iceSphereCooldownDuration = 20 * 1000; // 20 seconds
-
+    private final long minecartCooldownDuration = 30 * 1000; // 30 seconds
+    private final long squidFlyingCooldownDuration = 25 * 1000; // 25 seconds
+    private final long porkchopCooldownDuration = 12 * 1000; // 12 seconds
 
 
     // returns the remaining cooldown left
@@ -110,12 +108,10 @@ public class CooldownManager {
 
     // check if spells are on cooldown
     boolean isOnFireballCooldown(UUID playerId) {
-        // Check if player is on fireball cooldown
         return fireballCooldowns.containsKey(playerId) && System.currentTimeMillis() - fireballCooldowns.get(playerId) < fireballCooldownDuration;
     }
 
     boolean isOnTeleportCooldown(UUID playerId) {
-        // Check if player is on teleportation cooldown
         return teleportCooldowns.containsKey(playerId) && System.currentTimeMillis() - teleportCooldowns.get(playerId) < teleportCooldownDuration;
     }
 

@@ -1,5 +1,6 @@
 package WizardsGame;
 
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -20,19 +21,19 @@ public class SquidFlight{
         BukkitRunnable flyingTask = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!player.isOnline() || !isFlying(playerId) || !WizardsPlugin.getInstance().hasEnoughMana(playerId, flyingManaCostPerTick)) {
-                    // Stop flying if player is offline, no longer flying, or doesn't have enough mana
+                if (WizardsPlugin.getInstance().Mana.getCurrentMana(playerId) <= 50 || !player.isOnline() || !isFlying(playerId) || !WizardsPlugin.getInstance().Mana.hasEnoughMana(playerId, flyingManaCostPerTick)) {
+                    // stop flying if player is offline, no longer flying, or doesn't have enough mana
                     stopFlyingSpell(player);
                     cancel();
                     return;
                 }
                 // deduct mana per tick
-                WizardsPlugin.getInstance().deductMana(playerId, flyingManaCostPerTick);
+                WizardsPlugin.getInstance().Mana.deductMana(playerId, flyingManaCostPerTick);
                 player.setVelocity(player.getLocation().getDirection().multiply(0.5));
             }
         };
 
-        flyingTask.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // Run every tick
+        flyingTask.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // run every tick
 
         // save task for later cancel
         flyingTasks.put(playerId, flyingTask);
