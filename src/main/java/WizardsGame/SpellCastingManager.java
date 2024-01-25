@@ -152,14 +152,17 @@ public class SpellCastingManager {
         }
     }
     private void groundPound(Player player) {
+        var delay = player.isOnGround() ? 10L : 0; // set delay to 1 if player is on ground, otherwise set to 0
         World world = player.getWorld();
         Location initialLocation = player.getLocation();
 
         // particle effects at initial location
         world.spawnParticle(Particle.EXPLOSION_LARGE, initialLocation, 1, 0, 0, 0, 0);
 
-        // launch the player up before bringing them down
-        player.setVelocity(new Vector(0, 2, 0)); // Adjust the upward velocity
+        if (player.isOnGround()) {  // && player.getVelocity().getY() > 0 && !player.isFlying() && !player.isGliding()
+            // launch the player up before bringing them down if not already in the air
+            player.setVelocity(new Vector(0, 2, 0)); // Adjust the upward velocity
+        }
 
         // delay before descent
         new BukkitRunnable() {
@@ -195,7 +198,6 @@ public class SpellCastingManager {
                             }
                         }
                     }
-
                     // make player fall faster without taking fall damage
                     player.setFallDistance(0); // Reset fall distance to prevent fall damage
 
@@ -208,8 +210,10 @@ public class SpellCastingManager {
                     player.setFallDistance(0);
                 }
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 10L, 1L); // delay1 second = 20 ticks
+        }.runTaskTimer(WizardsPlugin.getInstance(), delay, 1L); // delay 1 second = 20 ticks
     }
+
+
     private Vector getRandomVelocity(double minVelocity, double maxVelocity) {
         double randomX = minVelocity + Math.random() * (maxVelocity - minVelocity);
         double randomY = minVelocity + Math.random() * (maxVelocity - minVelocity);

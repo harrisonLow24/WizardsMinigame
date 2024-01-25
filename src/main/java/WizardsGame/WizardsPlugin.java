@@ -214,7 +214,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                         Cooldown.setMinecartCooldown(playerId);
                         Mana.deductMana(playerId, minecartCost);
                     } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Minecart spell.");
+                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Big Man Slam spell.");
                     }
                 } else {
                     int remainingSeconds = Cooldown.getRemainingMinecartCooldownSeconds(playerId);
