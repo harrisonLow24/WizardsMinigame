@@ -19,13 +19,18 @@ import java.util.UUID;
 import org.bukkit.Particle;
 
 public class SpellCastingManager {
-
     // fireball cast
     void castFireball(UUID playerId) {
+        final double[] speed = {1};
         Player player = WizardsPlugin.getPlayerById(playerId);
         if (player != null) {
-            double speed = 1; // speed of fireball
-            Vector direction = player.getLocation().getDirection().multiply(speed);
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    speed[0] += 1; // speed of fireball
+                }
+            }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
+            Vector direction = player.getLocation().getDirection().multiply(speed[0]);
             player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
             player.sendMessage(ChatColor.GREEN.toString() + ChatColor.BOLD + "" + "You cast the Fireball spell!");
             player.getWorld().playSound(player, Sound.ENTITY_GHAST_SHOOT, 1.0f, 1.0f);
@@ -35,7 +40,7 @@ public class SpellCastingManager {
     void castLightningSpell(UUID playerId) {
         Player player = WizardsPlugin.getPlayerById(playerId);
         if (player != null) {
-            double particleDistance = 1000; // length of particle trail
+            double particleDistance = 10000; // length of particle trail
             Vector direction = player.getLocation().getDirection().multiply(particleDistance);
             Location destination = player.getLocation().add(direction);
 
@@ -56,7 +61,7 @@ public class SpellCastingManager {
     }
     // particle generation between player and strike area
     private void spawnAndMoveParticleTrail(Location startLocation, Location endLocation) {
-        int particleCount = 100000; // number of generated trail particles
+        int particleCount = 1000; // number of generated trail particles
         Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
         double distanceBetweenParticles = startLocation.distance(endLocation) / particleCount;
 
@@ -107,7 +112,6 @@ public class SpellCastingManager {
     void launchMinecart(Player player) {
         // create and launch the minecart with player inside
         Minecart minecart = player.getWorld().spawn(player.getLocation(), Minecart.class);
-        minecart.addPassenger();
         // set the minecart's velocity
         Vector direction = player.getLocation().getDirection().multiply(5);  // adjust the launch speed
         direction.setX(direction.getX() * 10);  // adjust the x velocity
@@ -155,7 +159,7 @@ public class SpellCastingManager {
         world.spawnParticle(Particle.EXPLOSION_LARGE, initialLocation, 1, 0, 0, 0, 0);
 
         // launch the player up before bringing them down
-        player.setVelocity(new Vector(0, 1, 0)); // Adjust the upward velocity
+        player.setVelocity(new Vector(0, 2, 0)); // Adjust the upward velocity
 
         // delay before descent
         new BukkitRunnable() {
@@ -200,7 +204,7 @@ public class SpellCastingManager {
                     playGPSound(landingLocation);
                 } else {
                     // apply upward velocity to cancel fall velocity
-                    player.setVelocity(new Vector(0, -5, 0));
+                    player.setVelocity(new Vector(0, -1.5, 0));
                     player.setFallDistance(0);
                 }
             }

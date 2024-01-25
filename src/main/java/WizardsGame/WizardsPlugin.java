@@ -82,6 +82,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }
         }, 0, 10);
 
+
     }
 
     public static WizardsPlugin getInstance() {
@@ -148,7 +149,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 // teleport cast
                 if (!Cooldown.isOnTeleportCooldown(playerId)) { // if teleport is not on cooldown
                     if (Mana.hasEnoughMana(playerId, teleportCost)){ // AND if player has enough mana
-                        Teleport.castTeleportSpell(playerId, 2.5); // teleport is cast, and a cooldown + mana reduction is set
+                        Teleport.castTeleportSpell(playerId, 0); // teleport is cast, and a cooldown + mana reduction is set
                         Cooldown.setTeleportCooldown(playerId);
                         Mana.deductMana(playerId, teleportCost);
                     }else {

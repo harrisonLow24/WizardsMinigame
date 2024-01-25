@@ -148,7 +148,7 @@ public class TeleportationManager implements Listener {
                     remainingTime -= 0.5;
                 }
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 10L); // run every second
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 20L); // run every second
 
     }
 

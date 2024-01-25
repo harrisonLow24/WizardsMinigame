@@ -15,13 +15,14 @@ public class SquidFlight{
     private final double flyingManaCostPerTick = 1.5;
     public void startFlyingSpell(Player player) {
         UUID playerId = player.getUniqueId();
+
         flyingMap.put(playerId, true);
         player.playSound(player.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.0F, 1.0F);
         // schedule a task to consume mana over time and move the player
         BukkitRunnable flyingTask = new BukkitRunnable() {
             @Override
             public void run() {
-                if (WizardsPlugin.getInstance().Mana.getCurrentMana(playerId) <= 50 || !player.isOnline() || !isFlying(playerId) || !WizardsPlugin.getInstance().Mana.hasEnoughMana(playerId, flyingManaCostPerTick)) {
+                if (!player.isOnline() || !isFlying(playerId) || !WizardsPlugin.getInstance().Mana.hasEnoughMana(playerId, flyingManaCostPerTick)) {
                     // stop flying if player is offline, no longer flying, or doesn't have enough mana
                     stopFlyingSpell(player);
                     cancel();
