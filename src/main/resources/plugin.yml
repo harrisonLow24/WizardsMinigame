@@ -17,6 +17,12 @@ commands:
     permission: op
     permission-message: You do not have permission!
     usage: /togglecooldowns
+  checkmana:
+    description: check mana
+    aliases: chmana
+    permission: op
+    permission-message: You do not have permission!
+    usage: /checkmana
 
 
 #load: POSTWORLD

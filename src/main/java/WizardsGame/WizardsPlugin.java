@@ -38,11 +38,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     SquidFlight Squid = new SquidFlight();
     ManaManager Mana = new ManaManager();
     CharmSpell Charm = new CharmSpell();
+    TwistedFateSpell Twist = new TwistedFateSpell();
 
-
-    private final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
-
-    private final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
 
     final Map<UUID, Double> spellManaCost = new HashMap<>(); // hashmap of all spells' mana costs
 
@@ -57,11 +54,12 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         SpellBookMenu spellBookMenu = new SpellBookMenu(this);
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
+        getServer().getPluginManager().registerEvents(new TwistedFateSpell(), this);
 
         // commands
         Objects.requireNonNull(getCommand("toggleinfinitemana")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("togglecooldowns")).setExecutor(new WizardCommands(this));
-
+        Objects.requireNonNull(getCommand("checkmana")).setExecutor(new WizardCommands(this));
 
         // mana bar updated every 20 ticks / 1 second
 
@@ -122,8 +120,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         double minecartCost = 30.0;
         double flyingManaCostPerTick = 1.5;
         double charmCost = 15.0;
-        double porkchopCost = 10;
-
+        double porkchopCost = 10.0;
 
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
@@ -167,7 +164,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                         Cast.castLightningSpell(playerId);      // lightning is cast, and a cooldown + mana reduction is set
                         Cooldown.setLightningCooldown(playerId);
                         Mana.deductMana(playerId, lightningCost);
-                        startLightningEffect(playerId);
+                        Cast.startLightningEffect(playerId);
                     }else {
                         player.sendMessage(ChatColor.RED + "Not enough mana to cast Lightning.");
                     }
@@ -285,44 +282,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "Charm spell on cooldown. Please wait " + remainingSeconds + " seconds.");
                 }
             }
-
-        }
-    }
-
-    @EventHandler
-    public void onProjectileHit(ProjectileHitEvent event) {
-        if (event.getEntity() instanceof Snowball) {
-            Location hitLocation = event.getEntity().getLocation();
-
-            // check if snowball hit a block
-            if (hitLocation.getBlock().getType() != Material.AIR) {
-                // create a temporary sphere of ice
-                createIceSphere(hitLocation);
-            }
-        }
-    }
-
-    // porkchop hit event
-    @EventHandler
-    public void onPorkchopHit(EntityDamageByEntityEvent event) {
-        if (event.getDamager() instanceof Item && event.getEntity() instanceof LivingEntity) {
-            Item porkchopItem = (Item) event.getDamager();
-            LivingEntity targetEntity = (LivingEntity) event.getEntity();
-
-            if (porkchopItem.getItemStack().getType() == Material.PORKCHOP) {
-                PersistentDataContainer container = porkchopItem.getItemStack().getItemMeta().getPersistentDataContainer();
-                if (container.has(new NamespacedKey(this, "caster"), PersistentDataType.STRING)) {
-                    UUID casterId = UUID.fromString(container.get(new NamespacedKey(this, "caster"), PersistentDataType.STRING));
-                    Player caster = getPlayerById(casterId);
-                    if (caster != null) {
-                        double damage = 10.0;
-                        targetEntity.damage(damage, caster);
-
-                        // remove the cooked Porkchop from ground
-                        porkchopItem.remove();
-                    }
-                }
-            }
         }
     }
 
@@ -345,20 +304,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
 
 
-    private void createIceSphere(Location location) {
-        World world = location.getWorld();
-        double radius = 3.0; //radius of ice sphere
-        for (double x = -radius; x <= radius; x++) {
-            for (double y = -radius; y <= radius; y++) {
-                for (double z = -radius; z <= radius; z++) {
-                    if (Math.sqrt(x * x + y * y + z * z) <= radius) {
-                        Location iceBlockLocation = location.clone().add(x, y, z);
-                        world.getBlockAt(iceBlockLocation).setType(Material.ICE);
-                    }
-                }
-            }
-        }
-    }
     // get UUID of player
     public static Player getPlayerById(UUID playerId) {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -371,68 +316,57 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     // action boss bar to display mana %
 
 
-
-    // exaggerated lightning effect
-    private void startLightningEffect(UUID playerId) {
-        Player player = getPlayerById(playerId);
-        if (player == null) {
-            return;
-        }
-
-        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0F, 1.0F);
-        player.getWorld().strikeLightningEffect(player.getLocation());
-        new BukkitRunnable() {
-            double radius = 3.0;
-            double height = 5.0;
-            double angle = 0;
-
-            @Override
-            public void run() {
-                if (angle >= 360) {
-                    this.cancel();
-                    return;
-                }
-
-                double x = radius * Math.cos(Math.toRadians(angle));
-                double z = radius * Math.sin(Math.toRadians(angle));
-
-                Location particleLocation = player.getLocation().clone().add(x, height, z);
-                player.getWorld().spawnParticle(Particle.CRIT, particleLocation, 10, 0.2, 0.2, 0.2, 0.1);
-
-                angle += 10;
-            }
-        }.runTaskTimer(this, 0, 1);
-
-        // schedule task to simulate longer lightning effect
-        int maxLightningEffectDuration = 100;
-        lightningEffectDuration.put(playerId, maxLightningEffectDuration);
-
-        getServer().getScheduler().runTaskTimer(this, () -> {
-            int remainingDuration = lightningEffectDuration.getOrDefault(playerId, 0);
-
-            if (remainingDuration <= 0) {
-                lightningEffectDuration.remove(playerId);
-                return;
-            }
-
-            // increase remaining duration
-            lightningEffectDuration.put(playerId, remainingDuration - 1);
-        }, 0, 1);
-    }
-
-
-    public void toggleCooldowns(UUID playerId) {
-        boolean currentStatus = cooldownsDisabledMap.getOrDefault(playerId, false);
-        cooldownsDisabledMap.put(playerId, !currentStatus);
-
-        // if cooldowns are disabled, clear cooldowns for the player
-        if (hasCooldownsDisabled(playerId)) {
-            Cooldown.clearCooldowns(playerId);
-        }
-    }
-
-    public boolean hasCooldownsDisabled(UUID playerId) {
-        return cooldownsDisabledMap.getOrDefault(playerId, false);
-    }
-
 }
+
+//    @EventHandler
+//    public void onProjectileHit(ProjectileHitEvent event) {
+//        if (event.getEntity() instanceof Snowball) {
+//            Location hitLocation = event.getEntity().getLocation();
+//
+//            // check if snowball hit a block
+//            if (hitLocation.getBlock().getType() != Material.AIR) {
+//                // create a temporary sphere of ice
+//                createIceSphere(hitLocation);
+//            }
+//        }
+//    }
+
+//    private void createIceSphere(Location location) {
+//        World world = location.getWorld();
+//        double radius = 3.0; //radius of ice sphere
+//        for (double x = -radius; x <= radius; x++) {
+//            for (double y = -radius; y <= radius; y++) {
+//                for (double z = -radius; z <= radius; z++) {
+//                    if (Math.sqrt(x * x + y * y + z * z) <= radius) {
+//                        Location iceBlockLocation = location.clone().add(x, y, z);
+//                        world.getBlockAt(iceBlockLocation).setType(Material.ICE);
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+
+    // porkchop hit event
+//    @EventHandler
+//    public void onPorkchopHit(EntityDamageByEntityEvent event) {
+//        if (event.getDamager() instanceof Item && event.getEntity() instanceof LivingEntity) {
+//            Item porkchopItem = (Item) event.getDamager();
+//            LivingEntity targetEntity = (LivingEntity) event.getEntity();
+//
+//            if (porkchopItem.getItemStack().getType() == Material.PORKCHOP) {
+//                PersistentDataContainer container = porkchopItem.getItemStack().getItemMeta().getPersistentDataContainer();
+//                if (container.has(new NamespacedKey(this, "caster"), PersistentDataType.STRING)) {
+//                    UUID casterId = UUID.fromString(container.get(new NamespacedKey(this, "caster"), PersistentDataType.STRING));
+//                    Player caster = getPlayerById(casterId);
+//                    if (caster != null) {
+//                        double damage = 10.0;
+//                        targetEntity.damage(damage, caster);
+//
+//                        // remove the cooked Porkchop from ground
+//                        porkchopItem.remove();
+//                    }
+//                }
+//            }
+//        }
+//    }

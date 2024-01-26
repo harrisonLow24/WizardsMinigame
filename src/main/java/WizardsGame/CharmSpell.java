@@ -12,6 +12,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
+import org.bukkit.entity.LivingEntity;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class CharmSpell implements Listener {
     private int charmCooldownDuration = 30;
     private double charmRadius = 5.0;
     private int charmDuration = 4;
-
+    private double charmSpeed = 1.5;
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -45,7 +46,7 @@ public class CharmSpell implements Listener {
                     }
                 }
 
-                // Cast charm spell as a projectile
+                // cast charm spell as projectile
                 castCharmProjectile(player);
                 charmCooldowns.put(player.getUniqueId(), System.currentTimeMillis() / 1000);
             }
@@ -95,8 +96,9 @@ public class CharmSpell implements Listener {
 
                 // check for entities in charm radius
                 for (Entity entity : caster.getWorld().getNearbyEntities(particleLocation, 0.5, 0.5, 0.5)) {
-                    if (entity instanceof LivingEntity) {
-                        applyCharmEffect(((LivingEntity) entity).getUniqueId());
+                    if (entity instanceof LivingEntity && !entity.getUniqueId().equals(caster.getUniqueId())) {
+                        applyCharmEffectToEntity((LivingEntity) entity);
+                        // stop projectile if it hits an entity
                         this.cancel();
                         return;
                     }
@@ -116,18 +118,30 @@ public class CharmSpell implements Listener {
 
             // check if player is within charm radius
             if (player.getLocation().distance(targetLocation) <= charmRadius) {
-                // set player's velocity to zero to prevent floating
-                player.setVelocity(new Vector(0, 0, 0));
+                // exclude the caster from charm effect
+                if (!player.getUniqueId().equals(playerId)) {
+                    // set player's velocity to zero to prevent floating
+                    player.setVelocity(new Vector(0, 0, 0));
+                }
             } else {
                 // force player to walk towards caster
                 Vector direction = targetLocation.toVector().subtract(player.getLocation().toVector()).normalize();
                 player.setVelocity(direction.multiply(0.1));
             }
         } else {
-            // remove charm effect player is no longer online
+            // remove charm effect if player is no longer online
             charmTargets.remove(playerId);
         }
     }
+    void applyCharmEffectToEntity(LivingEntity entity) {
+        // pull entity towards caster
+        Player caster = Bukkit.getPlayer(entity.getUniqueId());
+        if (caster != null) {
+            Vector direction = caster.getLocation().subtract(entity.getLocation()).toVector().normalize();
+            entity.setVelocity(direction.multiply(charmSpeed));
+        }
+    }
+
     void cancelCharmEffect(UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);
         if (player != null) {

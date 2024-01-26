@@ -14,15 +14,24 @@ import org.bukkit.util.Vector;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Particle;
 
+import static WizardsGame.WizardsPlugin.getPlayerById;
+
 public class SpellCastingManager {
+    public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     // fireball cast
     void castFireball(UUID playerId) {
         final double[] speed = {1};
-        Player player = WizardsPlugin.getPlayerById(playerId);
+        Player player = getPlayerById(playerId);
         if (player != null) {
             new BukkitRunnable() {
                 @Override
@@ -38,7 +47,7 @@ public class SpellCastingManager {
     }
 
     void castLightningSpell(UUID playerId) {
-        Player player = WizardsPlugin.getPlayerById(playerId);
+        Player player = getPlayerById(playerId);
         if (player != null) {
             double particleDistance = 10000; // length of particle trail
             Vector direction = player.getLocation().getDirection().multiply(particleDistance);
@@ -82,10 +91,58 @@ public class SpellCastingManager {
 
         return null; // no solid block found
     }
+    // exaggerated lightning effect
+    void startLightningEffect(UUID playerId) {
+        Player player = getPlayerById(playerId);
+        if (player == null) {
+            return;
+        }
+
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0F, 1.0F);
+        player.getWorld().strikeLightningEffect(player.getLocation());
+        new BukkitRunnable() {
+            double radius = 3.0;
+            double height = 5.0;
+            double angle = 0;
+
+            @Override
+            public void run() {
+                if (angle >= 360) {
+                    this.cancel();
+                    return;
+                }
+
+                double x = radius * Math.cos(Math.toRadians(angle));
+                double z = radius * Math.sin(Math.toRadians(angle));
+
+                Location particleLocation = player.getLocation().clone().add(x, height, z);
+                player.getWorld().spawnParticle(Particle.CRIT, particleLocation, 10, 0.2, 0.2, 0.2, 0.1);
+
+                angle += 10;
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1);
+
+        // schedule task to simulate longer lightning effect
+        int maxLightningEffectDuration = 100;
+        lightningEffectDuration.put(playerId, maxLightningEffectDuration);
+
+        WizardsPlugin.getInstance().getServer().getScheduler().runTaskTimer(WizardsPlugin.getInstance(), () -> {
+            int remainingDuration = lightningEffectDuration.getOrDefault(playerId, 0);
+
+            if (remainingDuration <= 0) {
+                lightningEffectDuration.remove(playerId);
+                return;
+            }
+
+            // increase remaining duration
+            lightningEffectDuration.put(playerId, remainingDuration - 1);
+        }, 0, 1);
+    }
+
 
 
     void castGustSpell(UUID playerId) {
-        Player player = WizardsPlugin.getPlayerById(playerId);
+        Player player = getPlayerById(playerId);
         double gustRadius = 5.0; // radius of the gust spell
         double gustStrength = 2.0; // strength of the gust spell
 
@@ -109,15 +166,26 @@ public class SpellCastingManager {
 
 
 
-    void launchMinecart(Player player) {
-        // create and launch the minecart with player inside
+    public static void launchMinecart(Player player) {
+        // create and launch minecart with player inside
         Minecart minecart = player.getWorld().spawn(player.getLocation(), Minecart.class);
-        // set the minecart's velocity
-        Vector direction = player.getLocation().getDirection().multiply(5);  // adjust the launch speed
-        direction.setX(direction.getX() * 10);  // adjust the x velocity
-        minecart.setVelocity(direction);
 
-        minecart.setPassenger(player); // sets player as passenger
+        // calculate launch direction based on player's pitch and yaw
+        double pitch = Math.toRadians(player.getLocation().getPitch());
+        double yaw = Math.toRadians(player.getLocation().getYaw());
+
+        double cosPitch = Math.cos(pitch); // precalculate cos of pitch for optimization
+
+        // calculate launch direction using spherical coordinates
+        double x = -Math.sin(yaw) * cosPitch;
+        double y = -Math.sin(pitch);
+        double z = -Math.cos(yaw) * cosPitch;
+
+        Vector launchDirection = new Vector(x, y, z).normalize().multiply(5); // adjust the launch speed
+
+        minecart.setVelocity(launchDirection);
+
+        minecart.setPassenger(player); // sets player as a passenger
 
         // schedule task to check for minecart landing
         new BukkitRunnable() {
@@ -145,7 +213,7 @@ public class SpellCastingManager {
         location.getWorld().playSound(location, Sound.ENTITY_IRON_GOLEM_HURT, 1.0f, 1.0f);
     }
     void castGroundPoundSpell(UUID playerId) {
-        Player player = WizardsPlugin.getPlayerById(playerId);
+        Player player = getPlayerById(playerId);
         if (player != null) {
             groundPound(player);
             player.sendMessage(ChatColor.RED.toString() + ChatColor.BOLD + "Ground Pound spell cast!");
@@ -204,6 +272,13 @@ public class SpellCastingManager {
                     // launch blocks upward when player touches ground
                     this.cancel();
                     playGPSound(landingLocation);
+                    dealDamageToEntities(player, player.getWorld(), landingLocation);
+
+                    // entity launch
+                    double launchRadius = 5.0;
+                    double launchVelocity = 1.2;
+                    launchEntitiesExcludingCaster(player, initialLocation, launchRadius, launchVelocity);
+
                 } else {
                     // apply upward velocity to cancel fall velocity
                     player.setVelocity(new Vector(0, -1.5, 0));
@@ -213,6 +288,37 @@ public class SpellCastingManager {
         }.runTaskTimer(WizardsPlugin.getInstance(), delay, 1L); // delay 1 second = 20 ticks
     }
 
+
+    private void dealDamageToEntities(Player player, World world, Location landingLocation) {
+        double damageRadius = 5.0;
+        double damageAmount = 2.0; // hearts of damage
+        for (Entity entity : landingLocation.getWorld().getNearbyEntities(landingLocation, damageRadius, damageRadius, damageRadius)) {
+            if (entity instanceof LivingEntity && !entity.equals(player)) {
+                LivingEntity livingEntity = (LivingEntity) entity;
+                EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(player, livingEntity, DamageCause.ENTITY_ATTACK, damageAmount);
+                Bukkit.getPluginManager().callEvent(damageEvent);
+
+                if (!damageEvent.isCancelled()) {
+                    livingEntity.damage(damageAmount);
+                }
+            }
+        }
+    }
+    private void launchEntitiesExcludingCaster(Player caster, Location location, double launchRadius, double launchVelocity) {
+        World world = location.getWorld();
+        for (Entity entity : location.getWorld().getNearbyEntities(location, launchRadius, launchRadius, launchRadius)) {
+            if (entity instanceof LivingEntity && !entity.equals(caster)) {
+                LivingEntity livingEntity = (LivingEntity) entity;
+
+                // calculate direction away from caster
+                Vector awayDirection = entity.getLocation().toVector().subtract(caster.getLocation().toVector()).normalize();
+
+                // launch entities upward and away
+                Vector launchVector = new Vector(awayDirection.getX(), launchVelocity, awayDirection.getZ());
+                livingEntity.setVelocity(launchVector);
+            }
+        }
+    }
 
     private Vector getRandomVelocity(double minVelocity, double maxVelocity) {
         double randomX = minVelocity + Math.random() * (maxVelocity - minVelocity);
@@ -250,6 +356,7 @@ public class SpellCastingManager {
             }
         }
     }
+
 
 
     int porkchopSpeed = 2;

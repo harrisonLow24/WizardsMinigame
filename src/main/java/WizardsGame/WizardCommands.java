@@ -11,6 +11,7 @@ import java.util.UUID;
 public class WizardCommands implements CommandExecutor {
 
     private final WizardsPlugin plugin;
+    CooldownManager Cooldown = new CooldownManager();
 
     public WizardCommands(WizardsPlugin plugin) {
         this.plugin = plugin;
@@ -39,8 +40,8 @@ public class WizardCommands implements CommandExecutor {
                 if (sender instanceof Player) {
                     Player player = (Player) sender;
                     UUID playerId = player.getUniqueId();
-                    plugin.toggleCooldowns(playerId);
-                    sender.sendMessage(ChatColor.GREEN + "Cooldowns " + (plugin.hasCooldownsDisabled(playerId) ? "disabled" : "enabled"));
+                    Cooldown.toggleCooldowns(playerId);
+                    sender.sendMessage(ChatColor.GREEN + "Cooldowns " + (Cooldown.hasCooldownsDisabled(playerId) ? "disabled" : "enabled"));
                 } else {
                     sender.sendMessage(ChatColor.RED + "This command can only be used by a player.");
                 }
@@ -49,7 +50,22 @@ public class WizardCommands implements CommandExecutor {
             }
             return true;
         }
+        if (command.getName().equalsIgnoreCase("checkmana")) {
+            if (sender.hasPermission("wizardsplugin.checkmana")) {
+                if (sender instanceof Player) {
+                    Player player = (Player) sender;
+                    UUID playerId = player.getUniqueId();
 
+                    // retrieve and display player's current mana
+                    double currentMana = plugin.Mana.getCurrentMana(playerId);
+                    sender.sendMessage(ChatColor.BLUE + "Your current mana: " + currentMana);
+                } else {
+                    sender.sendMessage(ChatColor.RED + "This command can only be used by a player.");
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+            }
+        }
         return false;
     }
 }

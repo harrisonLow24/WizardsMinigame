@@ -9,17 +9,38 @@ import java.util.concurrent.TimeUnit;
 
 
 public class CooldownManager {
+
+    private final Map<UUID, Long> cooldowns = new HashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Map<UUID, Long> minecartCooldowns = new HashMap<>();
     private final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
     private final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
     private final Map<UUID, Long> charmCooldowns = new HashMap<>();
+    public final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
+    public final Map<UUID, Long> twistedFateSpellCooldowns = new HashMap<>();
 
     public CooldownManager() {
 
         // schedule the task to run every second
         scheduler.scheduleAtFixedRate(this::clearAllCooldowns, 0, 1, TimeUnit.SECONDS);
     }
+
+    public void toggleCooldowns(UUID playerId) {
+        boolean currentStatus = cooldownsDisabledMap.getOrDefault(playerId, false);
+        cooldownsDisabledMap.put(playerId, !currentStatus);
+
+        // if cooldowns are disabled, clear cooldowns for the player
+        if (hasCooldownsDisabled(playerId)) {
+            clearCooldowns(playerId);
+        }
+    }
+
+    public boolean hasCooldownsDisabled(UUID playerId) {
+        return cooldownsDisabledMap.getOrDefault(playerId, false);
+    }
+
+
+
 
     private void clearAllCooldowns() {
         // iterate through all players and clear cooldowns
@@ -67,7 +88,7 @@ public class CooldownManager {
     private final long minecartCooldownDuration = 1 * 1000; // 30 seconds
     private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
     private final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
-
+    private final long twistedFateSpellDuration = 1 * 1000; //30 seconds
 
     // returns the remaining cooldown left
     int getRemainingFireballCooldownSeconds(UUID playerId) {
@@ -118,7 +139,10 @@ public class CooldownManager {
         int remainingSeconds = (int) Math.max(0, (cooldownEndTime - currentTime) / 1000);
         return remainingSeconds;
     }
-
+    int getRemainingtwistedFateSpellCooldownSeconds(UUID playerId) {
+        long remainingCooldown = twistedFateSpellDuration - (System.currentTimeMillis() - twistedFateSpellCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
 
 
     // check if spells are on cooldown
@@ -157,6 +181,10 @@ public class CooldownManager {
 
         return currentTime < cooldownEndTime;
     }
+    boolean isOntwistedFateSpellCooldown(UUID playerId) {
+        return twistedFateSpellCooldowns.containsKey(playerId) && System.currentTimeMillis() - twistedFateSpellCooldowns.get(playerId) < twistedFateSpellDuration;
+    }
+
 
     // sets the cooldown of spells
     void setFireballCooldown(UUID playerId) {
@@ -189,6 +217,9 @@ public class CooldownManager {
         double charmDuration = 10;
         charmCooldowns.put(playerId, (long) (System.currentTimeMillis() + (charmDuration * 1000)));
     }
+    void settwistedFateSpellCooldown(UUID playerId) {
+        twistedFateSpellCooldowns.put(playerId, System.currentTimeMillis());
+    }
 
 
 
@@ -203,4 +234,12 @@ public class CooldownManager {
         porkchopCooldowns.remove(playerId);
         charmCooldowns.remove(playerId);
     }
+
+    public long getOrDefault(UUID playerId, long defaultValue) {
+        return cooldowns.getOrDefault(playerId, defaultValue);
+    }
+    public void put(UUID playerId, long currentTime) {
+        cooldowns.put(playerId, currentTime);
+    }
+
 }
