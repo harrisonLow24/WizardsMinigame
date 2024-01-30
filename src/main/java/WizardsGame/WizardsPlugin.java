@@ -1,33 +1,19 @@
 package WizardsGame;
 
 import org.bukkit.*;
-import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
 import org.bukkit.Material;
-import org.bukkit.entity.Item;
-
-import org.bukkit.event.entity.ProjectileHitEvent;
 
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
@@ -38,40 +24,50 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     SquidFlight Squid = new SquidFlight();
     ManaManager Mana = new ManaManager();
     CharmSpell Charm = new CharmSpell();
-    TwistedFateSpell Twist = new TwistedFateSpell();
+//    TwistedFateSpell Twist = new TwistedFateSpell();
 
-
-    final Map<UUID, Double> spellManaCost = new HashMap<>(); // hashmap of all spells' mana costs
-
-    // porkchop variables
-    private final double porkchopDamage = 5.0;
-    private final double healAmount = 4.0;
+//    // porkchop variables
+//    private final double porkchopDamage = 5.0;
+//    private final double healAmount = 4.0;
 
     @Override
     public void onEnable() {
         instance = this;
         getLogger().info("WizardsPlugin has been enabled!");
+        registerEvents();
+        registerCommands();
+        startManaBarUpdateTask();
+        startManaRegenTask();
+
+
+    }
+    void registerEvents() {
         getServer().getPluginManager().registerEvents(this, this);
-        SpellBookMenu spellBookMenu = new SpellBookMenu(this);
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
         getServer().getPluginManager().registerEvents(new TwistedFateSpell(), this);
+//        SpellBookMenu spellBookMenu = new SpellBookMenu(this);
+    }
 
-        // commands
+    // commands
+    void registerCommands() {
+
         Objects.requireNonNull(getCommand("toggleinfinitemana")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("togglecooldowns")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("checkmana")).setExecutor(new WizardCommands(this));
-
+    }
+    void startManaBarUpdateTask() {
         // mana bar updated every 20 ticks / 1 second
 
         // note to self: may remove this scheduler, as the proceeding one updates the bar every second
         // however, this makes sure the mana bar will ALWAYS update when a spell is used for consistency
-
         getServer().getScheduler().runTaskTimer(this, () -> {
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 Mana.updateManaActionBar(onlinePlayer);
             }
         }, 0, 10);
+    }
 
+    void startManaRegenTask() {
         // mana bar updated every 20 ticks / 1 second for MANA REGEN
         getServer().getScheduler().runTaskTimer(this, this::regenerateMana, 0, 20);
         getServer().getScheduler().runTaskTimer(this, () -> {
@@ -79,9 +75,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 Mana.updateManaActionBar(onlinePlayer);
             }
         }, 0, 10);
-
-
     }
+
+
+
 
     public static WizardsPlugin getInstance() {
         return instance;
@@ -98,7 +95,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         // get player and UUID
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
-
         player.sendMessage("Welcome!");
 
         //set players' mana to max on join
@@ -285,6 +281,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
+
+
+
     // regenerate mana over time
     public void regenerateMana() {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -313,8 +312,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
         return null; // player with UUID not found
     }
-    // action boss bar to display mana %
-
 
 }
 
@@ -347,7 +344,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //    }
 
 
-    // porkchop hit event
+// porkchop hit event
 //    @EventHandler
 //    public void onPorkchopHit(EntityDamageByEntityEvent event) {
 //        if (event.getDamager() instanceof Item && event.getEntity() instanceof LivingEntity) {

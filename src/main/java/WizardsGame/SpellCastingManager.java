@@ -2,9 +2,7 @@ package WizardsGame;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.type.TNT;
 import org.bukkit.entity.*;
-import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -16,7 +14,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
 import java.util.HashMap;
@@ -28,6 +25,8 @@ import static WizardsGame.WizardsPlugin.getPlayerById;
 
 public class SpellCastingManager {
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
+    private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
+
     // fireball cast
     void castFireball(UUID playerId) {
         final double[] speed = {1};
@@ -46,39 +45,80 @@ public class SpellCastingManager {
         }
     }
 
-    void castLightningSpell(UUID playerId) {
+    public void castLightningSpell(UUID playerId) {
         Player player = getPlayerById(playerId);
         if (player != null) {
-            double particleDistance = 10000; // length of particle trail
+            double particleDistance = 1000;
             Vector direction = player.getLocation().getDirection().multiply(particleDistance);
             Location destination = player.getLocation().add(direction);
-
-            // find first block in spell's path
             Location blockLocation = findSolidBlockInPath(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0));
 
-            // if solid block is found, strike lightning where particle ends
             if (blockLocation != null) {
                 destination = blockLocation;
-                spawnAndMoveParticleTrail(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0)); // particle adjustment to look better
-                strikeLightning(destination);
+                spawnAndMoveParticleTrailWithEntityCheck(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0), playerId);
+                scheduleLightningStrike(destination, playerId); // pass playerId to the method
+
+                // check if lightning effect has been triggered already
+                if (!lightningEffectTriggered.getOrDefault(playerId, false)) {
+                    // mark lightning effect as triggered
+                    lightningEffectTriggered.put(playerId, true);
+
+                    // schedule exaggerated lightning effect with a delay
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            startLightningEffect(playerId);
+                        }
+                    }.runTaskLater(WizardsPlugin.getInstance(), 20); // 20 ticks = 1 second
+                }
+
                 player.sendMessage(ChatColor.YELLOW.toString() + ChatColor.BOLD + "You cast the Lightning spell!");
             }
         }
     }
-    private void strikeLightning(Location location) {
-        location.getWorld().strikeLightning(location);
-    }
-    // particle generation between player and strike area
-    private void spawnAndMoveParticleTrail(Location startLocation, Location endLocation) {
-        int particleCount = 1000; // number of generated trail particles
+    private void spawnAndMoveParticleTrailWithEntityCheck(Location startLocation, Location endLocation, UUID playerId) {
+        int particleCount = 100; // number of generated trail particles
         Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
         double distanceBetweenParticles = startLocation.distance(endLocation) / particleCount;
+
+        boolean entityHit = false; // flag to track if entity was hit by particle trail
 
         for (int i = 0; i < particleCount; i++) {
             Location particleLocation = startLocation.clone().add(direction.clone().multiply(distanceBetweenParticles * i));
             startLocation.getWorld().spawnParticle(Particle.CRIT, particleLocation, 1, 0, 0, 0, 0);
+
+            // check for entities in particle's location
+            for (Entity entity : particleLocation.getWorld().getNearbyEntities(particleLocation, 1, 1, 1)) {
+                if (entity.getType() != EntityType.PLAYER) { // exclude players from being struck . . . change for PVP
+                    entityHit = true;
+                    break; // stop checking for entities
+                }
+            }
+
+            if (entityHit) {
+                break; // stop particle trail loop if entity is hit
+            }
+        }
+
+        // handle lightning strike logic after particle trail loop completes
+        if (entityHit) {
+            strikeLightning(endLocation, playerId); // pass playerId to the method
         }
     }
+
+    private void strikeLightning(Location location, UUID playerId) {
+        // set a delay (in ticks) before striking lightning
+        int delayTicks = 0; // set delay to 0 for immediate lightning strike
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                location.getWorld().strikeLightning(location);
+                startLightningEffect(playerId); // start the lightning effect
+            }
+        }.runTaskLater(WizardsPlugin.getInstance(), delayTicks);
+    }
+
     // check for blocks in path of the particles
     private Location findSolidBlockInPath(Location startLocation, Location endLocation) {
         // check for first non-air block in spell's path
@@ -91,7 +131,22 @@ public class SpellCastingManager {
 
         return null; // no solid block found
     }
-    // exaggerated lightning effect
+
+    private void scheduleLightningStrike(Location location, UUID playerId) {
+        // set delay (in ticks) before striking lightning
+        int delayTicks = 20; // (20 ticks = 1 second)
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                strikeLightning(location, playerId); // pass playerId
+            }
+        }.runTaskLater(WizardsPlugin.getInstance(), delayTicks);
+    }
+
+
+    // lightning effect
+
     void startLightningEffect(UUID playerId) {
         Player player = getPlayerById(playerId);
         if (player == null) {
@@ -122,19 +177,23 @@ public class SpellCastingManager {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1);
 
-        // schedule task to simulate longer lightning effect
+        // schedule task to reset lightning effect trigger after a duration
         int maxLightningEffectDuration = 100;
         lightningEffectDuration.put(playerId, maxLightningEffectDuration);
 
-        WizardsPlugin.getInstance().getServer().getScheduler().runTaskTimer(WizardsPlugin.getInstance(), () -> {
+        Bukkit.getScheduler().runTaskTimer(WizardsPlugin.getInstance(), () -> {
             int remainingDuration = lightningEffectDuration.getOrDefault(playerId, 0);
 
             if (remainingDuration <= 0) {
                 lightningEffectDuration.remove(playerId);
+
+                // reset lightning effect trigger
+                lightningEffectTriggered.put(playerId, false);
+
                 return;
             }
 
-            // increase remaining duration
+            // decrease remaining duration
             lightningEffectDuration.put(playerId, remainingDuration - 1);
         }, 0, 1);
     }
@@ -143,8 +202,8 @@ public class SpellCastingManager {
 
     void castGustSpell(UUID playerId) {
         Player player = getPlayerById(playerId);
-        double gustRadius = 5.0; // radius of the gust spell
-        double gustStrength = 2.0; // strength of the gust spell
+        double gustRadius = 5.0; // radius of gust spell
+        double gustStrength = 2.0; // strength of gust spell
 
         // push all nearby entities
         assert player != null;
@@ -229,7 +288,7 @@ public class SpellCastingManager {
 
         if (player.isOnGround()) {  // && player.getVelocity().getY() > 0 && !player.isFlying() && !player.isGliding()
             // launch the player up before bringing them down if not already in the air
-            player.setVelocity(new Vector(0, 2, 0)); // Adjust the upward velocity
+            player.setVelocity(new Vector(0, 1.5, 0)); // adjust upward velocity
         }
 
         // delay before descent
@@ -267,7 +326,7 @@ public class SpellCastingManager {
                         }
                     }
                     // make player fall faster without taking fall damage
-                    player.setFallDistance(0); // Reset fall distance to prevent fall damage
+                    player.setFallDistance(0); // reset fall distance to prevent fall damage
 
                     // launch blocks upward when player touches ground
                     this.cancel();
@@ -345,7 +404,7 @@ public class SpellCastingManager {
                             FallingBlock fallingBlock = world.spawnFallingBlock(block.getLocation(), block.getBlockData());
 
                             // set random velocity
-                            Vector velocity = getRandomVelocity(minVelocity, maxVelocity); // Use the random velocity
+                            Vector velocity = getRandomVelocity(minVelocity, maxVelocity); // use random velocity
                             fallingBlock.setVelocity(velocity);
 
                             // remove original block
@@ -358,13 +417,12 @@ public class SpellCastingManager {
     }
 
 
-
     int porkchopSpeed = 2;
     public void castPorkchopSpell(Player player) {
         // create and launch porkchop
         ItemStack porkchopItem = new ItemStack(Material.PORKCHOP);
         Item porkchopEntity = player.getWorld().dropItem(player.getEyeLocation(), porkchopItem);
-        porkchopEntity.setVelocity(player.getLocation().getDirection().multiply(porkchopSpeed)); // Porkchop speed
+        porkchopEntity.setVelocity(player.getLocation().getDirection().multiply(porkchopSpeed)); // porkchop speed
 
         // store player's UUID in item's metadata
         ItemMeta itemMeta = porkchopItem.getItemMeta();

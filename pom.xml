@@ -6,7 +6,7 @@
 
     <groupId>org.example</groupId>
     <artifactId>WizardsGame</artifactId>
-    <version>0.19-SNAPSHOT</version>
+    <version>0.20-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -21,7 +21,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
                 <configuration>
-                    <outputDirectory>D:\MC Servers\SpigotServer\plugins</outputDirectory>
+                    <outputDirectory>D:\MC_Servers\SpigotServer\plugins</outputDirectory>
                 </configuration>
             </plugin>
         </plugins>

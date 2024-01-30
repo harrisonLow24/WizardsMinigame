@@ -31,6 +31,7 @@ public class SquidFlight{
             }
         }
     }
+
     @EventHandler
     public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
@@ -40,7 +41,7 @@ public class SquidFlight{
             if (!isFlying(playerId) && canFly(playerId)) {
                 startFlyingSpell(player);
             } else {
-                event.setCancelled(true); // c ancel flight if player is already flying or can't fly
+                event.setCancelled(true); // cancel flight if player is already flying or can't fly
             }
         } else {
             stopFlyingSpell(player);
@@ -99,8 +100,17 @@ public class SquidFlight{
         BukkitRunnable flyingTask = flyingTasks.remove(playerId);
         if (flyingTask != null) {
             flyingTask.cancel();
-            player.setFallDistance(0); // reset fall distance to prevent fall damage
         }
+
+        player.setFallDistance(0); // reset fall distance to prevent fall damage
+
+        // Schedule delayed task to re-enable fall damage after a short delay
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.setNoDamageTicks(0); // Reset no damage ticks to enable fall damage
+            }
+        }.runTaskLater(WizardsPlugin.getInstance(), 20); // 20 ticks delay
     }
 
     public boolean isFlying(UUID playerId) {

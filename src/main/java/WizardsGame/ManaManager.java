@@ -6,6 +6,7 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,17 +22,30 @@ public class ManaManager {
     // check if player has enough mana
     public boolean hasEnoughMana(UUID playerId, double spellCost) {
         double currentMana = playerMana.getOrDefault(playerId, maxMana);
-        return currentMana >= spellCost;
+        return currentMana >= spellCost || hasInfiniteMana(playerId);
     }
+
     // deduct mana for spell cast
     public void deductMana(UUID playerId, double spellCost) {
-        double currentMana = playerMana.getOrDefault(playerId, maxMana);
-        double newMana = Math.max(currentMana - spellCost, 0);
-        playerMana.put(playerId, newMana);
+        if (!hasInfiniteMana(playerId)) {
+            double currentMana = playerMana.getOrDefault(playerId, maxMana);
+            double newMana = Math.max(currentMana - spellCost, 0);
+            playerMana.put(playerId, newMana);
+
+            // update mana display for the player
+            Player player = WizardsPlugin.getPlayerById(playerId);
+            if (player != null) {
+                updateManaActionBar(player);
+            }
+        }
     }
     // get current mana value
     public double getCurrentMana(UUID playerId) {
-        return playerMana.getOrDefault(playerId, maxMana);
+        if (hasInfiniteMana(playerId)) {
+            return maxMana;
+        } else {
+            return playerMana.getOrDefault(playerId, maxMana);
+        }
     }
     public boolean hasInfiniteMana(UUID playerId) {
         return infiniteManaMap.getOrDefault(playerId, false);
@@ -65,6 +79,7 @@ public class ManaManager {
         bossBar.setProgress(manaPercentage);
         bossBar.addPlayer(player);
     }
+
 
 
 }

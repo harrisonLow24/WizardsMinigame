@@ -80,15 +80,15 @@ public class CooldownManager {
     private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>();
 
     // cooldown duration in milliseconds
-    private final long fireballCooldownDuration = 1 * 1000; //10
-    private final long teleportCooldownDuration = 1 * 1000; //15
-    private final long lightningCooldownDuration = 1 * 1000; //15
+    private final long fireballCooldownDuration = 1 * 1000; // 10
+    private final long teleportCooldownDuration = 1 * 1000; // 15
+    private final long lightningCooldownDuration = 1 * 1000; // 15
     private final long gustCooldownDuration = 1 * 1000; // 15
     private final long iceSphereCooldownDuration = 1 * 1000; // 20 seconds
     private final long minecartCooldownDuration = 1 * 1000; // 30 seconds
     private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
     private final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
-    private final long twistedFateSpellDuration = 1 * 1000; //30 seconds
+    private final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
 
     // returns the remaining cooldown left
     int getRemainingFireballCooldownSeconds(UUID playerId) {
