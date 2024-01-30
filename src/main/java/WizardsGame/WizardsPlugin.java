@@ -13,7 +13,6 @@ import java.util.UUID;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
-import org.bukkit.Material;
 
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
@@ -24,6 +23,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     SquidFlight Squid = new SquidFlight();
     ManaManager Mana = new ManaManager();
     CharmSpell Charm = new CharmSpell();
+
 //    TwistedFateSpell Twist = new TwistedFateSpell();
 
 //    // porkchop variables
@@ -45,7 +45,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
         getServer().getPluginManager().registerEvents(new TwistedFateSpell(), this);
-//        SpellBookMenu spellBookMenu = new SpellBookMenu(this);
+        new SpellBookMenu(this);
     }
 
     // commands
@@ -76,216 +76,29 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }
         }, 0, 10);
     }
-
-
-
-
-    public static WizardsPlugin getInstance() {
-        return instance;
-    }
-
     @Override
     public void onDisable() {
         getLogger().info("WizardsPlugin has been disabled!");
     }
 
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        // get player and UUID
-        Player player = event.getPlayer();
-        UUID playerId = player.getUniqueId();
-        player.sendMessage("Welcome!");
-
-        //set players' mana to max on join
-        Mana.playerMana.put(playerId, Mana.maxMana);
-        Mana.manaBossBars.remove(playerId);
-
+    public static WizardsPlugin getInstance() {
+        return instance;
     }
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        UUID playerId = player.getUniqueId();
-        ItemStack wand = player.getInventory().getItemInMainHand();
 
-        //spell mana cost
-        double fireballCost = 15.0;
-        double teleportCost = 10.0;
-        double lightningCost = 20.0;
-        double gustCost = 25.0;
-        double minecartCost = 30.0;
-        double flyingManaCostPerTick = 1.5;
-        double charmCost = 15.0;
-        double porkchopCost = 10.0;
 
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
-            // fireball cast
-            if (wand.getType() == Material.BLAZE_ROD) {
-
-                if (!Cooldown.isOnFireballCooldown(playerId)) { // if fireball is not on cooldown
-                    if (Mana.hasEnoughMana(playerId, fireballCost)) { // AND if player has enough mana
-                        Cast.castFireball(playerId);            // fireball is cast, and a cooldown + mana reduction is set
-                        Cooldown.setFireballCooldown(playerId);
-                        Mana.deductMana(playerId, fireballCost);
-//                        updateManaActionBar(player); // old mana bar update before scheduler
-//                        player.sendMessage("You have " + getCurrentMana(playerId) + " mana remaining"); // old mana bar before action bar
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Fireball.");
-                    }
-                }else{
-                    int remainingSeconds = Cooldown.getRemainingFireballCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Fireball on cooldown. Please wait " + remainingSeconds + " seconds before casting again.");
-                }
-            }
-            if (wand.getType() == Material.IRON_SWORD) {
-                // teleport cast
-                if (!Cooldown.isOnTeleportCooldown(playerId)) { // if teleport is not on cooldown
-                    if (Mana.hasEnoughMana(playerId, teleportCost)){ // AND if player has enough mana
-                        Teleport.castTeleportSpell(playerId, 0); // teleport is cast, and a cooldown + mana reduction is set
-                        Cooldown.setTeleportCooldown(playerId);
-                        Mana.deductMana(playerId, teleportCost);
-                    }else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Teleport.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingTeleportCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Teleportation on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
-            }
-            if (wand.getType() == Material.IRON_PICKAXE) {
-                // lightning cast
-                if (!Cooldown.isOnLightningCooldown(playerId)) { // if teleport is not on cooldown
-                    if (Mana.hasEnoughMana(playerId, lightningCost)) { // AND if player has enough mana
-                        Cast.castLightningSpell(playerId);      // lightning is cast, and a cooldown + mana reduction is set
-                        Cooldown.setLightningCooldown(playerId);
-                        Mana.deductMana(playerId, lightningCost);
-                        Cast.startLightningEffect(playerId);
-                    }else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Lightning.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingLightningCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Lightning on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
-
-            }
-            if (wand.getType() == Material.FEATHER) {
-                if (!Cooldown.isOnGustCooldown(playerId)) {  // if gust spell is not on cooldown
-                    if (Mana.hasEnoughMana(playerId, gustCost)) { // AND if player has enough mana
-                        Cast.castGustSpell(playerId);          // gust is cast, and a cooldown + mana reduction is set
-                        Cooldown.setGustCooldown(playerId);
-                        Mana.deductMana(playerId, gustCost);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Gust.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingGustCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Gust spell on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
-            }
-            if (wand.getType() == Material.MINECART) {
-                // minecart spell
-                if (!Cooldown.isOnMinecartCooldown(playerId)) {
-                    if (Mana.hasEnoughMana(playerId, minecartCost)) {
-                        Cast.launchMinecart(player);
-                        Cooldown.setMinecartCooldown(playerId);
-                        Mana.deductMana(playerId, minecartCost);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Minecart spell.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingMinecartCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Minecart spell on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
-            }
-            if (wand.getType() == Material.IRON_INGOT) {
-                // minecart spell cast
-                if (!Cooldown.isOnMinecartCooldown(playerId)) {
-                    if (Mana.hasEnoughMana(playerId, minecartCost)) {
-                        Cast.castGroundPoundSpell(playerId);
-                        Cooldown.setMinecartCooldown(playerId);
-                        Mana.deductMana(playerId, minecartCost);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Big Man Slam spell.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingMinecartCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Minecart spell on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
-            }
-            if (wand.getType() == Material.SHIELD) {
-                if (!Cooldown.isOnSquidFlyingCooldown(playerId)) {
-                    if (Mana.hasEnoughMana(playerId, flyingManaCostPerTick)) {
-                        // flying spell
-                        Squid.startFlyingSpell(player);
-
-                        // initial mana cost
-                        Mana.deductMana(playerId, flyingManaCostPerTick);
-
-                        // schedule a task to consume mana over time
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (!player.isOnline() || !Squid.isFlying(playerId) || !Mana.hasEnoughMana(playerId, flyingManaCostPerTick)) {
-                                    // stop flying if player is offline, no longer flying, or not enough enough mana
-                                    Squid.stopFlyingSpell(player);
-                                    this.cancel();
-                                    return;
-                                }
-                                // deduct mana per tick
-                                Mana.deductMana(playerId, flyingManaCostPerTick);
-                            }
-                        }.runTaskTimer(this, 0, 20); // run every 1 second = 20 ticks
-
-                        // squid sound effect
-                        player.playSound(player.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.0F, 1.0F);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Flying.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Flying spell on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
-            }
-            if (wand.getType() == Material.IRON_SHOVEL) {
-                // porkchop spell
-                if (!Cooldown.isOnPorkchopCooldown(playerId)) {
-                    if (Mana.hasEnoughMana(playerId, porkchopCost)) {
-                        Cast.castPorkchopSpell(player);
-                        Cooldown.setPorkchopCooldown(playerId);
-                        Mana.deductMana(playerId, porkchopCost);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Porkchop spell.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingPorkchopCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Porkchop spell on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
-            }
-            if (wand.getType() == Material.BEETROOT) {
-                // charm spell cast
-                if (!Cooldown.isOnCharmCooldown(playerId)) {
-                    if (Mana.hasEnoughMana(playerId, charmCost)) {
-                        Charm.castCharmSpell(playerId);
-                        Cooldown.setCharmCooldown(playerId);
-                        Mana.deductMana(playerId, charmCost);
-                    } else {
-                        player.sendMessage(ChatColor.RED + "Not enough mana to cast Charm spell.");
-                    }
-                } else {
-                    int remainingSeconds = Cooldown.getRemainingCharmCooldownSeconds(playerId);
-                    player.sendMessage(ChatColor.RED + "Charm spell on cooldown. Please wait " + remainingSeconds + " seconds.");
-                }
+    // get UUID of player
+    public static Player getPlayerById(UUID playerId) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (onlinePlayer.getUniqueId().equals(playerId)) {
+                return onlinePlayer;
             }
         }
+        return null; // player with UUID not found
     }
 
-
-
-
     // regenerate mana over time
-    public void regenerateMana() {
+    void regenerateMana() {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             UUID playerId = onlinePlayer.getUniqueId();
             double currentMana = Mana.getCurrentMana(playerId);
@@ -302,15 +115,158 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
 
 
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        // get player and UUID
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        player.sendMessage("Welcome!");
 
-    // get UUID of player
-    public static Player getPlayerById(UUID playerId) {
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (onlinePlayer.getUniqueId().equals(playerId)) {
-                return onlinePlayer;
-            }
+        //set players' mana to max on join
+        Mana.playerMana.put(playerId, Mana.maxMana);
+        Mana.manaBossBars.remove(playerId);
+
+    }
+    private final double FIREBALL_COST = 15.0;
+    private final double TELEPORT_COST = 10.0;
+    private final double LIGHTNING_COST = 20.0;
+    private final double GUST_COST = 25.0;
+    private final double MINECART_COST = 30.0;
+    private final double GP_COST = 20.0;
+    private final double FLYING_MANA_COST_PER_TICK = 1.5;
+    private final double CHARM_COST = 15.0;
+    private final double PORKCHOP_COST = 10.0;
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        ItemStack wand = player.getInventory().getItemInMainHand();
+
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            handleSpellCast(player, playerId, wand);
         }
-        return null; // player with UUID not found
+    }
+
+    private void handleSpellCast(Player player, UUID playerId, ItemStack wand) {
+        switch (wand.getType()) {
+            case BLAZE_ROD -> handleFireballCast(player, playerId);
+            case IRON_SWORD -> handleTeleportCast(player, playerId);
+            case IRON_PICKAXE -> handleLightningCast(player, playerId);
+            case FEATHER -> handleGustCast(player, playerId);
+            case MINECART -> handleMinecartCast(player, playerId);
+            case IRON_INGOT -> handleBigManSlamCast(player, playerId);
+            case SHIELD -> handleFlyingSpellCast(player, playerId);
+            case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
+            case BEETROOT -> handleCharmCast(player, playerId);
+        }
+    }
+
+    void handleFireballCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnFireballCooldown(playerId) && Mana.hasEnoughMana(playerId, FIREBALL_COST)) {
+            Cast.castFireball(playerId);
+            Cooldown.setFireballCooldown(playerId);
+            Mana.deductMana(playerId, FIREBALL_COST);
+        } else {
+            handleCooldownMessage(player, "Fireball", Cooldown.getRemainingFireballCooldownSeconds(playerId));
+        }
+    }
+
+    void handleTeleportCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
+            Teleport.castTeleportSpell(playerId, 0);
+            Cooldown.setTeleportCooldown(playerId);
+            Mana.deductMana(playerId, TELEPORT_COST);
+        } else {
+            handleCooldownMessage(player, "Teleport", Cooldown.getRemainingTeleportCooldownSeconds(playerId));
+        }
+    }
+
+    void handleLightningCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnLightningCooldown(playerId) && Mana.hasEnoughMana(playerId, LIGHTNING_COST)) {
+            Cast.castLightningSpell(playerId);
+            Cooldown.setLightningCooldown(playerId);
+            Mana.deductMana(playerId, LIGHTNING_COST);
+            Cast.startLightningEffect(playerId);
+        } else {
+            handleCooldownMessage(player, "Lightning", Cooldown.getRemainingLightningCooldownSeconds(playerId));
+        }
+    }
+
+    void handleGustCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnGustCooldown(playerId) && Mana.hasEnoughMana(playerId, GUST_COST)) {
+            Cast.castGustSpell(playerId);
+            Cooldown.setGustCooldown(playerId);
+            Mana.deductMana(playerId, GUST_COST);
+        } else {
+            handleCooldownMessage(player, "Gust", Cooldown.getRemainingGustCooldownSeconds(playerId));
+        }
+    }
+
+    void handleFlyingSpellCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnSquidFlyingCooldown(playerId) && Mana.hasEnoughMana(playerId, FLYING_MANA_COST_PER_TICK)) {
+            Squid.startFlyingSpell(player);
+            Mana.deductMana(playerId, FLYING_MANA_COST_PER_TICK);
+
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline() || !Squid.isFlying(playerId) || !Mana.hasEnoughMana(playerId, FLYING_MANA_COST_PER_TICK)) {
+                        Squid.stopFlyingSpell(player);
+                        this.cancel();
+                        return;
+                    }
+                    Mana.deductMana(playerId, FLYING_MANA_COST_PER_TICK);
+                }
+            }.runTaskTimer(WizardsPlugin.getInstance(), 0, 20);
+
+            player.playSound(player.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.0F, 1.0F);
+        } else {
+            handleCooldownMessage(player, "Flying", Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId));
+        }
+    }
+
+    void handleMinecartCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnMinecartCooldown(playerId) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
+            Cast.launchMinecart(player);
+            Cooldown.setMinecartCooldown(playerId);
+            Mana.deductMana(playerId, MINECART_COST);
+        } else {
+            handleCooldownMessage(player, "Minecart", Cooldown.getRemainingMinecartCooldownSeconds(playerId));
+        }
+    }
+
+    void handleBigManSlamCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnGPCooldown(playerId) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
+            Cast.castGroundPoundSpell(playerId);
+            Cooldown.setGPCooldown(playerId);
+            Mana.deductMana(playerId, GP_COST);
+        } else {
+            handleCooldownMessage(player, "Big Man Slam", Cooldown.getRemainingGPCooldownSeconds(playerId));
+        }
+    }
+
+    void handlePorkchopCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnPorkchopCooldown(playerId) && Mana.hasEnoughMana(playerId, PORKCHOP_COST)) {
+            Cast.castPorkchopSpell(player);
+            Cooldown.setPorkchopCooldown(playerId);
+            Mana.deductMana(playerId, PORKCHOP_COST);
+        } else {
+            handleCooldownMessage(player, "Porkchop", Cooldown.getRemainingPorkchopCooldownSeconds(playerId));
+        }
+    }
+
+    void handleCharmCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnCharmCooldown(playerId) && Mana.hasEnoughMana(playerId, CHARM_COST)) {
+            Charm.castCharmSpell(playerId);
+            Cooldown.setCharmCooldown(playerId);
+            Mana.deductMana(playerId, CHARM_COST);
+        } else {
+            handleCooldownMessage(player, "Charm", Cooldown.getRemainingCharmCooldownSeconds(playerId));
+        }
+    }
+
+    void handleCooldownMessage(Player player, String spellName, int remainingSeconds) {
+        player.sendMessage(ChatColor.RED + spellName + " on cooldown. Please wait " + remainingSeconds + " seconds before casting again.");
     }
 
 }

@@ -71,12 +71,16 @@ public class CooldownManager {
         for (UUID playerId : charmCooldowns.keySet()) {
             clearCooldowns(playerId);
         }
+        for (UUID playerId : GPCooldowns.keySet()) {
+            clearCooldowns(playerId);
+        }
     }
     // store cooldowns in hashmaps
     private final Map<UUID, Long> fireballCooldowns = new HashMap<>();
     private final Map<UUID, Long> teleportCooldowns = new HashMap<>();
     private final Map<UUID, Long> lightningCooldowns = new HashMap<>();
     private final Map<UUID, Long> gustCooldowns = new HashMap<>();
+    private final Map<UUID, Long> GPCooldowns = new HashMap<>();
     private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>();
 
     // cooldown duration in milliseconds
@@ -86,6 +90,7 @@ public class CooldownManager {
     private final long gustCooldownDuration = 1 * 1000; // 15
     private final long iceSphereCooldownDuration = 1 * 1000; // 20 seconds
     private final long minecartCooldownDuration = 1 * 1000; // 30 seconds
+    private final long GPCooldownDuration = 1 * 1000; // 15 seconds
     private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
     private final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
     private final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
@@ -143,6 +148,10 @@ public class CooldownManager {
         long remainingCooldown = twistedFateSpellDuration - (System.currentTimeMillis() - twistedFateSpellCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
+    int getRemainingGPCooldownSeconds(UUID playerId) {
+        long remainingCooldown = GPCooldownDuration - (System.currentTimeMillis() - GPCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
 
 
     // check if spells are on cooldown
@@ -184,7 +193,9 @@ public class CooldownManager {
     boolean isOntwistedFateSpellCooldown(UUID playerId) {
         return twistedFateSpellCooldowns.containsKey(playerId) && System.currentTimeMillis() - twistedFateSpellCooldowns.get(playerId) < twistedFateSpellDuration;
     }
-
+    boolean isOnGPCooldown(UUID playerId) {
+        return GPCooldowns.containsKey(playerId) && System.currentTimeMillis() - GPCooldowns.get(playerId) < GPCooldownDuration;
+    }
 
     // sets the cooldown of spells
     void setFireballCooldown(UUID playerId) {
@@ -220,6 +231,9 @@ public class CooldownManager {
     void settwistedFateSpellCooldown(UUID playerId) {
         twistedFateSpellCooldowns.put(playerId, System.currentTimeMillis());
     }
+    void setGPCooldown(UUID playerId) {
+        GPCooldowns.put(playerId, System.currentTimeMillis());
+    }
 
 
 
@@ -230,6 +244,7 @@ public class CooldownManager {
         gustCooldowns.remove(playerId);
         iceSphereCooldowns.remove(playerId);
         minecartCooldowns.remove(playerId);
+        GPCooldowns.remove(playerId);
         squidFlyingCooldowns.remove(playerId);
         porkchopCooldowns.remove(playerId);
         charmCooldowns.remove(playerId);
