@@ -46,6 +46,7 @@ public class SpellBookMenu implements Listener {
         ItemStack gustButton = createSpellButton("Gust Feather", Material.FEATHER);
         ItemStack flyButton = createSpellButton("Winged Shield", Material.SHIELD);
         ItemStack GPButton = createSpellButton("Big Man Slam", Material.IRON_INGOT);
+        ItemStack mapTPButton = createSpellButton("Voidwalker", Material.RECOVERY_COMPASS);
 
         // spell buttons' positions, starting from the 9th slot (index 8)
         spellBookMenu.setItem(10, fireballButton);
@@ -55,6 +56,7 @@ public class SpellBookMenu implements Listener {
         spellBookMenu.setItem(28, gustButton);
         spellBookMenu.setItem(30, flyButton);
         spellBookMenu.setItem(32, GPButton);
+        spellBookMenu.setItem(34, mapTPButton);
 
         player.openInventory(spellBookMenu);
     }
@@ -130,6 +132,9 @@ public class SpellBookMenu implements Listener {
                 return "Winged Shield";
             case IRON_INGOT:
                 return "Big Man Slam";
+            case RECOVERY_COMPASS:
+                return "Voidwalker";
+
             default:
                 return "Unknown Spell";
         }
@@ -178,7 +183,8 @@ public class SpellBookMenu implements Listener {
         List<String> lore = new ArrayList<>();
         switch (spellName) {
             case "Fiery Wand":
-                lore.add("Cast powerful fireballs.");
+                lore.add("Cast powerful fireballs." +
+                        "Right click to shoot a fireball");
                 break;
             case "Shrouded Step":
                 lore.add("Teleport to a targeted location.");
@@ -197,6 +203,9 @@ public class SpellBookMenu implements Listener {
                 break;
             case "Big Man Slam":
                 lore.add("Unleash a powerful ground slam as the BIG MAN you are.");
+                break;
+            case "Voidwalker":
+                lore.add("Sneak into another dimension and reach new heights.");
                 break;
             default:
                 lore.add("Unknown Spell");
@@ -249,10 +258,11 @@ public class SpellBookMenu implements Listener {
                         case "Gust Feather":
                         case "Winged Shield":
                         case "Big Man Slam":
+                        case "Voidwalker":
                             handleSpellAddition(player, clickedItem.getType());
 
-                            // Close the inventory
-                            // Cancel event to prevent the item from being moved in the inventory
+                            // close  inventory
+                            // cancel event to prevent item from being moved in the inventory
                             player.closeInventory();
                             event.setCancelled(true);
                             break;

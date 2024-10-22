@@ -10,14 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 public class CooldownManager {
 
-    private final Map<UUID, Long> cooldowns = new HashMap<>();
+
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final Map<UUID, Long> minecartCooldowns = new HashMap<>();
-    private final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
-    private final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
-    private final Map<UUID, Long> charmCooldowns = new HashMap<>();
-    public final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
-    public final Map<UUID, Long> twistedFateSpellCooldowns = new HashMap<>();
 
     public CooldownManager() {
 
@@ -76,11 +70,22 @@ public class CooldownManager {
         }
     }
     // store cooldowns in hashmaps
+
+    private final Map<UUID, Long> cooldowns = new HashMap<>();
+    private final Map<UUID, Long> minecartCooldowns = new HashMap<>();
+    private final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
+    private final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
+    private final Map<UUID, Long> charmCooldowns = new HashMap<>();
+    public final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
+    public final Map<UUID, Long> twistedFateSpellCooldowns = new HashMap<>();
     private final Map<UUID, Long> fireballCooldowns = new HashMap<>();
     private final Map<UUID, Long> teleportCooldowns = new HashMap<>();
     private final Map<UUID, Long> lightningCooldowns = new HashMap<>();
     private final Map<UUID, Long> gustCooldowns = new HashMap<>();
     private final Map<UUID, Long> GPCooldowns = new HashMap<>();
+    private final Map<UUID, Long> MapTeleportCooldowns = new HashMap<>();
+    private final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
+
     private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>();
 
     // cooldown duration in milliseconds
@@ -92,6 +97,8 @@ public class CooldownManager {
     private final long minecartCooldownDuration = 1 * 1000; // 30 seconds
     private final long GPCooldownDuration = 1 * 1000; // 15 seconds
     private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
+    private final long MapTeleportCooldownDuration = 1 * 1000; // 25 seconds
+    private final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
     private final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
     private final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
 
@@ -127,6 +134,15 @@ public class CooldownManager {
     }
     int getRemainingSquidFlyingCooldownSeconds(UUID playerId) {
         long remainingCooldown = squidFlyingCooldownDuration - (System.currentTimeMillis() - squidFlyingCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
+    int getRemainingMapTeleportCooldownSeconds(UUID playerId) {
+        long remainingCooldown = MapTeleportCooldownDuration - (System.currentTimeMillis() - MapTeleportCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
+
+    int getRemainingFrostBarrierCooldownSeconds(UUID playerId) {
+        long remainingCooldown = frostBarrierCooldownDuration - (System.currentTimeMillis() - frostBarrierCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
     int getRemainingPorkchopCooldownSeconds(UUID playerId) {
@@ -177,6 +193,11 @@ public class CooldownManager {
     boolean isOnSquidFlyingCooldown(UUID playerId) {
         return squidFlyingCooldowns.containsKey(playerId) && System.currentTimeMillis() - squidFlyingCooldowns.get(playerId) < squidFlyingCooldownDuration;
     }
+    boolean isOnMapTeleportCooldown(UUID playerId) {
+        return MapTeleportCooldowns.containsKey(playerId) && System.currentTimeMillis() - MapTeleportCooldowns.get(playerId) < MapTeleportCooldownDuration;
+    }
+
+
     boolean isOnPorkchopCooldown(UUID playerId) {
         return porkchopCooldowns.containsKey(playerId) && System.currentTimeMillis() - porkchopCooldowns.get(playerId) < porkchopCooldownDuration;
     }
@@ -220,6 +241,12 @@ public class CooldownManager {
     }
     void setSquidFlyingCooldown(UUID playerId) {
         squidFlyingCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    void setFrostBarrierCooldown(UUID playerId) {
+        frostBarrierCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    void setMapTeleportCooldown(UUID playerId) {
+        MapTeleportCooldowns.put(playerId, System.currentTimeMillis());
     }
     void setPorkchopCooldown(UUID playerId) {
         porkchopCooldowns.put(playerId, System.currentTimeMillis());

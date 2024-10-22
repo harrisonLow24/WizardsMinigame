@@ -136,6 +136,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private final double FLYING_MANA_COST_PER_TICK = 1.5;
     private final double CHARM_COST = 15.0;
     private final double PORKCHOP_COST = 10.0;
+
+
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -156,6 +158,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case MINECART -> handleMinecartCast(player, playerId);
             case IRON_INGOT -> handleBigManSlamCast(player, playerId);
             case SHIELD -> handleFlyingSpellCast(player, playerId);
+            case RECOVERY_COMPASS -> handleMapTeleportCast(player, playerId);
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
         }
@@ -166,8 +169,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cast.castFireball(playerId);
             Cooldown.setFireballCooldown(playerId);
             Mana.deductMana(playerId, FIREBALL_COST);
-        } else {
+        } else if (Cooldown.isOnFireballCooldown(playerId)) {
             handleCooldownMessage(player, "Fireball", Cooldown.getRemainingFireballCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
@@ -176,8 +181,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Teleport.castTeleportSpell(playerId, 0);
             Cooldown.setTeleportCooldown(playerId);
             Mana.deductMana(playerId, TELEPORT_COST);
-        } else {
+        } else if (Cooldown.isOnTeleportCooldown(playerId)) {
             handleCooldownMessage(player, "Teleport", Cooldown.getRemainingTeleportCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
@@ -187,8 +194,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setLightningCooldown(playerId);
             Mana.deductMana(playerId, LIGHTNING_COST);
             Cast.startLightningEffect(playerId);
-        } else {
+        } else if (Cooldown.isOnLightningCooldown(playerId)) {
             handleCooldownMessage(player, "Lightning", Cooldown.getRemainingLightningCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
@@ -197,8 +206,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cast.castGustSpell(playerId);
             Cooldown.setGustCooldown(playerId);
             Mana.deductMana(playerId, GUST_COST);
-        } else {
+        } else if (Cooldown.isOnGustCooldown(playerId)) {
             handleCooldownMessage(player, "Gust", Cooldown.getRemainingGustCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
@@ -220,8 +231,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }.runTaskTimer(WizardsPlugin.getInstance(), 0, 20);
 
             player.playSound(player.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.0F, 1.0F);
-        } else {
+        } else if (Cooldown.isOnSquidFlyingCooldown(playerId)) {
             handleCooldownMessage(player, "Flying", Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
@@ -230,8 +243,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cast.launchMinecart(player);
             Cooldown.setMinecartCooldown(playerId);
             Mana.deductMana(playerId, MINECART_COST);
-        } else {
+        } else if (Cooldown.isOnMinecartCooldown(playerId)) {
             handleCooldownMessage(player, "Minecart", Cooldown.getRemainingMinecartCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
@@ -240,8 +255,19 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cast.castGroundPoundSpell(playerId);
             Cooldown.setGPCooldown(playerId);
             Mana.deductMana(playerId, GP_COST);
-        } else {
+        } else if (Cooldown.isOnGPCooldown(playerId)) {
             handleCooldownMessage(player, "Big Man Slam", Cooldown.getRemainingGPCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
+        }
+    }
+    void handleMapTeleportCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnMapTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
+            Cast.teleportPlayerUp(player);
+            Cooldown.setMapTeleportCooldown(playerId);
+            Mana.deductMana(playerId, TELEPORT_COST);
+        } else if (Cooldown.isOnMapTeleportCooldown(playerId)) {
+            handleCooldownMessage(player, "Map Teleport", Cooldown.getRemainingMapTeleportCooldownSeconds(playerId));
         }
     }
 
@@ -250,8 +276,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cast.castPorkchopSpell(player);
             Cooldown.setPorkchopCooldown(playerId);
             Mana.deductMana(playerId, PORKCHOP_COST);
-        } else {
+        } else if (Cooldown.isOnPorkchopCooldown(playerId)) {
             handleCooldownMessage(player, "Porkchop", Cooldown.getRemainingPorkchopCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
@@ -260,66 +288,18 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Charm.castCharmSpell(playerId);
             Cooldown.setCharmCooldown(playerId);
             Mana.deductMana(playerId, CHARM_COST);
-        } else {
+        } else if (Cooldown.isOnCharmCooldown(playerId)) {
             handleCooldownMessage(player, "Charm", Cooldown.getRemainingCharmCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
     void handleCooldownMessage(Player player, String spellName, int remainingSeconds) {
         player.sendMessage(ChatColor.RED + spellName + " on cooldown. Please wait " + remainingSeconds + " seconds before casting again.");
     }
+    void handleManaMessage(Player player) {
+        player.sendMessage(ChatColor.RED + " You do not have enough mana. Please wait before casting again.");
+    }
 
 }
-
-//    @EventHandler
-//    public void onProjectileHit(ProjectileHitEvent event) {
-//        if (event.getEntity() instanceof Snowball) {
-//            Location hitLocation = event.getEntity().getLocation();
-//
-//            // check if snowball hit a block
-//            if (hitLocation.getBlock().getType() != Material.AIR) {
-//                // create a temporary sphere of ice
-//                createIceSphere(hitLocation);
-//            }
-//        }
-//    }
-
-//    private void createIceSphere(Location location) {
-//        World world = location.getWorld();
-//        double radius = 3.0; //radius of ice sphere
-//        for (double x = -radius; x <= radius; x++) {
-//            for (double y = -radius; y <= radius; y++) {
-//                for (double z = -radius; z <= radius; z++) {
-//                    if (Math.sqrt(x * x + y * y + z * z) <= radius) {
-//                        Location iceBlockLocation = location.clone().add(x, y, z);
-//                        world.getBlockAt(iceBlockLocation).setType(Material.ICE);
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-
-// porkchop hit event
-//    @EventHandler
-//    public void onPorkchopHit(EntityDamageByEntityEvent event) {
-//        if (event.getDamager() instanceof Item && event.getEntity() instanceof LivingEntity) {
-//            Item porkchopItem = (Item) event.getDamager();
-//            LivingEntity targetEntity = (LivingEntity) event.getEntity();
-//
-//            if (porkchopItem.getItemStack().getType() == Material.PORKCHOP) {
-//                PersistentDataContainer container = porkchopItem.getItemStack().getItemMeta().getPersistentDataContainer();
-//                if (container.has(new NamespacedKey(this, "caster"), PersistentDataType.STRING)) {
-//                    UUID casterId = UUID.fromString(container.get(new NamespacedKey(this, "caster"), PersistentDataType.STRING));
-//                    Player caster = getPlayerById(casterId);
-//                    if (caster != null) {
-//                        double damage = 10.0;
-//                        targetEntity.damage(damage, caster);
-//
-//                        // remove the cooked Porkchop from ground
-//                        porkchopItem.remove();
-//                    }
-//                }
-//            }
-//        }
-//    }

@@ -1,11 +1,16 @@
 package WizardsGame;
 
+import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -16,9 +21,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 import org.bukkit.Particle;
 
 import static WizardsGame.WizardsPlugin.getPlayerById;
@@ -26,6 +30,12 @@ import static WizardsGame.WizardsPlugin.getPlayerById;
 public class SpellCastingManager {
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
+
+    //map teleport
+    private static final int TELEPORT_DURATION = 5; // duration player stays in the air (in seconds)
+    private static final int PLATFORM_SIZE = 150; // size of the platform (size x size)
+    private static final int TELEPORT_UP_HEIGHT = 60; // height to teleport up
+    private static final double SPEED_BOOST = 2.0; // speed while on barrier platform
 
     // fireball cast
     void castFireball(UUID playerId) {
@@ -415,6 +425,122 @@ public class SpellCastingManager {
             }
         }
     }
+
+    private static final HashMap<UUID, List<Block>> barrierBlocksMap = new HashMap<>(); // Store barrier blocks for each player
+    public void createBarrierPlatform(int x, int z, int y, Player player) {
+        List<Block> barrierBlocks = new ArrayList<>();
+        for (int i = -PLATFORM_SIZE / 2; i <= PLATFORM_SIZE / 2; i++) {
+            for (int j = -PLATFORM_SIZE / 2; j <= PLATFORM_SIZE / 2; j++) {
+                Block block = player.getWorld().getBlockAt(x + i, y, z + j);
+                block.setType(Material.BARRIER); // set block to barrier
+                barrierBlocks.add(block); // store block in the list
+            }
+        }
+        barrierBlocksMap.put(player.getUniqueId(), barrierBlocks); // store list in the map
+    }
+    public void removeBarrierPlatform(UUID playerId) {
+        List<Block> barrierBlocks = barrierBlocksMap.get(playerId);
+        if (barrierBlocks != null) {
+            for (Block block : barrierBlocks) {
+                block.setType(Material.AIR); // set blocks to air
+            }
+            barrierBlocksMap.remove(playerId); // remove barriers from hashmap
+        }
+    }
+    private void startTeleportationEffects(Player player) {
+        int playerY = player.getLocation().getBlockY();
+        Vector playerDirection = player.getLocation().getDirection();
+
+        // Check blocks below player's current position
+        for (int y = playerY - 1; y >= 0; y--) {
+            Block block = player.getWorld().getBlockAt(player.getLocation().getBlockX(), y, player.getLocation().getBlockZ());
+
+            // Check if the block is not air and not a barrier
+            if (block.getType() != Material.AIR && block.getType() != Material.BARRIER) {
+                // Start fancy teleportation effects
+                Location teleportLocation = block.getLocation().add(0, 1, 0);
+                player.getWorld().spawnParticle(Particle.PORTAL, teleportLocation, 30, 1, 1, 1, 0.1);
+                player.getWorld().playSound(teleportLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                player.getWorld().playSound(teleportLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+
+                // Delay for one second before teleporting
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        player.teleport(teleportLocation.setDirection(playerDirection)); // Teleport player
+                        // Remove all barrier blocks associated with player
+                        removeBarrierPlatform(player.getUniqueId());
+                    }
+                }.runTaskLater(WizardsPlugin.getInstance(), 20); // 20 ticks = 1 second
+                return;
+            }
+        }
+    }
+    public void teleportPlayerUp(Player player) {
+        // get player's current location
+        Vector playerLocation = player.getLocation().toVector();
+        // create platform at the player's current Y position + TELEPORT_UP_HEIGHT
+        createBarrierPlatform(playerLocation.getBlockX(), playerLocation.getBlockZ(), playerLocation.getBlockY() + TELEPORT_UP_HEIGHT, player);
+
+        // teleport player up
+        player.teleport(player.getLocation().add(0, TELEPORT_UP_HEIGHT + 1, 0));
+        player.setVelocity(new Vector(0, 0, 0)); // reset velocity
+
+        // increase speed
+        player.setWalkSpeed((float) (player.getWalkSpeed() * SPEED_BOOST));
+
+        BossBar bossBar = Bukkit.createBossBar("Move quickly!", BarColor.BLUE, BarStyle.SEGMENTED_20);
+        bossBar.addPlayer(player);
+
+        new BukkitRunnable() {
+            int timeLeft = TELEPORT_DURATION;
+            @Override
+            public void run() {
+                if (timeLeft <= 0) {
+                    teleportBackDown(player);
+                    bossBar.removePlayer(player);
+                    cancel();
+                } else {
+                    bossBar.setProgress((double) timeLeft / TELEPORT_DURATION);
+                    player.sendMessage("You have " + timeLeft + " seconds to move!");
+                    timeLeft--;
+                }
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0,20);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.setWalkSpeed(0.2f); // reset to default walk speed
+            }
+        }.runTaskLater(WizardsPlugin.getInstance(), TELEPORT_DURATION * 20);
+    }
+
+    public void teleportBackDown(Player player) {
+        int playerY = player.getLocation().getBlockY();
+        // gets players direction they are looking
+        Vector playerDirection = player.getLocation().getDirection();
+
+        // check blocks below player's current position
+        for (int y = playerY - 1; y >= 0; y--) {
+            Block block = player.getWorld().getBlockAt(player.getLocation().getBlockX(), y, player.getLocation().getBlockZ());
+
+            // check if the block != air and != barrier
+            if (block.getType() != Material.AIR && block.getType() != Material.BARRIER) {
+                // teleport player to the block above it
+                Location teleportLocation = block.getLocation().add(0, 1, 0);
+                player.teleport(teleportLocation.setDirection(playerDirection));
+                // remove all barrier blocks associated with player
+                removeBarrierPlatform(player.getUniqueId());
+
+                // sound effect
+                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                return;
+            }
+        }
+    }
+
+// WizardsPlugin.getInstance()
+
 
 
     int porkchopSpeed = 2;
