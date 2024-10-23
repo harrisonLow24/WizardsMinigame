@@ -513,7 +513,60 @@ public class SpellCastingManager implements Listener {
     }
 
     private void spawnTeleportParticles(Location location) {
+        // track the current phase
+        final boolean[] isInward = {true};
 
+        // create a runnable task to manage the particle spawning
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // check if the player is still at the teleport location
+                Player player = Bukkit.getPlayer(location.getWorld().getNearbyEntities(location, 1, 1, 1)
+                        .stream()
+                        .filter(entity -> entity instanceof Player)
+                        .findFirst().orElse(null).getUniqueId());
+
+                if (player != null && player.getLocation().distance(location) < 1) {
+                    // fetermine particle effect
+                    double radius = 1.5; // radius of  sphere effect
+                    int particles = 10; // number of particles to spawn
+
+                    if (isInward[0]) {
+                        // spawn particles moving inward towards the teleport location
+                        for (int i = 0; i < particles; i++) {
+                            double angle = Math.random() * 2 * Math.PI; // random angle
+                            double x = radius * Math.cos(angle); // x coordinate based on angle
+                            double z = radius * Math.sin(angle); // z coordinate based on angle
+                            double y = Math.random() * 0.5; // random height offset
+
+                            // create particle location
+                            Location particleLocation = location.clone().add(x, y, z);
+                            particleLocation.getWorld().spawnParticle(Particle.END_ROD, particleLocation, 1, 0, 0, 0, 0); // Spawn inward particle
+                        }
+
+                        // switch to outward phase after a certain time
+                        if (System.currentTimeMillis() % 1000 < 50) { // timing
+                            isInward[0] = false;
+                        }
+                    } else {
+                        // spawn particles exploding outward from the teleport location
+                        for (int i = 0; i < particles; i++) {
+                            double angle = Math.random() * 2 * Math.PI; // random angle
+                            double radiusOffset = Math.random(); // random distance from the center
+                            double x = radius * radiusOffset * Math.cos(angle); // x coordinate based on angle
+                            double z = radius * radiusOffset * Math.sin(angle); // z coordinate based on angle
+                            double y = Math.random() * 0.5; // random height offset
+
+                            // create particle location
+                            Location particleLocation = location.clone().add(x, y, z);
+                            particleLocation.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, particleLocation, 1, 0, 0, 0, 0);
+                        }
+                    }
+                } else {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1);
     }
 
     public void teleportPlayerUp(Player player) {
@@ -562,6 +615,8 @@ public class SpellCastingManager implements Listener {
         }.runTaskLater(WizardsPlugin.getInstance(), TELEPORT_DURATION * 20);
     }
 
+    private BukkitRunnable particleRunnable; // declare a variable to hold the particle runnable
+
     public void teleportBackDown(Player player) {
         UUID playerId = player.getUniqueId();
 
@@ -589,6 +644,16 @@ public class SpellCastingManager implements Listener {
                 Location teleportLocation = block.getLocation().add(0, 1, 0);
                 spawnTeleportParticles(teleportLocation); // spawn particles
 
+                // create a runnable to spawn constant particles
+                particleRunnable = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        // spawn particles at teleport location
+                        teleportLocation.getWorld().spawnParticle(Particle.END_ROD, teleportLocation, 5, 0.5, 0.5, 0.5, 0.1);
+                    }
+                };
+                particleRunnable.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // every tick (20 times per second)
+
                 // delayed teleportation
                 new BukkitRunnable() {
                     @Override
@@ -596,12 +661,17 @@ public class SpellCastingManager implements Listener {
                         player.teleport(teleportLocation.setDirection(playerDirection)); // teleport player to ground
                         removeBarrierPlatform(player.getUniqueId()); // remove barriers after teleport
                         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+
+                        // cancel the particle spawning runnable
+                        particleRunnable.cancel();
                     }
                 }.runTaskLater(WizardsPlugin.getInstance(), 20); // 20 ticks = 1 second
                 return;
             }
         }
     }
+
+
 
 
     private void spawnMeteor(Player player, Location targetLocation) {
