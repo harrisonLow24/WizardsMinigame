@@ -3,7 +3,7 @@
 WIP
 
 
-Right click a Book to open the spell menu.g=
+Right click a Book to open the spell menu.
 
 List of Spells:
 
