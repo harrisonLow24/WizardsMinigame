@@ -584,10 +584,10 @@ public class SpellCastingManager implements Listener {
     }
 
 
-    void spawnMeteor(Player player, Location targetLocation) {
+    private void spawnMeteor(Player player, Location targetLocation) {
         Location meteorSpawnLocation = targetLocation.clone().add(
                 ThreadLocalRandom.current().nextDouble(-5, 5), // random horizontal offset
-                25, // fixed height above target
+                40, // fixed height above target
                 ThreadLocalRandom.current().nextDouble(-5, 5)
         );
 
@@ -595,13 +595,13 @@ public class SpellCastingManager implements Listener {
 
         SmallFireball meteor = player.getWorld().spawn(meteorSpawnLocation, SmallFireball.class);
         meteor.setDirection(direction);
-        meteor.setYield(0); // set explosion power to 0 to handle custom damage
-        meteor.setIsIncendiary(false); // prevent setting blocks on fire
+        meteor.setYield(0); // Set explosion power to 0 to handle custom damage
+        meteor.setIsIncendiary(false); // Prevent setting blocks on fire
 
-        // meteor sound
+        // Meteor sound
         meteorSpawnLocation.getWorld().playSound(meteorSpawnLocation, Sound.ENTITY_BLAZE_SHOOT, 1.0f, 0.5f);
 
-        // schedule a crater creation when the meteor lands
+        // Schedule a crater creation when the meteor lands
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -615,8 +615,30 @@ public class SpellCastingManager implements Listener {
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, 2);
     }
 
-    void castMeteorShower(Player player, Location targetLocation) {
+    private void spawnWarningParticles(Location center) {
+        new BukkitRunnable() {
+            private int count = 0;
+            @Override
+            public void run() {
+                if (count >= 100) { // show particles for 5 seconds (100 ticks)
+                    cancel();
+                    return;
+                }
+                for (double theta = 0; theta < Math.PI * 2; theta += Math.PI / 15) {
+                    double x = Math.cos(theta) * METEOR_RADIUS * 2;
+                    double z = Math.sin(theta) * METEOR_RADIUS * 2;
+                    Location particleLocation = center.clone().add(x, 1, z);
+                    center.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 1, new Particle.DustOptions(Color.RED, 2));
+                }
+                count++;
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // adjust frequency
+    }
+    public void castMeteorShower(Player player, Location targetLocation) {
         player.sendMessage("Casting Meteor Shower!");
+
+        // start particles in the target area
+        spawnWarningParticles(targetLocation);
 
         new BukkitRunnable() {
             int meteorCount = 0;
@@ -624,7 +646,7 @@ public class SpellCastingManager implements Listener {
             @Override
             public void run() {
                 if (meteorCount < METEOR_COUNT) {
-                    // randomize the meteor's impact location around target
+                    // randomize meteor's impact location around the target
                     Location randomizedLocation = getRandomizedLocation(targetLocation);
                     spawnMeteor(player, randomizedLocation);
                     meteorCount++;
