@@ -5,10 +5,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 
@@ -20,6 +23,7 @@ import org.bukkit.Sound;
 public class WizardsPlugin extends JavaPlugin implements Listener {
     private static WizardsPlugin instance;
     SpellCastingManager Cast = new SpellCastingManager();
+    SpellMenu Menu = new SpellMenu(this);
     CooldownManager Cooldown = new CooldownManager();
     TeleportationManager Teleport = new TeleportationManager();
     SquidFlight Squid = new SquidFlight();
@@ -35,13 +39,52 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         startManaBarUpdateTask();
         startManaRegenTask();
         getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
-
-
     }
+    @Override
+    public void onDisable() {
+        getLogger().info("WizardsPlugin has been disabled!");
+    }
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        // get player and UUID
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        startLocationTracking(player);
+        player.sendMessage("Welcome!");
+
+        //set players' mana to max on join
+        Mana.playerMana.put(playerId, Mana.maxMana);
+        Mana.manaBossBars.remove(playerId);
+    }
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        playerLocations.remove(playerId); // remove the player's location record on quit
+    }
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        ItemStack wand = player.getInventory().getItemInMainHand();
+
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            handleSpellCast(player, playerId, wand);
+        }
+    }
+    @EventHandler
+    public void onPlayerItemHeld(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
+            Mana.updateManaActionBar(player); // update mana action bar after a short delay
+        }, 1L); // short delay to ensure item has changed
+    }
+
+
     void registerEvents() {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
         getServer().getPluginManager().registerEvents(new TwistedFateSpell(), this);
+        getServer().getPluginManager().registerEvents(new SpellListener(this, Menu), this);
 //        getServer().getPluginManager().registerEvents(new SquidFlight(), this);
         new SpellBookMenu(this);
     }
@@ -76,26 +119,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }
         }, 0, 10);
     }
-    @Override
-    public void onDisable() {
-        getLogger().info("WizardsPlugin has been disabled!");
-    }
-
-    public static WizardsPlugin getInstance() {
-        return instance;
-    }
-
-
-
-    // get UUID of player
-    public static Player getPlayerById(UUID playerId) {
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (onlinePlayer.getUniqueId().equals(playerId)) {
-                return onlinePlayer;
-            }
-        }
-        return null; // player with UUID not found
-    }
 
     // regenerate mana over time
     void regenerateMana() {
@@ -114,57 +137,92 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        // get player and UUID
-        Player player = event.getPlayer();
-        UUID playerId = player.getUniqueId();
-        startLocationTracking(player);
-        player.sendMessage("Welcome!");
-
-        //set players' mana to max on join
-        Mana.playerMana.put(playerId, Mana.maxMana);
-        Mana.manaBossBars.remove(playerId);
-    }
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        UUID playerId = event.getPlayer().getUniqueId();
-        playerLocations.remove(playerId); // remove the player's location record on quit
+    public static WizardsPlugin getInstance() {
+        return instance;
     }
 
 
-    private final double FIREBALL_COST = 15.0;
-    private final double TELEPORT_COST = 10.0;
-    private final double LIGHTNING_COST = 20.0;
-    private final double GUST_COST = 25.0;
-    private final double MINECART_COST = 30.0;
-    private final double GP_COST = 20.0;
-    private final double FLYING_MANA_COST_PER_TICK = 1.5;
-    private final double VOIDWALKER_COST = 20;
+
+    // get UUID of player
+    public static Player getPlayerById(UUID playerId) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (onlinePlayer.getUniqueId().equals(playerId)) {
+                return onlinePlayer;
+            }
+        }
+        return null; // player with UUID not found
+    }
+
+
+    static final double FIREBALL_COST = 15.0;
+    static final double TELEPORT_COST = 10.0;
+    static final double LIGHTNING_COST = 20.0;
+    static final double GUST_COST = 25.0;
+    static final double MINECART_COST = 30.0;
+    static final double GP_COST = 20.0;
+    static final double FLYING_MANA_COST_PER_TICK = 1.5;
+    static final double VOIDWALKER_COST = 20;
 //    private final int CLONE_COST = 20;
-    private final double METEOR_COST = 50;
-    private final double HEALCLOUD_COST = 15;
-    private final double RecallManaCost = 10.0;
-    private final double CHARM_COST = 15.0;
-    private final double PORKCHOP_COST = 10.0;
+    static final double METEOR_COST = 50;
+    static final double HEALCLOUD_COST = 15;
+    static final double RecallManaCost = 10.0;
+    static final double CHARM_COST = 15.0;
+    static final double PORKCHOP_COST = 10.0;
 
     // recall spell ----------------------------------------------------------------------------------------------------
     private final int maxRecordedLocations = 5; // number of locations to record ( ho many seconds to teleport back )
     private final Map<UUID, Queue<Location>> playerLocations = new HashMap<>();
     private final int recordInterval = 20; // time in ticks (1 second)
     // -----------------------------------------------------------------------------------------------------------------
+    public enum SpellType {
+        FIREBALL(Material.BLAZE_ROD),
+        TELEPORT(Material.IRON_SWORD),
+        LIGHTNING(Material.IRON_PICKAXE),
+        GUST(Material.FEATHER),
+        MINECART(Material.MINECART),
+        BIG_MAN_SLAM(Material.IRON_INGOT),
+        FLYING(Material.SHIELD),
+        MAP_TELEPORT(Material.RECOVERY_COMPASS),
+        METEOR(Material.HONEYCOMB),
+        HEAL_CLOUD(Material.TIPPED_ARROW),
+        RECALL(Material.MUSIC_DISC_5),
+        PORKCHOP(Material.IRON_SHOVEL),
+        CHARM(Material.BEETROOT);
 
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        UUID playerId = player.getUniqueId();
-        ItemStack wand = player.getInventory().getItemInMainHand();
+        private final Material material;
 
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            handleSpellCast(player, playerId, wand);
+        SpellType(Material material) {
+            this.material = material;
+        }
+
+        public Material getMaterial() {
+            return material;
         }
     }
+    private final Map<UUID, Map<SpellType, Integer>> playerSpells = new HashMap<>(); // each player’s owned spells
+    private final int maxSpellLevel = 5; // max level
+    public void increaseSpellLevel(UUID playerId, SpellType spellType) {
+        Map<SpellType, Integer> spells = playerSpells.computeIfAbsent(playerId, k -> new HashMap<>());
+        int currentLevel = spells.getOrDefault(spellType, 0);
+
+        // increase level if not at max level
+        if (currentLevel < maxSpellLevel) {
+            spells.put(spellType, currentLevel + 1);
+        }
+    }
+
+    public boolean canSelectSpell(UUID playerId, SpellType spellType) {
+        return getSpellLevel(playerId, spellType) >= 1;
+    }
+
+    public int getSpellLevel(UUID playerId, SpellType spellType) {
+        return playerSpells.getOrDefault(playerId, new HashMap<>()).getOrDefault(spellType, 0);
+    }
+
+    public void addSpellToPlayer(UUID playerId, SpellType spellType) {
+        increaseSpellLevel(playerId, spellType);
+    }
+
 
     private void handleSpellCast(Player player, UUID playerId, ItemStack wand) {
         switch (wand.getType()) {
@@ -179,7 +237,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //            case SHULKER_SHELL -> handleCloneCast(player, playerId);
             case HONEYCOMB -> handleMeteorCast(player, playerId);
             case TIPPED_ARROW -> handleHealCloudCast(player, playerId);
-            case CHORUS_FRUIT -> handleRecallCast(player, playerId);
+            case MUSIC_DISC_5 -> handleRecallCast(player, playerId);
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
         }
@@ -373,9 +431,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 // get location from 5 seconds ago ( first recorded location in the queue )
                 Location teleportLocation = locations.poll(); // get and remove oldest location
                 if (teleportLocation != null) {
-                    player.teleport(teleportLocation);
                     showTeleportEffect(teleportLocation, player.getLocation());
+                    player.teleport(teleportLocation);
                     Mana.deductMana(playerId, RecallManaCost); // Deduct mana
+                    applyDarknessEffect(player);
                     player.sendMessage("You have been teleported to your previous location.");
                 }
             } else {
@@ -389,12 +448,17 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
     // show teleport effect at the original and new locations
     private void showTeleportEffect(Location from, Location to) {
-        // Show effect at the original location
-        createSphereEffect(from, Particle.VILLAGER_HAPPY, 0.5, 10); // sphere effect going inwards
-        createSphereEffect(to, Particle.END_ROD, 0.5, 10); // sphere effect going outwards
+        // show effect at original location
+        createSphereEffect(from, Particle.VILLAGER_HAPPY, 1, 10); // sphere effect going inwards
+        createSphereEffect(to, Particle.SONIC_BOOM, 0.01, 10); // sphere effect going outwards
 
         // play sound effect at original location
         from.getWorld().playSound(from, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+    }
+
+    private void applyDarknessEffect(Player player) {
+        PotionEffect blindnessEffect = new PotionEffect(PotionEffectType.BLINDNESS, 40, 0); // 20 ticks = 1 second
+        player.addPotionEffect(blindnessEffect); // apply effect to the player
     }
 
     // create a sphere effect with particles
@@ -407,7 +471,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 double z = radius * Math.sin(theta) * Math.sin(phi);
 
                 // calculate location to spawn the particle
-                Location particleLocation = center.clone().add(x, y, z);
+                Location particleLocation = center.clone().add(x, y + 1, z);
                 center.getWorld().spawnParticle(particle, particleLocation, 1);
             }
         }
