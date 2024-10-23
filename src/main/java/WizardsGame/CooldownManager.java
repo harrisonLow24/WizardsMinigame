@@ -68,6 +68,9 @@ public class CooldownManager {
         for (UUID playerId : GPCooldowns.keySet()) {
             clearCooldowns(playerId);
         }
+//        for (UUID playerId : cloneCooldowns.keySet()) {
+//            clearCooldowns(playerId);
+//        }
     }
     // store cooldowns in hashmaps
 
@@ -84,9 +87,11 @@ public class CooldownManager {
     private final Map<UUID, Long> gustCooldowns = new HashMap<>();
     private final Map<UUID, Long> GPCooldowns = new HashMap<>();
     private final Map<UUID, Long> MapTeleportCooldowns = new HashMap<>();
+//    private final Map<UUID, Long> cloneCooldowns = new HashMap<>();
+    private final Map<UUID, Long> meteorCooldowns = new HashMap<>();
     private final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
 
-    private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>();
+    private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>    ();
 
     // cooldown duration in milliseconds
     private final long fireballCooldownDuration = 1 * 1000; // 10
@@ -98,6 +103,8 @@ public class CooldownManager {
     private final long GPCooldownDuration = 1 * 1000; // 15 seconds
     private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
     private final long MapTeleportCooldownDuration = 1 * 1000; // 25 seconds
+    //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
+    private final long meteorCooldownDuration = 1 * 1000; // 25 seconds
     private final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
     private final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
     private final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
@@ -140,6 +147,10 @@ public class CooldownManager {
         long remainingCooldown = MapTeleportCooldownDuration - (System.currentTimeMillis() - MapTeleportCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
+    int getRemainingMeteorCooldownSeconds(UUID playerId) {
+        long remainingCooldown = MapTeleportCooldownDuration - (System.currentTimeMillis() - MapTeleportCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
 
     int getRemainingFrostBarrierCooldownSeconds(UUID playerId) {
         long remainingCooldown = frostBarrierCooldownDuration - (System.currentTimeMillis() - frostBarrierCooldowns.getOrDefault(playerId, 0L));
@@ -168,6 +179,10 @@ public class CooldownManager {
         long remainingCooldown = GPCooldownDuration - (System.currentTimeMillis() - GPCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
+//    int getRemainingCloneCooldown(UUID playerId) {
+//        long remainingCooldown = cloneCooldownDuration - (System.currentTimeMillis() - cloneCooldowns.getOrDefault(playerId, 0L));
+//        return (int) Math.ceil(remainingCooldown / 1000.0);
+//    }
 
 
     // check if spells are on cooldown
@@ -196,7 +211,12 @@ public class CooldownManager {
     boolean isOnMapTeleportCooldown(UUID playerId) {
         return MapTeleportCooldowns.containsKey(playerId) && System.currentTimeMillis() - MapTeleportCooldowns.get(playerId) < MapTeleportCooldownDuration;
     }
-
+//    public boolean isOnCloneCooldown(UUID playerId) {
+//        return cloneCooldowns.containsKey(playerId) && (System.currentTimeMillis() - cloneCooldowns.get(playerId) < cloneCooldownDuration);
+//    }
+boolean isOnMeteorCooldown(UUID playerId) {
+    return MapTeleportCooldowns.containsKey(playerId) && System.currentTimeMillis() - MapTeleportCooldowns.get(playerId) < MapTeleportCooldownDuration;
+}
 
     boolean isOnPorkchopCooldown(UUID playerId) {
         return porkchopCooldowns.containsKey(playerId) && System.currentTimeMillis() - porkchopCooldowns.get(playerId) < porkchopCooldownDuration;
@@ -248,6 +268,13 @@ public class CooldownManager {
     void setMapTeleportCooldown(UUID playerId) {
         MapTeleportCooldowns.put(playerId, System.currentTimeMillis());
     }
+//    void setCloneCooldown(UUID playerId) {
+//        cloneCooldowns.put(playerId, System.currentTimeMillis());
+//    }
+    void setMeteorCooldown(UUID playerId) {
+        MapTeleportCooldowns.put(playerId, System.currentTimeMillis());
+    }
+
     void setPorkchopCooldown(UUID playerId) {
         porkchopCooldowns.put(playerId, System.currentTimeMillis());
     }

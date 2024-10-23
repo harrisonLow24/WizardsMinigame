@@ -1,6 +1,6 @@
 name: WizardsPlugin
 api-version: 1.20
-version: 0.18
+version: 0.20
 main: WizardsGame.WizardsPlugin
 description: Wizards Minigame
 author: hareesun
@@ -23,6 +23,20 @@ commands:
     permission: op
     permission-message: You do not have permission!
     usage: /checkmana
+  add:
+    description: add player to team
+    permission: op
+    permission-message: You do not have permission!
+    usage: /add <player> <team>
+  togglefriendlyfire:
+    description: toggle friendly fire for a team
+    aliases: toggleff
+    permission: op
+    permission-message: You do not have permission!
+    usage: /togglefriendlyfire <team>
+
+
+
 
 
 #load: POSTWORLD

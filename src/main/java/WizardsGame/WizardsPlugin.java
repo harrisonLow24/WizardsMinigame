@@ -54,6 +54,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("toggleinfinitemana")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("togglecooldowns")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("checkmana")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("add")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("togglefriendlyfire")).setExecutor(new WizardCommands(this));
     }
     void startManaBarUpdateTask() {
         // mana bar updated every 20 ticks / 1 second
@@ -134,6 +136,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private final double MINECART_COST = 30.0;
     private final double GP_COST = 20.0;
     private final double FLYING_MANA_COST_PER_TICK = 1.5;
+    private static final int VOIDWALKER_COST = 20;
+//    private static final int CLONE_COST = 20;
+private static final int METEOR_COST = 50;
     private final double CHARM_COST = 15.0;
     private final double PORKCHOP_COST = 10.0;
 
@@ -159,6 +164,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case IRON_INGOT -> handleBigManSlamCast(player, playerId);
             case SHIELD -> handleFlyingSpellCast(player, playerId);
             case RECOVERY_COMPASS -> handleMapTeleportCast(player, playerId);
+//            case SHULKER_SHELL -> handleCloneCast(player, playerId);
+            case HONEYCOMB -> handleMeteorCast(player, playerId);
+
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
         }
@@ -265,12 +273,35 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         if (!Cooldown.isOnMapTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
             Cast.teleportPlayerUp(player);
             Cooldown.setMapTeleportCooldown(playerId);
-            Mana.deductMana(playerId, TELEPORT_COST);
+            Mana.deductMana(playerId, VOIDWALKER_COST);
         } else if (Cooldown.isOnMapTeleportCooldown(playerId)) {
             handleCooldownMessage(player, "Map Teleport", Cooldown.getRemainingMapTeleportCooldownSeconds(playerId));
         }
     }
 
+    public void handleMeteorCast(Player player, UUID playerId) {
+        if (!Cooldown.isOnMeteorCooldown(playerId) && Mana.hasEnoughMana(playerId, METEOR_COST)) {
+            Location targetLocation = Cast.getTargetLocation(player);
+            if (targetLocation != null) {
+                Cast.castMeteorShower(player, targetLocation);
+                Cooldown.setMeteorCooldown(playerId);
+                Mana.deductMana(playerId, METEOR_COST);
+            }
+        } else {
+            int remainingCooldown = Cooldown.getRemainingMeteorCooldownSeconds(playerId);
+            handleCooldownMessage(player, "Meteor Shower", Cooldown.getRemainingMeteorCooldownSeconds(playerId));
+        }
+    }
+
+//    void handleCloneCast(Player player, UUID playerId) {
+//        if (!Cooldown.isOnCloneCooldown(playerId) && Mana.hasEnoughMana(playerId, CLONE_COST)) {
+//            Cast.createClone(player);
+//            Cooldown.setCloneCooldown(playerId);
+//            Mana.deductMana(playerId, CLONE_COST);
+//        } else {
+//            handleCooldownMessage(player, "Illusion", Cooldown.getRemainingCloneCooldown(playerId));
+//        }
+//    }
     void handlePorkchopCast(Player player, UUID playerId) {
         if (!Cooldown.isOnPorkchopCooldown(playerId) && Mana.hasEnoughMana(playerId, PORKCHOP_COST)) {
             Cast.castPorkchopSpell(player);
