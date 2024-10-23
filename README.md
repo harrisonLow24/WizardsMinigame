@@ -1,9 +1,9 @@
-# WizardsMinigame
+# Wizards Plugin
 
 WIP
 
 
-Right click a Book to open the spell menu.
+Right click a Book to open the spell menu.g=
 
 List of Spells:
 
@@ -14,3 +14,5 @@ List of Spells:
 - Minecart Launch
 - Ground Pound
 - Flight
+- Voidwalker
+- Starfall Barrage
