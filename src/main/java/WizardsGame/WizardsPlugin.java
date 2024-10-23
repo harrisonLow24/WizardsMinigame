@@ -179,7 +179,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //            case SHULKER_SHELL -> handleCloneCast(player, playerId);
             case HONEYCOMB -> handleMeteorCast(player, playerId);
             case TIPPED_ARROW -> handleHealCloudCast(player, playerId);
-            case CHORUS_FRUIT -> handleChorusFruitUse(player, playerId);
+            case CHORUS_FRUIT -> handleRecallCast(player, playerId);
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
         }
@@ -211,7 +211,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setTeleportCooldown(playerId);
             Mana.deductMana(playerId, TELEPORT_COST);
         } else if (Cooldown.isOnTeleportCooldown(playerId)) {
-            handleCooldownMessage(player, "Teleport", Cooldown.getRemainingTeleportCooldownSeconds(playerId));
+            handleCooldownMessage(player, "Teleport", Cooldown.getRemainingRecallCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -365,7 +365,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    private void handleRecallFruitUse(Player player, UUID playerId) {
+    private void handleRecallCast(Player player, UUID playerId) {
         // check if player can teleport
         if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, RecallManaCost)) {
             Queue<Location> locations = playerLocations.get(playerId);
@@ -374,6 +374,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 Location teleportLocation = locations.poll(); // get and remove oldest location
                 if (teleportLocation != null) {
                     player.teleport(teleportLocation);
+                    showTeleportEffect(teleportLocation, player.getLocation());
                     Mana.deductMana(playerId, RecallManaCost); // Deduct mana
                     player.sendMessage("You have been teleported to your previous location.");
                 }
@@ -386,6 +387,32 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             handleManaMessage(player);
         }
     }
+    // show teleport effect at the original and new locations
+    private void showTeleportEffect(Location from, Location to) {
+        // Show effect at the original location
+        createSphereEffect(from, Particle.VILLAGER_HAPPY, 0.5, 10); // sphere effect going inwards
+        createSphereEffect(to, Particle.END_ROD, 0.5, 10); // sphere effect going outwards
+
+        // play sound effect at original location
+        from.getWorld().playSound(from, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+    }
+
+    // create a sphere effect with particles
+    private void createSphereEffect(Location center, Particle particle, double radius, int particlesCount) {
+        double increment = Math.PI / particlesCount;
+        for (double theta = 0; theta < Math.PI; theta += increment) {
+            for (double phi = 0; phi < 2 * Math.PI; phi += increment) {
+                double x = radius * Math.sin(theta) * Math.cos(phi);
+                double y = radius * Math.cos(theta);
+                double z = radius * Math.sin(theta) * Math.sin(phi);
+
+                // calculate location to spawn the particle
+                Location particleLocation = center.clone().add(x, y, z);
+                center.getWorld().spawnParticle(particle, particleLocation, 1);
+            }
+        }
+    }
+
     public void startLocationTracking(Player player) {
         UUID playerId = player.getUniqueId();
         playerLocations.put(playerId, new LinkedList<>()); // initialize location queue for the player
