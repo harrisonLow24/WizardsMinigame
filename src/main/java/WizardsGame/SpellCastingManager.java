@@ -198,23 +198,6 @@ public class SpellCastingManager implements Listener {
         target.setLastDamageCause(damageEvent);
     }
 
-
-
-
-    private void strikeLightning(Location location, UUID playerId) {
-        // set a delay (in ticks) before striking lightning
-        int delayTicks = 0; // set delay to 0 for immediate lightning strike
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                location.getWorld().strikeLightning(location);
-                startLightningEffect(playerId); // start the lightning effect
-            }
-        }.runTaskLater(WizardsPlugin.getInstance(), delayTicks);
-    }
-
-
     // lightning effect
 
     void startLightningEffect(UUID playerId) {
@@ -268,8 +251,6 @@ public class SpellCastingManager implements Listener {
         }, 0, 1);
     }
 
-
-
     void castGustSpell(UUID playerId) {
         Player player = getPlayerById(playerId);
         double gustRadius = 5.0; // radius of gust spell
@@ -292,8 +273,6 @@ public class SpellCastingManager implements Listener {
 
         player.sendMessage( ChatColor.WHITE.toString() + ChatColor.BOLD +"Gust spell cast!");
     }
-
-
 
     public static void launchMinecart(Player player) {
         // create and launch minecart with player inside
@@ -328,7 +307,6 @@ public class SpellCastingManager implements Listener {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
     }
-
 
 
     private void playGPSound(Location location) {
@@ -410,7 +388,6 @@ public class SpellCastingManager implements Listener {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), delay, 1L); // delay 1 second = 20 ticks
     }
-
 
     private void dealDamageToEntities(Player player, World world, Location landingLocation) {
         double damageRadius = 5.0;
@@ -749,6 +726,7 @@ public class SpellCastingManager implements Listener {
     void playImpactSound(Location location) {
         location.getWorld().playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
     }
+    
 //    void createClone(Player player) {
 //        // get player's current location and direction
 //        Location spawnLocation = player.getLocation();
