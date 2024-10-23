@@ -48,6 +48,7 @@ public class SpellBookMenu implements Listener {
         ItemStack GPButton = createSpellButton("Big Man Slam", Material.IRON_INGOT);
         ItemStack mapTPButton = createSpellButton("Voidwalker", Material.RECOVERY_COMPASS);
         ItemStack mapMeteorButton = createSpellButton("Starfall Barrage", Material.HONEYCOMB);
+        ItemStack mapHealCloudButton = createSpellButton("Heal Cloud", Material.TIPPED_ARROW);
 
         // spell buttons' positions, starting from the 9th slot (index 8)
         spellBookMenu.setItem(10, fireballButton);
@@ -59,6 +60,7 @@ public class SpellBookMenu implements Listener {
         spellBookMenu.setItem(32, GPButton);
         spellBookMenu.setItem(34, mapTPButton);
         spellBookMenu.setItem(46, mapMeteorButton);
+        spellBookMenu.setItem(48, mapHealCloudButton);
 
         player.openInventory(spellBookMenu);
     }
@@ -138,6 +140,8 @@ public class SpellBookMenu implements Listener {
                 return "Voidwalker";
             case HONEYCOMB:
                 return "Starfall Barrage";
+            case TIPPED_ARROW:
+                return "Heal Cloud";
 
             default:
                 return "Unknown Spell";
@@ -181,6 +185,8 @@ public class SpellBookMenu implements Listener {
                 return ChatColor.DARK_PURPLE;
             case HONEYCOMB:
                 return ChatColor.DARK_RED;
+            case TIPPED_ARROW:
+                return ChatColor.LIGHT_PURPLE;
             default:
                 return ChatColor.GRAY;
         }
@@ -217,6 +223,9 @@ public class SpellBookMenu implements Listener {
                 break;
             case "Starfall Barrage":
                 lore.add("Call upon the stars to rain down on your enemies.");
+                break;
+            case "Heal Cloud":
+                lore.add("Bless yourself and allies with a circle of heal.");
                 break;
             default:
                 lore.add("Unknown Spell");
@@ -271,6 +280,7 @@ public class SpellBookMenu implements Listener {
                         case "Big Man Slam":
                         case "Voidwalker":
                         case "Starfall Barrage":
+                        case "Heal Cloud":
                             handleSpellAddition(player, clickedItem.getType());
 
                             // close  inventory

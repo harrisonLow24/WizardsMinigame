@@ -2,8 +2,10 @@ package WizardsGame;
 
 import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarFlag;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.*;
@@ -758,6 +760,99 @@ public class SpellCastingManager implements Listener {
 //        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // run every tick
 //    }
 
+
+    private static final int HEAL_RADIUS = 5;     // radius of the healing circle
+    private static final int HEAL_AMOUNT = 1;     // amount of health restored per heal tick
+    private static final int HEAL_DURATION = 6;  // duration of healing in seconds
+    private static final int HEAL_TICK_INTERVAL = 20; // heal interval (in ticks), 20 ticks = 1 second
+
+    private void drawParticleCircle(Location center, double radius) {
+        // number of particles around the circle
+        int particleCount = 100; // density of circle
+        double increment = (2 * Math.PI) / particleCount;
+
+        // dust options for yellow particles
+        Particle.DustOptions yellowDust = new Particle.DustOptions(Color.YELLOW, 2.0f);
+
+        for (int i = 0; i < particleCount; i++) {
+            double angle = i * increment;
+            double x = radius * Math.cos(angle);
+            double z = radius * Math.sin(angle);
+
+            // spawn yellow particles at calculated position
+            center.getWorld().spawnParticle(Particle.REDSTONE, center.clone().add(x, 1, z), 2, yellowDust);
+        }
+    }
+
+    // spawns a healing circle at specified location
+    void spawnHealingCircle(Player caster, Location center) {
+//        caster.sendMessage("Healing Circle cast at " + center.toString() + "!");
+
+        // display particle effect for healing circle
+        center.getWorld().spawnParticle(Particle.HEART, center, 100, HEAL_RADIUS, 2, HEAL_RADIUS, 0.1);
+
+        // create Boss Bar for players in healing radius
+        BossBar healBossBar = Bukkit.createBossBar(
+                "§e§lYou are being healed!",
+                BarColor.GREEN,
+                BarStyle.SOLID
+
+        );
+        healBossBar.setProgress(1.0);
+        new BukkitRunnable() {
+            int elapsedTime = 0;
+
+            @Override
+            public void run() {
+                if (elapsedTime >= HEAL_DURATION) {
+                    cancel();
+                    healBossBar.removeAll(); // remove Boss Bar from all players
+                    return;
+                }
+                healPlayersInCircle(center);
+
+                // update Boss Bar for players in healing radius
+                for (Entity entity : center.getWorld().getNearbyEntities(center, HEAL_RADIUS, 2, HEAL_RADIUS)) {
+                    if (entity instanceof Player) {
+                        Player player = (Player) entity;
+                        healBossBar.addPlayer(player);
+                        double progress = 1.0 - ((double) elapsedTime / HEAL_DURATION);
+                        healBossBar.setProgress(progress);
+                        healBossBar.setTitle("§e§lYou are being healed! Time Remaining: " + (HEAL_DURATION - elapsedTime) + "s");
+                    }
+                }
+                // remove players who walked out of healing radius
+                for (Player player : healBossBar.getPlayers()) {
+                    if (player.getLocation().distance(center) > HEAL_RADIUS) {
+                        healBossBar.removePlayer(player); // Remove from Boss Bar
+                    }
+                }
+
+                // particles every heal tick
+                center.getWorld().spawnParticle(Particle.HEART, center, 60, HEAL_RADIUS, 1, HEAL_RADIUS, 0.1);
+                drawParticleCircle(center, HEAL_RADIUS);
+                elapsedTime++;
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, HEAL_TICK_INTERVAL); // Heal every second
+    }
+
+
+    // heal all players within the circle
+    private void healPlayersInCircle(Location center) {
+        // expand the vertical range for healing by using a cuboid check
+        for (Entity entity : center.getWorld().getNearbyEntities(center, HEAL_RADIUS, 2, HEAL_RADIUS)) {
+            if (entity instanceof Player) {
+                Player player = (Player) entity;
+
+                // check if player is within the vertical range (up to 2 blocks above)
+                if (player.getLocation().getY() >= center.getY() - 2 && player.getLocation().getY() <= center.getY() + 2) {
+                    double newHealth = Math.min(player.getHealth() + HEAL_AMOUNT, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+                    player.setHealth(newHealth); // heal player without exceeding max health
+                    player.sendMessage("§l§eYou are being healed!");
+                }
+            }
+        }
+    }
 
 
     int porkchopSpeed = 2;

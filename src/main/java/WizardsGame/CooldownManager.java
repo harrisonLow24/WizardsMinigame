@@ -89,6 +89,7 @@ public class CooldownManager {
     private final Map<UUID, Long> MapTeleportCooldowns = new HashMap<>();
 //    private final Map<UUID, Long> cloneCooldowns = new HashMap<>();
     private final Map<UUID, Long> meteorCooldowns = new HashMap<>();
+    private final Map<UUID, Long> HealCloudCooldowns = new HashMap<>    ();
     private final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
 
     private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>    ();
@@ -103,6 +104,7 @@ public class CooldownManager {
     private final long GPCooldownDuration = 1 * 1000; // 15 seconds
     private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
     private final long MapTeleportCooldownDuration = 1 * 1000; // 25 seconds
+    private final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
     private final long meteorCooldownDuration = 1 * 1000; // 25 seconds
     private final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
@@ -149,6 +151,10 @@ public class CooldownManager {
     }
     int getRemainingMeteorCooldownSeconds(UUID playerId) {
         long remainingCooldown = MapTeleportCooldownDuration - (System.currentTimeMillis() - MapTeleportCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
+    int getRemainingHealCloudCooldownSeconds(UUID playerId) {
+        long remainingCooldown = HealCloudCooldownDuration - (System.currentTimeMillis() - HealCloudCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
 
@@ -237,6 +243,9 @@ boolean isOnMeteorCooldown(UUID playerId) {
     boolean isOnGPCooldown(UUID playerId) {
         return GPCooldowns.containsKey(playerId) && System.currentTimeMillis() - GPCooldowns.get(playerId) < GPCooldownDuration;
     }
+    boolean isOnHealCloudCooldown(UUID playerId) {
+        return HealCloudCooldowns.containsKey(playerId) && System.currentTimeMillis() - HealCloudCooldowns.get(playerId) < HealCloudCooldownDuration;
+    }
 
     // sets the cooldown of spells
     void setFireballCooldown(UUID playerId) {
@@ -272,9 +281,11 @@ boolean isOnMeteorCooldown(UUID playerId) {
 //        cloneCooldowns.put(playerId, System.currentTimeMillis());
 //    }
     void setMeteorCooldown(UUID playerId) {
-        MapTeleportCooldowns.put(playerId, System.currentTimeMillis());
+        meteorCooldowns.put(playerId, System.currentTimeMillis());
     }
-
+    void setHealCloudCooldown(UUID playerId) {
+        HealCloudCooldowns.put(playerId, System.currentTimeMillis());
+    }
     void setPorkchopCooldown(UUID playerId) {
         porkchopCooldowns.put(playerId, System.currentTimeMillis());
     }

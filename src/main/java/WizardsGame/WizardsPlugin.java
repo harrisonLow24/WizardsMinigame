@@ -137,9 +137,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private final double MINECART_COST = 30.0;
     private final double GP_COST = 20.0;
     private final double FLYING_MANA_COST_PER_TICK = 1.5;
-    private static final int VOIDWALKER_COST = 20;
+    private static final double VOIDWALKER_COST = 20;
 //    private static final int CLONE_COST = 20;
-private static final int METEOR_COST = 50;
+    private static final double METEOR_COST = 50;
+    private static final double HEALCLOUD_COST = 15;
     private final double CHARM_COST = 15.0;
     private final double PORKCHOP_COST = 10.0;
 
@@ -167,6 +168,7 @@ private static final int METEOR_COST = 50;
             case RECOVERY_COMPASS -> handleMapTeleportCast(player, playerId);
 //            case SHULKER_SHELL -> handleCloneCast(player, playerId);
             case HONEYCOMB -> handleMeteorCast(player, playerId);
+            case TIPPED_ARROW -> handleHealCloudCast(player, playerId);
 
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
@@ -333,6 +335,27 @@ private static final int METEOR_COST = 50;
             handleManaMessage(player);
         }
     }
+
+    void handleHealCloudCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
+        if (!Cooldown.isOnHealCloudCooldown(playerId) && Mana.hasEnoughMana(playerId, HEALCLOUD_COST)) {
+            Location targetLocation = Cast.getTargetLocation(player);
+            if (targetLocation != null) {
+                Cast.spawnHealingCircle(player, targetLocation); // spawn the healing circle
+                Cooldown.setHealCloudCooldown(playerId); // set cooldown after casting
+                Mana.deductMana(playerId, HEALCLOUD_COST);
+            } else if (Cooldown.isOnHealCloudCooldown(playerId)) {
+                handleCooldownMessage(player, "Heal Cloud", Cooldown.getRemainingHealCloudCooldownSeconds(playerId));
+            }else{
+                handleManaMessage(player);
+            }
+        }
+    }
+
+
 
 //    void handleCloneCast(Player player, UUID playerId) {
 //        if (!Cooldown.isOnCloneCooldown(playerId) && Mana.hasEnoughMana(playerId, CLONE_COST)) {
