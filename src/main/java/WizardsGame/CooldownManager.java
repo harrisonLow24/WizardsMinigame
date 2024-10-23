@@ -118,7 +118,7 @@ public class CooldownManager {
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
 
-    int getRemainingTeleportCooldownSeconds(UUID playerId) {
+    int getRemainingRecallCooldownSeconds(UUID playerId) {
         // remaining teleportation cooldown
         long remainingCooldown = teleportCooldownDuration - (System.currentTimeMillis() - teleportCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);

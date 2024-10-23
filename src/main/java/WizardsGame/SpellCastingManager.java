@@ -179,7 +179,7 @@ public class SpellCastingManager implements Listener {
                     registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
                 }
                 world.strikeLightning(strikeLocation); // strike lightning at determined location
-            }, 40L); // 40L = 2 seconds delay (20 ticks per second)
+            }, 30L); // 40L = 2 seconds delay (20 ticks per second)
         }
     }
 

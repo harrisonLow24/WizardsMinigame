@@ -6,10 +6,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import java.util.Objects;
-import java.util.UUID;
+
+import java.util.*;
+
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
@@ -23,12 +25,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     SquidFlight Squid = new SquidFlight();
     ManaManager Mana = new ManaManager();
     CharmSpell Charm = new CharmSpell();
-
-//    TwistedFateSpell Twist = new TwistedFateSpell();
-
-//    // porkchop variables
-//    private final double porkchopDamage = 5.0;
-//    private final double healAmount = 4.0;
 
     @Override
     public void onEnable() {
@@ -46,6 +42,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
         getServer().getPluginManager().registerEvents(new TwistedFateSpell(), this);
+//        getServer().getPluginManager().registerEvents(new SquidFlight(), this);
         new SpellBookMenu(this);
     }
 
@@ -123,13 +120,20 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         // get player and UUID
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
+        startLocationTracking(player);
         player.sendMessage("Welcome!");
 
         //set players' mana to max on join
         Mana.playerMana.put(playerId, Mana.maxMana);
         Mana.manaBossBars.remove(playerId);
-
     }
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        playerLocations.remove(playerId); // remove the player's location record on quit
+    }
+
+
     private final double FIREBALL_COST = 15.0;
     private final double TELEPORT_COST = 10.0;
     private final double LIGHTNING_COST = 20.0;
@@ -137,13 +141,19 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private final double MINECART_COST = 30.0;
     private final double GP_COST = 20.0;
     private final double FLYING_MANA_COST_PER_TICK = 1.5;
-    private static final double VOIDWALKER_COST = 20;
-//    private static final int CLONE_COST = 20;
-    private static final double METEOR_COST = 50;
-    private static final double HEALCLOUD_COST = 15;
+    private final double VOIDWALKER_COST = 20;
+//    private final int CLONE_COST = 20;
+    private final double METEOR_COST = 50;
+    private final double HEALCLOUD_COST = 15;
+    private final double RecallManaCost = 10.0;
     private final double CHARM_COST = 15.0;
     private final double PORKCHOP_COST = 10.0;
 
+    // recall spell ----------------------------------------------------------------------------------------------------
+    private final int maxRecordedLocations = 5; // number of locations to record ( ho many seconds to teleport back )
+    private final Map<UUID, Queue<Location>> playerLocations = new HashMap<>();
+    private final int recordInterval = 20; // time in ticks (1 second)
+    // -----------------------------------------------------------------------------------------------------------------
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -169,7 +179,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //            case SHULKER_SHELL -> handleCloneCast(player, playerId);
             case HONEYCOMB -> handleMeteorCast(player, playerId);
             case TIPPED_ARROW -> handleHealCloudCast(player, playerId);
-
+            case CHORUS_FRUIT -> handleChorusFruitUse(player, playerId);
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
         }
@@ -353,6 +363,52 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 handleManaMessage(player);
             }
         }
+    }
+
+    private void handleRecallFruitUse(Player player, UUID playerId) {
+        // check if player can teleport
+        if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, RecallManaCost)) {
+            Queue<Location> locations = playerLocations.get(playerId);
+            if (locations != null && locations.size() >= maxRecordedLocations) {
+                // get location from 5 seconds ago ( first recorded location in the queue )
+                Location teleportLocation = locations.poll(); // get and remove oldest location
+                if (teleportLocation != null) {
+                    player.teleport(teleportLocation);
+                    Mana.deductMana(playerId, RecallManaCost); // Deduct mana
+                    player.sendMessage("You have been teleported to your previous location.");
+                }
+            } else {
+                player.sendMessage("No location record found. Please wait a moment.");
+            }
+        } else if (Cooldown.isOnTeleportCooldown(playerId)) {
+            handleCooldownMessage(player, "Chorus Fruit Teleport", Cooldown.getRemainingRecallCooldownSeconds(playerId));
+        } else {
+            handleManaMessage(player);
+        }
+    }
+    public void startLocationTracking(Player player) {
+        UUID playerId = player.getUniqueId();
+        playerLocations.put(playerId, new LinkedList<>()); // initialize location queue for the player
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancel(); // stop tracking if the player is no longer online
+                    return;
+                }
+
+                // record player's current location
+                Queue<Location> locations = playerLocations.get(playerId);
+                if (locations.size() >= maxRecordedLocations) {
+                    locations.poll(); // remove oldest location if maximum size is hit
+                }
+                locations.offer(player.getLocation()); // add current location to the queue
+
+                //debug
+                Bukkit.getLogger().info("Recording location for " + player.getName() + ": " + player.getLocation());
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, recordInterval); // run every second
     }
 
 

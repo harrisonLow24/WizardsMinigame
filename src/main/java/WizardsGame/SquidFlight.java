@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -12,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class SquidFlight{
+public class SquidFlight implements Listener {
     private final Map<UUID, Boolean> flyingMap = new HashMap<>();
     private final Map<UUID, BukkitRunnable> flyingTasks = new HashMap<>();
     private final double flyingManaCostPerTick = 1.5;
