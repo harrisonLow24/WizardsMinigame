@@ -302,17 +302,11 @@ public class SpellCastingManager implements Listener {
         // calculate launch direction based on player's pitch and yaw
         double pitch = Math.toRadians(player.getLocation().getPitch());
         double yaw = Math.toRadians(player.getLocation().getYaw());
-
-        double cosPitch = Math.cos(pitch); // precalculate cos of pitch for optimization
-
-        // calculate launch direction using spherical coordinates
-        double x = -Math.sin(yaw) * cosPitch;
-        double y = -Math.sin(pitch);
-        double z = -Math.cos(yaw) * cosPitch;
-
-        Vector launchDirection = new Vector(x, y, z).normalize().multiply(5); // adjust the launch speed
+        Vector launchDirection = player.getEyeLocation().getDirection().normalize().multiply(5); // adjust the launch speed
 
         minecart.setVelocity(launchDirection);
+        Location minecartLocation = player.getEyeLocation().add(0, 1, 0); // positioning it slightly above the player's eye location
+        minecart.teleport(minecartLocation);
 
         minecart.setPassenger(player); // sets player as a passenger
 
