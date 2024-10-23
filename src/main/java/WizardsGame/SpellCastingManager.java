@@ -460,7 +460,10 @@ public class SpellCastingManager implements Listener {
     }
 
     private static final HashMap<UUID, List<Block>> barrierBlocksMap = new HashMap<>(); // store barrier blocks for each player
+    private static final HashMap<UUID, List<Block>> barrierBlocksMap2 = new HashMap<>();
+
     Map<UUID, Boolean> playerTeleportationState = new HashMap<>();
+
     public void createBarrierPlatform(int x, int z, int y, Player player) {
         List<Block> barrierBlocks = new ArrayList<>();
         for (int i = -PLATFORM_SIZE / 2; i <= PLATFORM_SIZE / 2; i++) {
@@ -472,15 +475,47 @@ public class SpellCastingManager implements Listener {
         }
         barrierBlocksMap.put(player.getUniqueId(), barrierBlocks); // store list in the map
     }
-    public void removeBarrierPlatform(UUID playerId) {
+    private void removeBarrierPlatform(UUID playerId) {
         List<Block> barrierBlocks = barrierBlocksMap.get(playerId);
+        List<Block> barrierBlocks2 = barrierBlocksMap2.get(playerId);
         if (barrierBlocks != null) {
             for (Block block : barrierBlocks) {
                 block.setType(Material.AIR); // set blocks to air
             }
-            barrierBlocksMap.remove(playerId); // remove barriers from hashmap
+            for (Block block : barrierBlocks2) {
+                block.setType(Material.AIR); // set blocks to air
+            }
+            barrierBlocksMap.remove(playerId); // remove barriers from map
+            barrierBlocksMap2.remove(playerId);
         }
     }
+    private void surroundPlayerWithBarriers(Player player) {
+        Location playerLocation = player.getLocation();
+        World world = player.getWorld();
+
+        List<Block> barrierBlocks = new ArrayList<>(); // create a list to track barrier blocks
+
+        // create barrier blocks surrounding player
+        for (int y = 0; y <= 1; y++) { // two blocks tall
+            for (int x = -1; x <= 1; x++) {
+                for (int z = -1; z <= 1; z++) {
+                    // create barrier block only in the 1x2x1 area
+                    if (x == 0 && z == 0) continue; // skip center (where player stands)
+                    Block block = world.getBlockAt(playerLocation.getBlockX() + x, playerLocation.getBlockY() + y, playerLocation.getBlockZ() + z);
+                    block.setType(Material.BARRIER); // set the block to barrier
+                    barrierBlocks.add(block); // store the barrier block
+                }
+            }
+        }
+
+        // Store the barrier blocks in the barrierBlocksMap
+        barrierBlocksMap2.put(player.getUniqueId(), barrierBlocks);
+    }
+
+    private void spawnTeleportParticles(Location location) {
+
+    }
+
     public void teleportPlayerUp(Player player) {
         UUID playerId = player.getUniqueId();
 
@@ -533,24 +568,36 @@ public class SpellCastingManager implements Listener {
         // set teleportation state to false
         playerTeleportationState.put(playerId, false);
 
+        // get player's current position
         int playerY = player.getLocation().getBlockY();
-        // gets player's direction they are looking
+        // get player's direction they are looking
         Vector playerDirection = player.getLocation().getDirection();
 
-        // check blocks below player's current pos
+        // check blocks below player's current position for teleportation
         for (int y = playerY - 1; y >= 0; y--) {
             Block block = player.getWorld().getBlockAt(player.getLocation().getBlockX(), y, player.getLocation().getBlockZ());
 
-            // check if block != air and != barrier
+            // check if block is not air and not barrier
             if (block.getType() != Material.AIR && block.getType() != Material.BARRIER) {
-                // teleport player to block above it
-                Location teleportLocation = block.getLocation().add(0, 1, 0);
-                player.teleport(teleportLocation.setDirection(playerDirection));
-                // remove all barrier blocks associated with player
-                removeBarrierPlatform(player.getUniqueId());
+                // teleport the player in place to prevent being stuck in blocks
+                player.teleport(player.getLocation());
 
-                // Sound effect
-                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                // surround player with barrier blocks
+                surroundPlayerWithBarriers(player);
+
+                // create a particle effect at teleport location
+                Location teleportLocation = block.getLocation().add(0, 1, 0);
+                spawnTeleportParticles(teleportLocation); // spawn particles
+
+                // delayed teleportation
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        player.teleport(teleportLocation.setDirection(playerDirection)); // teleport player to ground
+                        removeBarrierPlatform(player.getUniqueId()); // remove barriers after teleport
+                        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                    }
+                }.runTaskLater(WizardsPlugin.getInstance(), 20); // 20 ticks = 1 second
                 return;
             }
         }
