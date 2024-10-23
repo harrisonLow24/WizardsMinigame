@@ -7,27 +7,31 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.*;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.BlockIterator;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import java.util.*;
 import org.bukkit.Particle;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.Sound;
 import org.bukkit.entity.SmallFireball;
-
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -35,9 +39,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static WizardsGame.WizardsPlugin.getPlayerById;
 
-public class SpellCastingManager {
+public class SpellCastingManager implements Listener {
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
+    double lightningDamage = 1.0;
 
     //map teleport
     private static final int TELEPORT_DURATION = 5; // duration player stays in the air (in seconds)
@@ -55,85 +60,146 @@ public class SpellCastingManager {
     private static final int METEOR_DELAY = 10; // delay between each meteor in ticks
     private static final int MAX_CAST_RANGE = 25;
     private static final double RANDOM_SPAWN_RADIUS = 5.0;
+    private final HashMap<UUID, Player> projectileCasterMap = new HashMap<>();
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent event) {
+        if (event.getEntity() instanceof Projectile) {
+            Projectile projectile = (Projectile) event.getEntity();
+            Player caster = projectileCasterMap.get(projectile.getUniqueId());
+            if (caster != null && event.getHitEntity() instanceof LivingEntity) {
+                LivingEntity target = (LivingEntity) event.getHitEntity();
+                target.damage(5, caster); // Damage tied to the caster
+            }
+            projectileCasterMap.remove(projectile.getUniqueId());
+        }
+    }
+
+    //event handler for entity deaths
+
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        // fheck if entity that died is a Player
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+
+            // get last damage cause and verify if it's from another entity
+            if (player.getLastDamageCause() instanceof EntityDamageByEntityEvent) {
+                EntityDamageByEntityEvent lastDamageEvent = (EntityDamageByEntityEvent) player.getLastDamageCause();
+
+                // check if the damager is a player
+                if (lastDamageEvent.getDamager() instanceof Player) {
+                    Player killer = (Player) lastDamageEvent.getDamager();
+                    if (event instanceof PlayerDeathEvent) {
+                        PlayerDeathEvent playerDeathEvent = (PlayerDeathEvent) event;
+                        playerDeathEvent.setDeathMessage(player.getName() + " was slain by " + killer.getName() + "'s spell.");
+                    }
+                }
+            }
+        }
+    }
 
     // fireball cast
-    void castFireball(UUID playerId) {
-        final double[] speed = {1};
-        Player player = getPlayerById(playerId);
-        if (player != null) {
+    public void castFireball(Player caster) {
+        Fireball fireball = caster.launchProjectile(Fireball.class);
+        fireball.setYield(1); // remove block-breaking ability
+        fireball.setIsIncendiary(false); // avoid setting fires
+        // track the caster of this fireball
+        projectileCasterMap.put(fireball.getUniqueId(), caster);
+    }
+
+
+    public void castLightningSpell(Player caster) {
+        World world = caster.getWorld();
+        Vector direction = caster.getEyeLocation().getDirection();
+        Location eyeLocation = caster.getEyeLocation();
+
+        // variable to hold target entity if found
+        LivingEntity targetEntity = null;
+
+        // line of sight
+        BlockIterator blockIterator = new BlockIterator(world, eyeLocation.toVector(), direction, 0, Integer.MAX_VALUE);
+
+        // track block hit
+        Block targetBlock = null;
+
+        // iterate over blocks in player's line of sight
+        while (blockIterator.hasNext()) {
+            Block block = blockIterator.next();
+
+            // check if there's a solid block in sight
+            if (block.getType() != Material.AIR) {
+                targetBlock = block; // found a block
+                break; // stop checking
+            }
+
+            // check if there's an entity in line of sight
+            for (Entity entity : world.getNearbyEntities(block.getLocation(), 1.0, 1.0, 1.0)) {
+                if (entity instanceof LivingEntity && entity != caster) {
+                    targetEntity = (LivingEntity) entity; // found an entity
+                    break; // stop checking
+                }
+            }
+
+            // if found a target entity, stop checking
+            if (targetEntity != null) {
+                break; // exit the blockIterator loop
+            }
+        }
+
+        // determine strike location
+        Location strikeLocation = (targetEntity != null) ? targetEntity.getLocation() : (targetBlock != null) ? targetBlock.getLocation() : null;
+
+        // if valid strike location is found, show particles and schedule lightning strike
+        if (strikeLocation != null) {
+            // start a repeating task to show particles
             new BukkitRunnable() {
+                private int count = 0;
+
                 @Override
                 public void run() {
-                    speed[0] += 1; // speed of fireball
+                    // show particles in a circle
+                    showLightningParticles(strikeLocation);
+
+                    // increment count and check if we should stop
+                    if (count >= 40) { // show particles for 2 seconds (40 ticks)
+                        cancel();
+                        return;
+                    }
+                    count++;
                 }
-            }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
-            Vector direction = player.getLocation().getDirection().multiply(speed[0]);
-            player.launchProjectile(org.bukkit.entity.Fireball.class, direction);
-            player.sendMessage(ChatColor.GREEN.toString() + ChatColor.BOLD + "" + "You cast the Fireball spell!");
-            player.getWorld().playSound(player, Sound.ENTITY_GHAST_SHOOT, 1.0f, 1.0f);
+            }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L); // start immediately and repeat every tick
+
+            // schedule task to strike lightning after a delay
+            LivingEntity finalTargetEntity = targetEntity;
+            Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
+                if (finalTargetEntity != null) {
+                    finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
+                    registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
+                }
+                world.strikeLightning(strikeLocation); // strike lightning at determined location
+            }, 40L); // 40L = 2 seconds delay (20 ticks per second)
         }
     }
 
-    public void castLightningSpell(UUID playerId) {
-        Player player = getPlayerById(playerId);
-        if (player != null) {
-            double particleDistance = 1000;
-            Vector direction = player.getLocation().getDirection().multiply(particleDistance);
-            Location destination = player.getLocation().add(direction);
-            Location blockLocation = findSolidBlockInPath(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0));
-
-            if (blockLocation != null) {
-                destination = blockLocation;
-                spawnAndMoveParticleTrailWithEntityCheck(player.getLocation().add(0, 1.5, 0), destination.add(0, 1, 0), playerId);
-                scheduleLightningStrike(destination, playerId); // pass playerId to the method
-
-                // check if lightning effect has been triggered already
-                if (!lightningEffectTriggered.getOrDefault(playerId, false)) {
-                    // mark lightning effect as triggered
-                    lightningEffectTriggered.put(playerId, true);
-
-                    // schedule exaggerated lightning effect with a delay
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            startLightningEffect(playerId);
-                        }
-                    }.runTaskLater(WizardsPlugin.getInstance(), 20); // 20 ticks = 1 second
-                }
-
-                player.sendMessage(ChatColor.YELLOW.toString() + ChatColor.BOLD + "You cast the Lightning spell!");
-            }
+    private void showLightningParticles(Location location) {
+        // create a circle of particles around location
+        for (double angle = 0; angle < 2 * Math.PI; angle += Math.PI / 8) { // 16 particles
+            double x = Math.cos(angle) * 1; // radius of 1 block
+            double z = Math.sin(angle) * 1;
+            Location particleLocation = location.clone().add(x, 1, z);
+            particleLocation.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLocation, 1); // particle effect
         }
+        location.getWorld().playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
     }
-    private void spawnAndMoveParticleTrailWithEntityCheck(Location startLocation, Location endLocation, UUID playerId) {
-        int particleCount = 100; // number of generated trail particles
-        Vector direction = endLocation.toVector().subtract(startLocation.toVector()).normalize();
-        double distanceBetweenParticles = startLocation.distance(endLocation) / particleCount;
 
-        boolean entityHit = false; // flag to track if entity was hit by particle trail
-
-        for (int i = 0; i < particleCount; i++) {
-            Location particleLocation = startLocation.clone().add(direction.clone().multiply(distanceBetweenParticles * i));
-            startLocation.getWorld().spawnParticle(Particle.CRIT, particleLocation, 1, 0, 0, 0, 0);
-
-            // check for entities in particle's location
-            for (Entity entity : particleLocation.getWorld().getNearbyEntities(particleLocation, 1, 1, 1)) {
-                if (entity.getType() != EntityType.PLAYER) { // exclude players from being struck . . . change for PVP
-                    entityHit = true;
-                    break; // stop checking for entities
-                }
-            }
-
-            if (entityHit) {
-                break; // stop particle trail loop if entity is hit
-            }
-        }
-
-        // handle lightning strike logic after particle trail loop completes
-        if (entityHit) {
-            strikeLightning(endLocation, playerId); // pass playerId to the method
-        }
+    void registerPlayerKill(Player caster, Entity target) {
+        // set last damage cause for target entity
+        EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(caster, target, DamageCause.CUSTOM, 2.0);
+        target.setLastDamageCause(damageEvent);
     }
+
+
+
 
     private void strikeLightning(Location location, UUID playerId) {
         // set a delay (in ticks) before striking lightning
@@ -144,31 +210,6 @@ public class SpellCastingManager {
             public void run() {
                 location.getWorld().strikeLightning(location);
                 startLightningEffect(playerId); // start the lightning effect
-            }
-        }.runTaskLater(WizardsPlugin.getInstance(), delayTicks);
-    }
-
-    // check for blocks in path of the particles
-    private Location findSolidBlockInPath(Location startLocation, Location endLocation) {
-        // check for first non-air block in spell's path
-        RayTraceResult result = startLocation.getWorld().rayTraceBlocks(startLocation, endLocation.toVector().subtract(startLocation.toVector()).normalize(),
-                startLocation.distance(endLocation), FluidCollisionMode.NEVER, true);
-
-        if (result != null && result.getHitBlock() != null) {
-            return result.getHitBlock().getLocation(); //returns location of block in spells path
-        }
-
-        return null; // no solid block found
-    }
-
-    private void scheduleLightningStrike(Location location, UUID playerId) {
-        // set delay (in ticks) before striking lightning
-        int delayTicks = 20; // (20 ticks = 1 second)
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                strikeLightning(location, playerId); // pass playerId
             }
         }.runTaskLater(WizardsPlugin.getInstance(), delayTicks);
     }
@@ -445,7 +486,8 @@ public class SpellCastingManager {
         }
     }
 
-    private static final HashMap<UUID, List<Block>> barrierBlocksMap = new HashMap<>(); // Store barrier blocks for each player
+    private static final HashMap<UUID, List<Block>> barrierBlocksMap = new HashMap<>(); // store barrier blocks for each player
+    Map<UUID, Boolean> playerTeleportationState = new HashMap<>();
     public void createBarrierPlatform(int x, int z, int y, Player player) {
         List<Block> barrierBlocks = new ArrayList<>();
         for (int i = -PLATFORM_SIZE / 2; i <= PLATFORM_SIZE / 2; i++) {
@@ -466,44 +508,20 @@ public class SpellCastingManager {
             barrierBlocksMap.remove(playerId); // remove barriers from hashmap
         }
     }
-    private void startTeleportationEffects(Player player) {
-        int playerY = player.getLocation().getBlockY();
-        Vector playerDirection = player.getLocation().getDirection();
-
-        // Check blocks below player's current position
-        for (int y = playerY - 1; y >= 0; y--) {
-            Block block = player.getWorld().getBlockAt(player.getLocation().getBlockX(), y, player.getLocation().getBlockZ());
-
-            // Check if the block is not air and not a barrier
-            if (block.getType() != Material.AIR && block.getType() != Material.BARRIER) {
-                // Start fancy teleportation effects
-                Location teleportLocation = block.getLocation().add(0, 1, 0);
-                player.getWorld().spawnParticle(Particle.PORTAL, teleportLocation, 30, 1, 1, 1, 0.1);
-                player.getWorld().playSound(teleportLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
-                player.getWorld().playSound(teleportLocation, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
-
-                // Delay for one second before teleporting
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        player.teleport(teleportLocation.setDirection(playerDirection)); // Teleport player
-                        // Remove all barrier blocks associated with player
-                        removeBarrierPlatform(player.getUniqueId());
-                    }
-                }.runTaskLater(WizardsPlugin.getInstance(), 20); // 20 ticks = 1 second
-                return;
-            }
-        }
-    }
     public void teleportPlayerUp(Player player) {
+        UUID playerId = player.getUniqueId();
+
+        // set teleportation state to true to disable spell casting
+        playerTeleportationState.put(playerId, true);
+
         // get player's current location
         Vector playerLocation = player.getLocation().toVector();
-        // create platform at the player's current Y position + TELEPORT_UP_HEIGHT
+        // create platform at player's current Y position + TELEPORT_UP_HEIGHT
         createBarrierPlatform(playerLocation.getBlockX(), playerLocation.getBlockZ(), playerLocation.getBlockY() + TELEPORT_UP_HEIGHT, player);
 
         // teleport player up
         player.teleport(player.getLocation().add(0, TELEPORT_UP_HEIGHT + 1, 0));
-        player.setVelocity(new Vector(0, 0, 0)); // reset velocity
+        player.setVelocity(new Vector(0, 0, 0)); // Reset velocity
 
         // increase speed
         player.setWalkSpeed((float) (player.getWalkSpeed() * SPEED_BOOST));
@@ -513,6 +531,7 @@ public class SpellCastingManager {
 
         new BukkitRunnable() {
             int timeLeft = TELEPORT_DURATION;
+
             @Override
             public void run() {
                 if (timeLeft <= 0) {
@@ -525,7 +544,8 @@ public class SpellCastingManager {
                     timeLeft--;
                 }
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 0,20);
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 20);
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -535,28 +555,34 @@ public class SpellCastingManager {
     }
 
     public void teleportBackDown(Player player) {
+        UUID playerId = player.getUniqueId();
+
+        // set teleportation state to false
+        playerTeleportationState.put(playerId, false);
+
         int playerY = player.getLocation().getBlockY();
-        // gets players direction they are looking
+        // gets player's direction they are looking
         Vector playerDirection = player.getLocation().getDirection();
 
-        // check blocks below player's current position
+        // check blocks below player's current pos
         for (int y = playerY - 1; y >= 0; y--) {
             Block block = player.getWorld().getBlockAt(player.getLocation().getBlockX(), y, player.getLocation().getBlockZ());
 
-            // check if the block != air and != barrier
+            // check if block != air and != barrier
             if (block.getType() != Material.AIR && block.getType() != Material.BARRIER) {
-                // teleport player to the block above it
+                // teleport player to block above it
                 Location teleportLocation = block.getLocation().add(0, 1, 0);
                 player.teleport(teleportLocation.setDirection(playerDirection));
                 // remove all barrier blocks associated with player
                 removeBarrierPlatform(player.getUniqueId());
 
-                // sound effect
+                // Sound effect
                 player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
                 return;
             }
         }
     }
+
 
     void spawnMeteor(Player player, Location targetLocation) {
         Location meteorSpawnLocation = targetLocation.clone().add(
@@ -675,7 +701,7 @@ public class SpellCastingManager {
                     double distance = craterLocation.distance(impactLocation);
                     if (distance <= METEOR_RADIUS) {
                         Block block = craterLocation.getBlock();
-                        if (block.getType() != Material.BEDROCK) {
+                        if (block.getType() != Material.BEDROCK && block.getType() != Material.WATER) {
                             block.setType(Material.AIR); // create crater by removing blocks
                         }
                     }

@@ -38,6 +38,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         registerCommands();
         startManaBarUpdateTask();
         startManaRegenTask();
+        getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
 
 
     }
@@ -173,8 +174,12 @@ private static final int METEOR_COST = 50;
     }
 
     void handleFireballCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnFireballCooldown(playerId) && Mana.hasEnoughMana(playerId, FIREBALL_COST)) {
-            Cast.castFireball(playerId);
+            Cast.castFireball(player);
             Cooldown.setFireballCooldown(playerId);
             Mana.deductMana(playerId, FIREBALL_COST);
         } else if (Cooldown.isOnFireballCooldown(playerId)) {
@@ -185,6 +190,10 @@ private static final int METEOR_COST = 50;
     }
 
     void handleTeleportCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
             Teleport.castTeleportSpell(playerId, 0);
             Cooldown.setTeleportCooldown(playerId);
@@ -197,8 +206,12 @@ private static final int METEOR_COST = 50;
     }
 
     void handleLightningCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnLightningCooldown(playerId) && Mana.hasEnoughMana(playerId, LIGHTNING_COST)) {
-            Cast.castLightningSpell(playerId);
+            Cast.castLightningSpell(player);
             Cooldown.setLightningCooldown(playerId);
             Mana.deductMana(playerId, LIGHTNING_COST);
             Cast.startLightningEffect(playerId);
@@ -210,6 +223,10 @@ private static final int METEOR_COST = 50;
     }
 
     void handleGustCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnGustCooldown(playerId) && Mana.hasEnoughMana(playerId, GUST_COST)) {
             Cast.castGustSpell(playerId);
             Cooldown.setGustCooldown(playerId);
@@ -222,6 +239,10 @@ private static final int METEOR_COST = 50;
     }
 
     void handleFlyingSpellCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnSquidFlyingCooldown(playerId) && Mana.hasEnoughMana(playerId, FLYING_MANA_COST_PER_TICK)) {
             Squid.startFlyingSpell(player);
             Mana.deductMana(playerId, FLYING_MANA_COST_PER_TICK);
@@ -247,6 +268,10 @@ private static final int METEOR_COST = 50;
     }
 
     void handleMinecartCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnMinecartCooldown(playerId) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
             Cast.launchMinecart(player);
             Cooldown.setMinecartCooldown(playerId);
@@ -259,6 +284,10 @@ private static final int METEOR_COST = 50;
     }
 
     void handleBigManSlamCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnGPCooldown(playerId) && Mana.hasEnoughMana(playerId, GP_COST)) {
             Cast.castGroundPoundSpell(playerId);
             Cooldown.setGPCooldown(playerId);
@@ -270,6 +299,10 @@ private static final int METEOR_COST = 50;
         }
     }
     void handleMapTeleportCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnMapTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
             Cast.teleportPlayerUp(player);
             Cooldown.setMapTeleportCooldown(playerId);
@@ -283,6 +316,10 @@ private static final int METEOR_COST = 50;
     }
 
     public void handleMeteorCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         if (!Cooldown.isOnMeteorCooldown(playerId) && Mana.hasEnoughMana(playerId, METEOR_COST)) {
             Location targetLocation = Cast.getTargetLocation(player);
             if (targetLocation != null) {
