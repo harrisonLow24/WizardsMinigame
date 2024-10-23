@@ -259,7 +259,7 @@ private static final int METEOR_COST = 50;
     }
 
     void handleBigManSlamCast(Player player, UUID playerId) {
-        if (!Cooldown.isOnGPCooldown(playerId) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
+        if (!Cooldown.isOnGPCooldown(playerId) && Mana.hasEnoughMana(playerId, GP_COST)) {
             Cast.castGroundPoundSpell(playerId);
             Cooldown.setGPCooldown(playerId);
             Mana.deductMana(playerId, GP_COST);
@@ -276,7 +276,10 @@ private static final int METEOR_COST = 50;
             Mana.deductMana(playerId, VOIDWALKER_COST);
         } else if (Cooldown.isOnMapTeleportCooldown(playerId)) {
             handleCooldownMessage(player, "Map Teleport", Cooldown.getRemainingMapTeleportCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
+
     }
 
     public void handleMeteorCast(Player player, UUID playerId) {
@@ -287,9 +290,10 @@ private static final int METEOR_COST = 50;
                 Cooldown.setMeteorCooldown(playerId);
                 Mana.deductMana(playerId, METEOR_COST);
             }
-        } else {
-            int remainingCooldown = Cooldown.getRemainingMeteorCooldownSeconds(playerId);
+        } else if (Cooldown.isOnMeteorCooldown(playerId)) {
             handleCooldownMessage(player, "Meteor Shower", Cooldown.getRemainingMeteorCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 
