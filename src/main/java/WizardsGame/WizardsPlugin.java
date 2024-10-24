@@ -8,6 +8,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -81,6 +82,16 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         UUID playerId = player.getUniqueId();
         ItemStack wand = player.getInventory().getItemInMainHand();
         if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            handleSpellCast(player, playerId, wand);
+        }
+    }
+    @EventHandler
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        // check if damage is dealt by a player & cast spell if so
+        if (event.getDamager() instanceof Player) {
+            Player player = (Player) event.getDamager();
+            UUID playerId = player.getUniqueId();
+            ItemStack wand = player.getInventory().getItemInMainHand();
             handleSpellCast(player, playerId, wand);
         }
     }
