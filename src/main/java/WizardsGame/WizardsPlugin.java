@@ -1,5 +1,7 @@
 package WizardsGame;
 
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
@@ -38,6 +40,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         getLogger().info("WizardsPlugin has been enabled!");
         registerEvents();
         registerCommands();
+        startCooldownBarUpdateTask();
         startManaBarUpdateTask();
         startManaRegenTask();
         getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
@@ -46,7 +49,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             public void run() {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     checkAndUpdateWand(player);
-//                    Cast.updateActionBar(player);
                 }
             }
         }.runTaskTimer(this, 0, 20);
@@ -63,7 +65,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         UUID playerId = player.getUniqueId();
         startLocationTracking(player);
         player.sendMessage("Welcome!");
-
+        updateActionBar(player);
         //set players' mana to max on join
         Mana.playerMana.put(playerId, Mana.maxMana);
         Mana.manaBossBars.remove(playerId);
@@ -82,14 +84,12 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             handleSpellCast(player, playerId, wand);
         }
     }
-    @EventHandler
-    public void onPlayerItemHeld(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
-//        Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
-//            Cast.updateActionBar(player); // update mana action bar after a short delay
-//        }, 1L); // short delay to ensure item has changed
-    }
 
+    @EventHandler
+    public void onPlayerItemChange(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        updateActionBar(player);
+    }
 
     void registerEvents() {
         getServer().getPluginManager().registerEvents(this, this);
@@ -110,6 +110,146 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("add")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("togglefriendlyfire")).setExecutor(new WizardCommands(this));
     }
+
+    private static final Map<Material, String> SPELL_NAMES = new HashMap<>();
+    static {
+        SPELL_NAMES.put(Material.STICK, "§lGeneric Wand");
+        SPELL_NAMES.put(Material.BLAZE_ROD, "§lFiery Wand");
+        SPELL_NAMES.put(Material.IRON_SWORD, "§lShrouded Step");
+        SPELL_NAMES.put(Material.IRON_PICKAXE, "§lMjölnir");
+        SPELL_NAMES.put(Material.FEATHER, "§lGust Feather");
+        SPELL_NAMES.put(Material.MINECART, "§lThe Great Escape");
+        SPELL_NAMES.put(Material.IRON_INGOT, "§lBig Man Slam");
+        SPELL_NAMES.put(Material.SHIELD, "§lWinged Shield");
+        SPELL_NAMES.put(Material.RECOVERY_COMPASS, "§lVoidwalker");
+        SPELL_NAMES.put(Material.HONEYCOMB, "§lStarfall Barrage");
+        SPELL_NAMES.put(Material.TIPPED_ARROW, "§lHeal Cloud");
+        SPELL_NAMES.put(Material.MUSIC_DISC_5, "§lRecall");
+        SPELL_NAMES.put(Material.HEART_OF_THE_SEA, "§lVoid Orb");
+
+    }
+    private String getSpellInfo(ItemStack itemInHand) {
+        if (itemInHand != null) {
+            // check if item type has a corresponding spell name
+            String spellName = SPELL_NAMES.get(itemInHand.getType());
+            if (spellName != null) {
+                return spellName;
+            }
+        }
+        return null;
+    }
+    private void updateActionBar(Player player) {
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        String spellName = getSpellInfo(itemInHand); // get spell name based on the item type
+        long cooldownDuration = getCooldownDuration(itemInHand); // get the cooldown duration for that spell
+        long remainingCooldown = getRemainingCooldown(player.getUniqueId(), itemInHand); // get the remaining cooldown
+
+        StringBuilder actionBarMessage = new StringBuilder();
+
+        if (spellName != null) {
+            // color based on cooldown state
+            ChatColor spellColor = remainingCooldown > 0 ? ChatColor.RED : ChatColor.YELLOW;
+            actionBarMessage.append(spellColor).append(spellName).append(ChatColor.RESET).append(" ");
+
+            if (remainingCooldown > 0) {
+                int totalBlocks = 20; // total blocks in the bar
+                int filledBlocks = (int) Math.floor((cooldownDuration - remainingCooldown) / (double) cooldownDuration * totalBlocks);
+                int emptyBlocks = totalBlocks - filledBlocks;
+
+                actionBarMessage.append(ChatColor.GREEN).append("█".repeat(Math.max(0, filledBlocks))); // solid section
+                actionBarMessage.append(ChatColor.RED).append("█".repeat(Math.max(0, emptyBlocks))); // empty seciton
+            }
+        }
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBarMessage.toString()));
+    }
+
+
+    private long getRemainingCooldown(UUID playerId, ItemStack itemInHand) {
+        if (itemInHand.getType() == Material.BLAZE_ROD) {
+            return Cooldown.fireballCooldownDuration - (System.currentTimeMillis() - Cooldown.fireballCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.IRON_PICKAXE) {
+            return Cooldown.lightningCooldownDuration - (System.currentTimeMillis() - Cooldown.lightningCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.IRON_SWORD) {
+            return Cooldown.teleportCooldownDuration - (System.currentTimeMillis() - Cooldown.teleportCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.FEATHER) {
+            return Cooldown.gustCooldownDuration - (System.currentTimeMillis() - Cooldown.gustCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.MINECART) {
+            return Cooldown.minecartCooldownDuration - (System.currentTimeMillis() - Cooldown.minecartCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.IRON_INGOT) {
+            return Cooldown.GPCooldownDuration - (System.currentTimeMillis() - Cooldown.GPCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.HONEYCOMB) {
+            return Cooldown.MeteorCooldownDuration - (System.currentTimeMillis() - Cooldown.MeteorCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.TIPPED_ARROW) {
+            return Cooldown.HealCloudCooldownDuration - (System.currentTimeMillis() - Cooldown.HealCloudCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.RECOVERY_COMPASS) {
+            return Cooldown.MapTeleportCooldownDuration - (System.currentTimeMillis() - Cooldown.MapTeleportCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.MUSIC_DISC_5) {
+            return Cooldown.RecallCooldownDuration - (System.currentTimeMillis() - Cooldown.RecallCooldowns.getOrDefault(playerId, 0L));
+        }
+        else if (itemInHand.getType() == Material.HEART_OF_THE_SEA) {
+            return Cooldown.VoidOrbCooldownDuration - (System.currentTimeMillis() - Cooldown.VoidOrbCooldowns.getOrDefault(playerId, 0L));
+        }
+        return 0;
+    }
+
+    private long getCooldownDuration(ItemStack itemInHand) {
+        // Return the cooldown duration based on the item type
+        if (itemInHand.getType() == Material.BLAZE_ROD) {
+            return Cooldown.fireballCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.IRON_SWORD) {
+            return Cooldown.teleportCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.IRON_PICKAXE) {
+            return Cooldown.lightningCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.MINECART) {
+            return Cooldown.minecartCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.FEATHER) {
+            return Cooldown.gustCooldownDuration;
+        }
+
+        if (itemInHand.getType() == Material.IRON_INGOT) {
+            return Cooldown.GPCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.RECOVERY_COMPASS) {
+            return Cooldown.MapTeleportCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.HONEYCOMB) {
+            return Cooldown.MeteorCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.TIPPED_ARROW) {
+            return Cooldown.HealCloudCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.MUSIC_DISC_5) {
+            return Cooldown.RecallCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.HEART_OF_THE_SEA) {
+            return Cooldown.VoidOrbCooldownDuration;
+        }
+
+        return 0;
+    }
+
+
+    void startCooldownBarUpdateTask() {
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                updateActionBar(onlinePlayer);
+            }
+        }, 0, 5);
+    }
+
     void startManaBarUpdateTask() {
         // mana bar updated every 20 ticks / 1 second
 
@@ -465,7 +605,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             return;
         }
         // check if player can teleport
-        if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, Recall_Cost)) {
+        if (!Cooldown.isOnRecallCooldown(playerId) && Mana.hasEnoughMana(playerId, Recall_Cost)) {
             Queue<Location> locations = playerLocations.get(playerId);
             if (locations != null && locations.size() >= maxRecordedLocations) {
                 // get location from 5 seconds ago ( first recorded location in the queue )
@@ -480,7 +620,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             } else {
                 player.sendMessage("No location record found. Please wait a moment.");
             }
-        } else if (Cooldown.isOnTeleportCooldown(playerId)) {
+        } else if (Cooldown.isOnRecallCooldown(playerId)) {
             handleCooldownMessage(player, "Chorus Fruit Teleport", Cooldown.getRemainingRecallCooldownSeconds(playerId));
         } else {
             handleManaMessage(player);

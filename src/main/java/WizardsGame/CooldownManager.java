@@ -76,6 +76,7 @@ public class CooldownManager {
     final Map<UUID, Long> GPCooldowns = new HashMap<>();
     final Map<UUID, Long> VoidOrbCooldowns = new HashMap<>();
     final Map<UUID, Long> MapTeleportCooldowns = new HashMap<>();
+    final Map<UUID, Long> RecallCooldowns = new HashMap<>();
 //    private final Map<UUID, Long> cloneCooldowns = new HashMap<>();
     final Map<UUID, Long> MeteorCooldowns = new HashMap<>();
     final Map<UUID, Long> HealCloudCooldowns = new HashMap<>    ();
@@ -84,16 +85,17 @@ public class CooldownManager {
     final Map<UUID, Long> iceSphereCooldowns = new HashMap<>    ();
 
     // cooldown duration in milliseconds
-    final long fireballCooldownDuration = 4 * 1000; // 10
+    final long fireballCooldownDuration = 2 * 1000; // 10
     final long teleportCooldownDuration = 1 * 1000; // 15
-    final long lightningCooldownDuration = 1 * 1000; // 15
+    final long lightningCooldownDuration = 7 * 1000; // 15
     final long gustCooldownDuration = 1 * 1000; // 15
     final long iceSphereCooldownDuration = 1 * 1000; // 20 seconds
     final long minecartCooldownDuration = 1 * 1000; // 30 seconds
     final long GPCooldownDuration = 1 * 1000; // 15 seconds
     final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
-    final long MapTeleportCooldownDuration = 1 * 1000; // 25 seconds
-    final long MeteorCooldownDuration = 1 * 1000; // 25 seconds
+    final long MapTeleportCooldownDuration = 30 * 1000; // 25 seconds
+    final long RecallCooldownDuration = 1 * 1000;
+    final long MeteorCooldownDuration = 20 * 1000; // 25 seconds
     final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
     final long VoidOrbCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
@@ -211,6 +213,9 @@ public class CooldownManager {
     }
     boolean isOnMapTeleportCooldown(UUID playerId) {
         return MapTeleportCooldowns.containsKey(playerId) && System.currentTimeMillis() - MapTeleportCooldowns.get(playerId) < MapTeleportCooldownDuration;
+    }
+    boolean isOnRecallCooldown(UUID playerId) {
+        return RecallCooldowns.containsKey(playerId) && System.currentTimeMillis() - RecallCooldowns.get(playerId) < RecallCooldownDuration;
     }
 //    public boolean isOnCloneCooldown(UUID playerId) {
 //        return cloneCooldowns.containsKey(playerId) && (System.currentTimeMillis() - cloneCooldowns.get(playerId) < cloneCooldownDuration);
