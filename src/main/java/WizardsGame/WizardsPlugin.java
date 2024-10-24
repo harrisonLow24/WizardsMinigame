@@ -39,6 +39,14 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         startManaBarUpdateTask();
         startManaRegenTask();
         getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    checkAndUpdateWand(player);
+                }
+            }
+        }.runTaskTimer(this, 0, 20);
     }
     @Override
     public void onDisable() {
@@ -66,7 +74,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
         ItemStack wand = player.getInventory().getItemInMainHand();
-
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             handleSpellCast(player, playerId, wand);
         }
@@ -95,6 +102,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("toggleinfinitemana")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("togglecooldowns")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("checkmana")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("unlockspells")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("add")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("togglefriendlyfire")).setExecutor(new WizardCommands(this));
     }
@@ -174,20 +182,22 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private final Map<UUID, Queue<Location>> playerLocations = new HashMap<>();
     private final int recordInterval = 20; // time in ticks (1 second)
     // -----------------------------------------------------------------------------------------------------------------
+    private final Set<UUID> playersWithWands = new HashSet<>();
+
+
+
     public enum SpellType {
-        FIREBALL(Material.BLAZE_ROD),
-        TELEPORT(Material.IRON_SWORD),
-        LIGHTNING(Material.IRON_PICKAXE),
-        GUST(Material.FEATHER),
-        MINECART(Material.MINECART),
+        FIERY_WAND(Material.BLAZE_ROD),
+        SHROUDED_STEP(Material.IRON_SWORD),
+        MJOLNIR(Material.IRON_PICKAXE),
+        THE_GREAT_ESCAPE(Material.MINECART),
+        GUST_FEATHER(Material.FEATHER),
+        WINGED_SHIELD(Material.SHIELD),
         BIG_MAN_SLAM(Material.IRON_INGOT),
-        FLYING(Material.SHIELD),
-        MAP_TELEPORT(Material.RECOVERY_COMPASS),
-        METEOR(Material.HONEYCOMB),
+        VOIDWALKER(Material.RECOVERY_COMPASS),
+        STARFALL_BARRAGE(Material.HONEYCOMB),
         HEAL_CLOUD(Material.TIPPED_ARROW),
-        RECALL(Material.MUSIC_DISC_5),
-        PORKCHOP(Material.IRON_SHOVEL),
-        CHARM(Material.BEETROOT);
+        RECALL(Material.MUSIC_DISC_5);
 
         private final Material material;
 
@@ -211,6 +221,16 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
+    private void checkAndUpdateWand(Player player) {
+        ItemStack wand = player.getInventory().getItemInMainHand();
+        if (WandManager.isWand(wand)) {
+            wand = WandManager.createWand(wand.getType()); // create item with the correct properties
+            player.getInventory().setItemInMainHand(wand); // update item
+            playersWithWands.add(player.getUniqueId()); // track player
+        } else {
+            playersWithWands.remove(player.getUniqueId()); // remove from tracking
+        }
+    }
     public boolean canSelectSpell(UUID playerId, SpellType spellType) {
         return getSpellLevel(playerId, spellType) >= 1;
     }
@@ -221,6 +241,12 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     public void addSpellToPlayer(UUID playerId, SpellType spellType) {
         increaseSpellLevel(playerId, spellType);
+    }
+    void unlockAllSpells(UUID playerId) {
+        for (SpellType spellType : SpellType.values()) {
+            // increase the spell level to at least 1 to unlock it
+            increaseSpellLevel(playerId, spellType);
+        }
     }
 
 
@@ -424,6 +450,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
 
     private void handleRecallCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
         // check if player can teleport
         if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, RecallManaCost)) {
             Queue<Location> locations = playerLocations.get(playerId);

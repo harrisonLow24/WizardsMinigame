@@ -12,13 +12,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.Color;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class SpellBookMenu implements Listener {
 
@@ -265,20 +261,20 @@ public class SpellBookMenu implements Listener {
         Player player = (Player) event.getWhoClicked();
         ItemStack clickedItem = event.getCurrentItem();
 
-        // Check if clicked item is a spell button
+        // check if clicked item is a spell button
         if (clickedItem != null && clickedItem.getType() != Material.AIR) {
             ItemMeta meta = clickedItem.getItemMeta();
             if (clickedItem.getType() == Material.GRAY_STAINED_GLASS_PANE) {
-                // Prevent interaction with stained glass
+                //prevent interaction with stained glass
                 event.setCancelled(true);
                 return;
             }
             if (meta != null) {
                 String spellName = ChatColor.stripColor(meta.getDisplayName()); // Get spell name without color codes
 
-                // Check if the player has a spell book in hand
+                // check if the player has a spell book in hand
                 if (player.getInventory().getItemInMainHand().getType() == Material.BOOK) {
-                    // Add spell to player's inventory only if the spell book is in hand
+                    // add spell to player's inventory only if the spell book is in hand
                     switch (spellName) {
                         case "Fiery Wand":
                         case "Shrouded Step":
@@ -300,14 +296,10 @@ public class SpellBookMenu implements Listener {
                             break;
                     }
                 } else {
-                    // If the player doesn't have a spell book in hand, just close the inventory
                     player.closeInventory();
                     event.setCancelled(true);
                 }
             }
         }
     }
-
-
-
 }

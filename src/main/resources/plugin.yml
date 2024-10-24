@@ -23,11 +23,17 @@ commands:
     permission: op
     permission-message: You do not have permission!
     usage: /checkmana
-  add:
-    description: add player to team
+  unlockspells:
+    description: check mana
+    aliases: chmana
     permission: op
     permission-message: You do not have permission!
-    usage: /add <player> <team>
+    usage: /checkmana
+  add:
+    description: unlock all spells for the player
+    permission: op
+    permission-message: You do not have permission!
+    usage: /unlockspells
   togglefriendlyfire:
     description: toggle friendly fire for a team
     aliases: toggleff

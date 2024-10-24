@@ -273,7 +273,7 @@ public class SpellCastingManager implements Listener {
             entity.setVelocity(direction.multiply(gustStrength));
         }
 
-        player.sendMessage( ChatColor.WHITE.toString() + ChatColor.BOLD +"Gust spell cast!");
+//        player.sendMessage( ChatColor.WHITE.toString() + ChatColor.BOLD +"Gust spell cast!");
     }
 
     public static void launchMinecart(Player player) {
@@ -319,7 +319,7 @@ public class SpellCastingManager implements Listener {
         Player player = getPlayerById(playerId);
         if (player != null) {
             groundPound(player);
-            player.sendMessage(ChatColor.RED.toString() + ChatColor.BOLD + "Ground Pound spell cast!");
+//            player.sendMessage(ChatColor.RED.toString() + ChatColor.BOLD + "Ground Pound spell cast!");
         }
     }
     private void groundPound(Player player) {
@@ -601,7 +601,7 @@ public class SpellCastingManager implements Listener {
                     cancel();
                 } else {
                     bossBar.setProgress((double) timeLeft / TELEPORT_DURATION);
-                    player.sendMessage("You have " + timeLeft + " seconds to move!");
+//                    player.sendMessage("You have " + timeLeft + " seconds to move!");
                     timeLeft--;
                 }
             }
@@ -725,8 +725,6 @@ public class SpellCastingManager implements Listener {
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // adjust frequency
     }
     public void castMeteorShower(Player player, Location targetLocation) {
-        player.sendMessage("Casting Meteor Shower!");
-
         // start particles in the target area
         spawnWarningParticles(targetLocation);
 
