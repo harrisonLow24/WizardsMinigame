@@ -652,6 +652,8 @@ public class SpellCastingManager implements Listener {
 
         new BukkitRunnable() {
             int timeLeft = TELEPORT_DURATION;
+            int soundIndex = -1;
+
 
             @Override
             public void run() {
@@ -660,8 +662,11 @@ public class SpellCastingManager implements Listener {
                     bossBar.removePlayer(player);
                     cancel();
                 } else {
-                    bossBar.setProgress((double) timeLeft / TELEPORT_DURATION);
 //                    player.sendMessage("You have " + timeLeft + " seconds to move!");
+                    bossBar.setProgress((double) timeLeft / TELEPORT_DURATION);
+                    // progressive sound effect
+                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f + (soundIndex * 0.075f));
+                    soundIndex++;
                     timeLeft--;
                 }
             }
