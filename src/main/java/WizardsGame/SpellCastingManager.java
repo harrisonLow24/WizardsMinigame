@@ -64,6 +64,7 @@ public class SpellCastingManager implements Listener {
     private static final int MAX_CAST_RANGE = 25; // 25
     private static final double RANDOM_SPAWN_RADIUS = 8.0; // 5
     private final HashMap<UUID, Player> projectileCasterMap = new HashMap<>();
+    private Map<UUID, UUID> spellCasters = new HashMap<>();
 
     private boolean isIgnoredBlock(Material material) {
         // list of materials to ignore
@@ -121,9 +122,26 @@ public class SpellCastingManager implements Listener {
             }
         }
     }
+    @EventHandler
+    public void onEntityDamage(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof ArmorStand) {
+            ArmorStand swordStand = (ArmorStand) event.getDamager();
+            UUID spellId = swordStand.getUniqueId();
+            if (spellCasters.containsKey(spellId)) {
+                UUID casterId = spellCasters.get(spellId);
+                Player caster = Bukkit.getPlayer(casterId);
+
+                if (caster != null && event.getEntity() instanceof Player) {
+                    Player victim = (Player) event.getEntity();
+                    victim.sendMessage("You were killed by " + caster.getName() + "'s spell!");
+                }
+            }
+        }
+    }
 
 
-//    void updateActionBar(Player player) {
+
+    //    void updateActionBar(Player player) {
 //        ItemStack itemInHand = player.getInventory().getItemInMainHand();
 //        String itemName;
 //
@@ -1166,6 +1184,7 @@ public class SpellCastingManager implements Listener {
                 activeSwords.remove(playerId);
             }
         }, SWORD_LIFETIME);
+        spellCasters.put(swordStand.getUniqueId(), playerId);
     }
 
 

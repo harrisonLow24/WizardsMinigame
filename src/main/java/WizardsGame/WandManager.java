@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class WandManager {
@@ -16,64 +17,68 @@ public class WandManager {
         if (meta != null) {
             String spellInfo = getSpellInfo(material);
             meta.setDisplayName(spellInfo);
+            String spellName = getSpellName(material);
+            List<String> lore = new ArrayList<>();
 
+            lore.add(String.format("§eSpell: %s", spellName));
             // set lore based on the material
             switch (material) {
                 case STICK:
-                    meta.setLore(List.of("§gA basic wand with no special powers."));
+                    lore.add("§gA basic wand with no special powers.");
                     break;
                 case BLAZE_ROD:
-                    meta.setLore(List.of("§gCast powerful fireballs.",
-                            "§gRight click to shoot a fireball"));
+                    lore.add("§gCast powerful fireballs.");
+                    lore.add("§gRight click to shoot a fireball.");
                     break;
                 case IRON_SWORD:
-                    meta.setLore(List.of("§gTeleport to a targeted location.",
-                            "§gUse it wisely!"));
+                    lore.add("§gTeleport to a targeted location.");
+                    lore.add("§gUse it wisely!");
                     break;
                 case IRON_PICKAXE:
-                    meta.setLore(List.of("§gSummon lightning with a mighty hammer swing.",
-                            "§gStrike your enemies down!"));
+                    lore.add("§gSummon lightning with a mighty hammer swing.");
+                    lore.add("§gStrike your enemies down!");
                     break;
                 case MINECART:
-                    meta.setLore(List.of("§gRide a magical minecart to travel quickly.",
-                            "§gRide off into the sunset!"));
+                    lore.add("§gRide a magical minecart to travel quickly.");
+                    lore.add("§gRide off into the sunset!");
                     break;
                 case FEATHER:
-                    meta.setLore(List.of("§gCreate a gust of wind to push away enemies.",
-                            "§gUse it to push enemies back!"));
+                    lore.add("§gCreate a gust of wind to push away enemies.");
+                    lore.add("§gUse it to push enemies back!");
                     break;
                 case SHIELD:
-                    meta.setLore(List.of("§gRide away into the sunset.",
-                            "§gSoar through the skies!"));
+                    lore.add("§gRide away into the sunset.");
+                    lore.add("§gSoar through the skies!");
                     break;
                 case IRON_INGOT:
-                    meta.setLore(List.of("§gUnleash a powerful ground slam as the BIG MAN you are.",
-                            "§gSmash your opponents!"));
+                    lore.add("§gUnleash a powerful ground slam as the BIG MAN you are.");
+                    lore.add("§gSmash your opponents!");
                     break;
                 case RECOVERY_COMPASS:
-                    meta.setLore(List.of("§gSneak into another dimension and reach new heights.",
-                            "§gFollow the map!"));
+                    lore.add("§gSneak into another dimension and reach new heights.");
+                    lore.add("§gFollow the map!");
                     break;
                 case HONEYCOMB:
-                    meta.setLore(List.of("§gCall upon the stars to rain down on your enemies!",
-                            "§gUnleash destruction!"));
+                    lore.add("§gCall upon the stars to rain down on your enemies!");
+                    lore.add("§gUnleash destruction!");
                     break;
                 case TIPPED_ARROW:
-                    meta.setLore(List.of("§gBless yourself and allies with a circle of heal!",
-                            "§gHeal your allies!"));
+                    lore.add("§gBless yourself and allies with a circle of heal!");
+                    lore.add("§gHeal your allies!");
                     break;
                 case MUSIC_DISC_5:
-                    meta.setLore(List.of("§gGet out of trouble in a pinch!",
-                            "§gHeal your allies!"));
+                    lore.add("§gGet out of trouble in a pinch!");
+                    lore.add("§gHeal your allies!");
                     break;
                 case HEART_OF_THE_SEA:
-                    meta.setLore(List.of("§gSend a ball of void energy at your opponents!",
-                            "§gWatch this!"));
+                    lore.add("§gSend a ball of void energy at your opponents!");
+                    lore.add("§gWatch this!");
                     break;
                 default:
-                    meta.setLore(List.of("§gA basic wand with no special powers."));
+                    lore.add("§gA basic wand with no special powers.");
                     break;
             }
+            meta.setLore(lore);
 
             wand.setItemMeta(meta);
         }
@@ -81,7 +86,38 @@ public class WandManager {
         return wand;
     }
 
+
     // spell information
+    private static String getSpellName(Material material) {
+        switch (material) {
+            case BLAZE_ROD:
+                return "§c§lFiery Wand";
+            case IRON_SWORD:
+                return "§9§lShrouded Step";
+            case IRON_PICKAXE:
+                return "§b§lMjölnir";
+            case MINECART:
+                return "§a§lThe Great Escape";
+            case FEATHER:
+                return "§lGust Feather";
+            case SHIELD:
+                return "§6§lWinged Shield";
+            case IRON_INGOT:
+                return "§8§lBig Man Slam";
+            case RECOVERY_COMPASS:
+                return "§5§lVoidwalker";
+            case HONEYCOMB:
+                return "§4§lStarfall Barrage";
+            case TIPPED_ARROW:
+                return "§d§lHeal Cloud";
+            case MUSIC_DISC_5:
+                return "§a§lRecall";
+            case HEART_OF_THE_SEA:
+                return "§e§lVoid Orb";
+            default:
+                return "§i§lGeneric Wand";
+        }
+    }
     private static String getSpellInfo(Material material) {
         String spellName;
         int manaCost = 0;
