@@ -5,6 +5,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.type.Bed;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -81,7 +82,7 @@ public class SpellCastingManager implements Listener {
     static final double SWORD_SPEED = 1.5; // adjust speed as needed
     static final double SWORD_DAMAGE = 3.0; // damage dealt by sword 2 hearts
     static final int SWORD_LIFETIME = 100; // time in ticks before the sword disappears (5 seconds)
-    static final double AIM_RADIUS = 1; // aim detection
+    static final double AIM_RADIUS = 2; // aim detection
     final Map<UUID, ArmorStand> activeSwords = new HashMap<>();
 
     @EventHandler
@@ -1026,22 +1027,61 @@ public class SpellCastingManager implements Listener {
         }
     }
 
+    private void spawnProjectileTrail(Location location, Vector direction) {
+        double spiralRadius = 0.25; // radius of the spiral around the sword
+        double spiralHeight = 0.2; // height change per iteration
+        int spiralTurns = 1; // number of turns in the spiral
+        int particlesPerTurn = 1; // number of particles per turn
+
+        // calculate the number of particles to spawn based on the number of turns and particles per turn
+        for (int turn = 0; turn < spiralTurns; turn++) {
+            for (int i = 0; i < particlesPerTurn; i++) {
+                // calculate the angle for this particle
+                double angle = 2 * Math.PI * (turn + (i / (double) particlesPerTurn));
+                double heightOffset = turn * spiralHeight;
+
+                // calculate the x and z coordinates for the spiral
+                double xOffset = spiralRadius * Math.cos(angle);
+                double zOffset = spiralRadius * Math.sin(angle);
+
+                // create the particle location
+                Location particleLocation = location.clone()
+                        .add(xOffset + 0.25, heightOffset + 0.25, zOffset);
+
+                // spawn the particle effect
+                particleLocation.getWorld().spawnParticle(Particle.FLASH, particleLocation, 1, 0, 0, 0, 0.01);
+            }
+        }
+    }
     private boolean isSolidBlock(Location location) {
         Block block = location.getBlock();
         Material blockType = block.getType();
         // return true if the block is solid and not one of the ignored types
         return blockType.isSolid() && !isIgnoredBlock(blockType);
     }
-    void SwordCast(Player player, UUID playerId) {
+    void VoidOrbCast(Player player, UUID playerId) {
         Location spawnLocation = player.getEyeLocation().clone();
-        spawnLocation.setY(spawnLocation.getY() - 0); // sword relative to player
+        // armor stand relative to player
+        spawnLocation.setY(spawnLocation.getY() - 0.35);
+        spawnLocation.setX(spawnLocation.getX() - 0.35);
         ArmorStand swordStand = (ArmorStand) player.getWorld().spawnEntity(spawnLocation, EntityType.ARMOR_STAND);
+
+//        Vector direction1 = player.getEyeLocation().getDirection();
+//
+//        float yaw = (float) Math.toDegrees(Math.atan2(direction1.getZ(), direction1.getX()));
+//        // normalize yaw
+//        if (yaw < 0) {
+//            yaw += 360;
+//        }
+//        float pitch = (float) Math.toDegrees(Math.asin(direction1.getY() / direction1.length()));
+//        swordStand.setRotation(yaw, pitch);
+
         swordStand.setInvisible(true);
         swordStand.setGravity(false);
         swordStand.setMarker(true); // marker to avoid collisions
-        swordStand.setSmall(true); // smaller hitbox
+        swordStand.setSmall(false); // smaller hitbox
         swordStand.setArms(true);
-        swordStand.setItemInHand(new ItemStack(Material.DIAMOND_SWORD));
+//        swordStand.setItemInHand(new ItemStack(Material.SEA_LANTERN));
 
         // store in swords map
         activeSwords.put(playerId, swordStand);
@@ -1051,43 +1091,52 @@ public class SpellCastingManager implements Listener {
         swordStand.setVelocity(direction);
 
         // task to move sword and handle collision detection
-        Bukkit.getScheduler().runTaskTimer(WizardsPlugin.getInstance(), () -> {
-            if (swordStand.isDead() || !swordStand.isValid()) {
-                return;
-            }
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (swordStand.isDead() || !swordStand.isValid()) {
+                    cancel();
+                    return;
+                }
 
-            // move the armor stand in the given direction
-            Location currentLocation = swordStand.getLocation();
-            currentLocation.add(direction);
+                // move armor stand in given direction
+                Location currentLocation = swordStand.getLocation();
+                currentLocation.add(direction);
 
-            // check if sword hits a solid block
-            if (isSolidBlock(currentLocation)) {
-                swordStand.remove();
-                activeSwords.remove(playerId);
-                return;
-            }
+                // check if sword hits a solid block
+                if (isSolidBlock(currentLocation)) {
+                    swordStand.remove();
+                    activeSwords.remove(playerId);
+                    cancel();
+                    return;
+                }
 
-            // teleport sword to the updated location
-            swordStand.teleport(currentLocation);
+                // teleport sword to updated location
+                swordStand.teleport(currentLocation);
 
-            // get location of sword's hit area
-            Location swordTipLocation = currentLocation.clone().add(direction.clone().multiply(0.5));
+                // spawn particles for trail
+                spawnProjectileTrail(currentLocation, direction);
 
-            // check for nearby entities to detect a hit using the sword's tip location
-            for (Entity entity : swordTipLocation.getWorld().getNearbyEntities(swordTipLocation, AIM_RADIUS, AIM_RADIUS, AIM_RADIUS)) {
-                if (entity != player && entity != swordStand && entity instanceof LivingEntity) {
-                    if (entity.getBoundingBox().overlaps(entity.getBoundingBox().expand(AIM_RADIUS, AIM_RADIUS, AIM_RADIUS))) {
-                        // damage first entity hit and remove sword
-                        ((LivingEntity) entity).damage(SWORD_DAMAGE, player);
-                        swordStand.remove();
-                        activeSwords.remove(playerId);
-                        return;
+                // get location of sword's hit area
+                Location swordTipLocation = currentLocation.clone().add(direction.clone().multiply(0.5));
+
+                // check for nearby entities to detect a hit using held item's location
+                for (Entity entity : swordTipLocation.getWorld().getNearbyEntities(swordTipLocation, AIM_RADIUS, AIM_RADIUS, AIM_RADIUS)) {
+                    if (entity != player && entity != swordStand && entity instanceof LivingEntity) {
+                        if (entity.getBoundingBox().overlaps(entity.getBoundingBox().expand(AIM_RADIUS, AIM_RADIUS, AIM_RADIUS))) {
+                            // damage first entity hit and remove sword
+                            ((LivingEntity) entity).damage(SWORD_DAMAGE, player);
+                            swordStand.remove();
+                            activeSwords.remove(playerId);
+                            cancel();
+                            return;
+                        }
                     }
                 }
             }
-        }, 0L, 1L); // Run every tick
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
 
-        // task to remove sword after the defined lifetime
+        // remove sword after defined lifetime
         Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
             if (swordStand.isValid()) {
                 swordStand.remove();

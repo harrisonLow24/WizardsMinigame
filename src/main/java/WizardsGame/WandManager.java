@@ -73,9 +73,9 @@ public class WandManager {
                     meta.setLore(List.of("§gGet out of trouble in a pinch!",
                             "§gHeal your allies!"));
                     break;
-                case DIAMOND_SWORD:
-                    meta.setDisplayName("§e§lKunai Throw");
-                    meta.setLore(List.of("§gSlice your enemies from a distance!",
+                case HEART_OF_THE_SEA:
+                    meta.setDisplayName("§e§lVoid Orb");
+                    meta.setLore(List.of("§gSend a ball of void energy at your opponents!",
                             "§gWatch this!"));
                     break;
                 default:
@@ -104,7 +104,7 @@ public class WandManager {
                         item.getType() == Material.HONEYCOMB ||
                         item.getType() == Material.TIPPED_ARROW ||
                         item.getType() == Material.MUSIC_DISC_5 ||
-                        item.getType() == Material.DIAMOND_SWORD);
+                        item.getType() == Material.HEART_OF_THE_SEA);
     }
 
 }

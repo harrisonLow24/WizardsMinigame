@@ -73,41 +73,6 @@ public class ManaManager {
         }
     }
 
-    private String getSpellInfo(ItemStack item) {
-        if (item == null) return null;
-
-        switch (item.getType()) {
-            case BLAZE_ROD:
-                return "Fiery Wand | "+WizardsPlugin.FIREBALL_COST +" Mana";
-            case IRON_SWORD:
-                return "Shrouded Step | "+WizardsPlugin.TELEPORT_COST +" Mana";
-            case IRON_PICKAXE:
-                return "Mjölnir | "+WizardsPlugin.LIGHTNING_COST +" Mana";
-            case FEATHER:
-                return "Gust Feather | "+WizardsPlugin.GUST_COST +" Mana";
-            case MINECART:
-                return "The Great Escape | "+WizardsPlugin.MINECART_COST +" Mana";
-            case IRON_INGOT:
-                return "Big Man Slam | "+WizardsPlugin.GP_COST +" Mana";
-            case SHIELD:
-                return "Winged Shield | "+WizardsPlugin.FLYING_MANA_COST_PER_TICK +" Mana";
-            case RECOVERY_COMPASS:
-                return "Voidwalker | "+WizardsPlugin.VOIDWALKER_COST +" Mana";
-            case HONEYCOMB:
-                return "Starfall Barrage | "+WizardsPlugin.METEOR_COST +" Mana";
-            case TIPPED_ARROW:
-                return "Heal Cloud | "+WizardsPlugin.HEALCLOUD_COST +" Mana";
-            case CHORUS_FRUIT:
-                return "MUSIC_DISC_5 | "+WizardsPlugin.RecallManaCost +" Mana";
-            case IRON_SHOVEL:
-                return "Porkchop | "+WizardsPlugin.PORKCHOP_COST +" Mana";
-            case BEETROOT:
-                return "Charm | "+WizardsPlugin.CHARM_COST +" Mana";
-            default:
-                return null;
-        }
-    }
-
     public void clearManaBars() {
         for (BossBar bossBar : manaBossBars.values()) {
             bossBar.removeAll(); // remove players

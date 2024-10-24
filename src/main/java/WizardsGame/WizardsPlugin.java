@@ -177,8 +177,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //    private final int CLONE_COST = 20;
     static final double METEOR_COST = 50.0;
     static final double HEALCLOUD_COST = 15.0;
-    static final double RecallManaCost = 25.0;
-    static final double SwordManaCost = 10.0;
+    static final double Recall_Cost = 25.0;
+    static final double VoidOrb_Cost = 10.0;
     static final double CHARM_COST = 15.0;
     static final double PORKCHOP_COST = 10.0;
 
@@ -202,7 +202,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         VOIDWALKER(Material.RECOVERY_COMPASS),
         STARFALL_BARRAGE(Material.HONEYCOMB),
         HEAL_CLOUD(Material.TIPPED_ARROW),
-        RECALL(Material.MUSIC_DISC_5);
+        RECALL(Material.MUSIC_DISC_5),
+        VOID_ORB(Material.HEART_OF_THE_SEA);
 
         private final Material material;
 
@@ -269,7 +270,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case HONEYCOMB -> handleMeteorCast(player, playerId);
             case TIPPED_ARROW -> handleHealCloudCast(player, playerId);
             case MUSIC_DISC_5 -> handleRecallCast(player, playerId);
-            case DIAMOND_SWORD -> handleSwordCast(player, playerId);
+            case HEART_OF_THE_SEA -> handleVoidOrbCast(player, playerId);
 
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
@@ -464,7 +465,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             return;
         }
         // check if player can teleport
-        if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, RecallManaCost)) {
+        if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, Recall_Cost)) {
             Queue<Location> locations = playerLocations.get(playerId);
             if (locations != null && locations.size() >= maxRecordedLocations) {
                 // get location from 5 seconds ago ( first recorded location in the queue )
@@ -472,7 +473,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 if (teleportLocation != null) {
                     showTeleportEffect(teleportLocation, player.getLocation());
                     player.teleport(teleportLocation);
-                    Mana.deductMana(playerId, RecallManaCost); // Deduct mana
+                    Mana.deductMana(playerId, Recall_Cost); // Deduct mana
                     applyDarknessEffect(player);
                     player.sendMessage("You have been teleported to your previous location.");
                 }
@@ -541,17 +542,17 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, recordInterval); // run every second
     }
 
-    void handleSwordCast(Player player, UUID playerId) {
+    void handleVoidOrbCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             player.sendMessage("You cannot cast spells while teleported up!");
             return;
         }
-        if (!Cooldown.isOnKunaiCooldown(playerId) && Mana.hasEnoughMana(playerId, SwordManaCost)) {
-            Cast.SwordCast(player, playerId);
-            Cooldown.setKunaiCooldown(playerId);
-            Mana.deductMana(playerId, SwordManaCost); // deduct mana cost
-        } else if (Cooldown.isOnKunaiCooldown(playerId)) {
-            handleCooldownMessage(player, "Kunai", Cooldown.getRemainingKunaiCooldownSeconds(playerId));
+        if (!Cooldown.isOnVoidOrbCooldown(playerId) && Mana.hasEnoughMana(playerId, VoidOrb_Cost)) {
+            Cast.VoidOrbCast(player, playerId);
+            Cooldown.setVoidOrbCooldown(playerId);
+            Mana.deductMana(playerId, VoidOrb_Cost); // deduct mana cost
+        } else if (Cooldown.isOnVoidOrbCooldown(playerId)) {
+            handleCooldownMessage(player, "Void Orb", Cooldown.getRemainingVoidOrbCooldownSeconds(playerId));
     }
         }
 
