@@ -51,7 +51,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                     checkAndUpdateWand(player);
                 }
             }
-        }.runTaskTimer(this, 0, 20);
+        }.runTaskTimer(this, 0, 5);
     }
     @Override
     public void onDisable() {
@@ -148,16 +148,18 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
         if (spellName != null) {
             // color based on cooldown state
-            ChatColor spellColor = remainingCooldown > 0 ? ChatColor.RED : ChatColor.YELLOW;
+            ChatColor spellColor = remainingCooldown > 0 ? ChatColor.RED : ChatColor.GREEN;
             actionBarMessage.append(spellColor).append(spellName).append(ChatColor.RESET).append(" ");
 
             if (remainingCooldown > 0) {
-                int totalBlocks = 20; // total blocks in the bar
+                int totalBlocks = 24; // total blocks in the bar
                 int filledBlocks = (int) Math.floor((cooldownDuration - remainingCooldown) / (double) cooldownDuration * totalBlocks);
                 int emptyBlocks = totalBlocks - filledBlocks;
+                int remainingSeconds = (int) Math.ceil(remainingCooldown / 1000.0);
 
                 actionBarMessage.append(ChatColor.GREEN).append("█".repeat(Math.max(0, filledBlocks))); // solid section
                 actionBarMessage.append(ChatColor.RED).append("█".repeat(Math.max(0, emptyBlocks))); // empty seciton
+                actionBarMessage.append(" ").append(ChatColor.WHITE).append("").append(remainingSeconds).append("s");
             }
         }
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBarMessage.toString()));
@@ -420,7 +422,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleFireballCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnFireballCooldown(playerId) && Mana.hasEnoughMana(playerId, FIREBALL_COST)) {
@@ -436,7 +438,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleTeleportCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
@@ -452,7 +454,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleLightningCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnLightningCooldown(playerId) && Mana.hasEnoughMana(playerId, LIGHTNING_COST)) {
@@ -469,7 +471,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleGustCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnGustCooldown(playerId) && Mana.hasEnoughMana(playerId, GUST_COST)) {
@@ -485,7 +487,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleFlyingSpellCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnSquidFlyingCooldown(playerId) && Mana.hasEnoughMana(playerId, FLYING_MANA_COST_PER_TICK)) {
@@ -514,7 +516,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleMinecartCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnMinecartCooldown(playerId) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
@@ -530,7 +532,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleBigManSlamCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnGPCooldown(playerId) && Mana.hasEnoughMana(playerId, GP_COST)) {
@@ -545,7 +547,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
     void handleMapTeleportCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnMapTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
@@ -562,7 +564,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     public void handleMeteorCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnMeteorCooldown(playerId) && Mana.hasEnoughMana(playerId, METEOR_COST)) {
@@ -581,7 +583,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleHealCloudCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnHealCloudCooldown(playerId) && Mana.hasEnoughMana(playerId, HEALCLOUD_COST)) {
@@ -601,7 +603,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     private void handleRecallCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         // check if player can teleport
@@ -684,7 +686,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void handleVoidOrbCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            player.sendMessage("You cannot cast spells while teleported up!");
+            sendTeleportWarning(player);
             return;
         }
         if (!Cooldown.isOnVoidOrbCooldown(playerId) && Mana.hasEnoughMana(playerId, VoidOrb_Cost)) {
@@ -732,11 +734,36 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    void handleCooldownMessage(Player player, String spellName, int remainingSeconds) {
-        player.sendMessage(ChatColor.RED + spellName + " on cooldown. Please wait " + remainingSeconds + " seconds before casting again.");
+    private HashMap<Player, Long> lastTeleportMessage = new HashMap<>();
+    private HashMap<Player, Long> lastCooldownMessage = new HashMap<>();
+    private HashMap<Player, Long> lastManaMessage = new HashMap<>();
+    private static final long MESSAGE_COOLDOWN = 1000;
+
+    private void sendTeleportWarning(Player player) {
+        long currentTime = System.currentTimeMillis();
+        if (!lastTeleportMessage.containsKey(player) ||
+                (currentTime - lastTeleportMessage.get(player)) > MESSAGE_COOLDOWN) {
+
+            player.sendMessage(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + ("You cannot cast spells while in a different dimension!"));
+            lastTeleportMessage.put(player, currentTime);
+        }
     }
+    void handleCooldownMessage(Player player, String spellName, int remainingSeconds) {
+        long currentTime = System.currentTimeMillis();
+        if (!lastCooldownMessage.containsKey(player) || (currentTime - lastCooldownMessage.get(player)) > MESSAGE_COOLDOWN) {
+
+            player.sendMessage(ChatColor.RED + spellName + " on cooldown. Please wait " + ChatColor.BOLD + remainingSeconds + ChatColor.RED + " seconds before casting again.");
+            lastCooldownMessage.put(player, currentTime);
+        }
+    }
+
     void handleManaMessage(Player player) {
-        player.sendMessage(ChatColor.RED + " You do not have enough mana. Please wait before casting again.");
+        long currentTime = System.currentTimeMillis();
+        if (!lastManaMessage.containsKey(player) || (currentTime - lastManaMessage.get(player)) > MESSAGE_COOLDOWN) {
+
+            player.sendMessage(ChatColor.RED + " You do not have enough mana. Please wait before casting again.");
+            lastManaMessage.put(player, currentTime);
+        }
     }
 
 }

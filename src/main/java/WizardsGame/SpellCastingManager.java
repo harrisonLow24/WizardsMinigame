@@ -582,7 +582,9 @@ public class SpellCastingManager implements Listener {
                 Player player = Bukkit.getPlayer(location.getWorld().getNearbyEntities(location, 1, 1, 1)
                         .stream()
                         .filter(entity -> entity instanceof Player)
-                        .findFirst().orElse(null).getUniqueId());
+                        .findFirst()
+                        .orElse(null).getUniqueId()
+                );
 
                 if (player != null && player.getLocation().distance(location) < 1) {
                     // fetermine particle effect
