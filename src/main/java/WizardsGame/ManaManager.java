@@ -19,6 +19,8 @@ public class ManaManager {
     public final Map<UUID, Double> playerMana = new HashMap<>(); // hashmap of all players' current mana
     public final Map<UUID, Boolean> infiniteManaMap = new HashMap<>();
     public final Map<UUID, BossBar> manaBossBars = new HashMap<>(); // hashmap of all players' mana bars
+    SpellCastingManager Cast = new SpellCastingManager();
+    CooldownManager Cooldown = new CooldownManager();
     public final double maxMana = 100.0; // mana pool
 
 
@@ -91,6 +93,19 @@ public class ManaManager {
         bossBar.setProgress(manaPercentage);
         bossBar.addPlayer(player);
     }
+
+
+    // mana bar as boss bar
+//    public void updateManaActionBar(Player player) {
+//        UUID playerId = player.getUniqueId();
+//        double currentMana = getCurrentMana(playerId);
+//        double manaPercentage = currentMana / maxMana;
+//
+//        BossBar bossBar = manaBossBars.computeIfAbsent(playerId, k -> Bukkit.createBossBar("", BarColor.PURPLE, BarStyle.SOLID));
+//        bossBar.setTitle(ChatColor.YELLOW + "§lMana: " + (int) (manaPercentage * 100) + "§l%");
+//        bossBar.setProgress(manaPercentage);
+//        bossBar.addPlayer(player);
+//    }
 
 
     //mana bar as action bar

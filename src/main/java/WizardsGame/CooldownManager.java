@@ -1,5 +1,7 @@
 package WizardsGame;
 
+import org.bukkit.Bukkit;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -11,12 +13,12 @@ import java.util.concurrent.TimeUnit;
 public class CooldownManager {
 
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+//    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public CooldownManager() {
 
         // schedule the task to run every second
-        scheduler.scheduleAtFixedRate(this::clearAllCooldowns, 0, 1, TimeUnit.SECONDS);
+//        scheduler.scheduleAtFixedRate(this::clearAllCooldowns, 0, 1, TimeUnit.SECONDS);
     }
 
     public void toggleCooldowns(UUID playerId) {
@@ -24,6 +26,14 @@ public class CooldownManager {
         cooldownsDisabledMap.put(playerId, !currentStatus);
 
         // if cooldowns are disabled, clear cooldowns for the player
+//        Bukkit.getScheduler().runTaskTimer(WizardsPlugin.getInstance(), new Runnable() {
+//            @Override
+//            public void run() {
+//                clearCooldowns(playerId);
+//                // debug
+//                Bukkit.getLogger().info("Cooldowns cleared for player " + playerId);
+//            }
+//        }, 0L, 20L);
         if (hasCooldownsDisabled(playerId)) {
             clearCooldowns(playerId);
         }
@@ -34,84 +44,63 @@ public class CooldownManager {
     }
 
 
-
-
-    private void clearAllCooldowns() {
-        // iterate through all players and clear cooldowns
-        for (UUID playerId : fireballCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : teleportCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : lightningCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : gustCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : iceSphereCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : minecartCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : squidFlyingCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : porkchopCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : charmCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-        for (UUID playerId : GPCooldowns.keySet()) {
-            clearCooldowns(playerId);
-        }
-//        for (UUID playerId : cloneCooldowns.keySet()) {
-//            clearCooldowns(playerId);
-//        }
+    void clearCooldowns(UUID playerId) {
+        fireballCooldowns.remove(playerId);
+        minecartCooldowns.remove(playerId);
+        squidFlyingCooldowns.remove(playerId);
+        teleportCooldowns.remove(playerId);
+        lightningCooldowns.remove(playerId);
+        gustCooldowns.remove(playerId);
+        GPCooldowns.remove(playerId);
+        VoidOrbCooldowns.remove(playerId);
+        MapTeleportCooldowns.remove(playerId);
+        MeteorCooldowns.remove(playerId);
+        HealCloudCooldowns.remove(playerId);
+        twistedFateSpellCooldowns.remove(playerId);
+        charmCooldowns.remove(playerId);
+        porkchopCooldowns.remove(playerId);
     }
     // store cooldowns in hashmaps
 
-    private final Map<UUID, Long> cooldowns = new HashMap<>();
-    private final Map<UUID, Long> minecartCooldowns = new HashMap<>();
-    private final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
-    private final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
-    private final Map<UUID, Long> charmCooldowns = new HashMap<>();
-    public final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
-    public final Map<UUID, Long> twistedFateSpellCooldowns = new HashMap<>();
-    private final Map<UUID, Long> fireballCooldowns = new HashMap<>();
-    private final Map<UUID, Long> teleportCooldowns = new HashMap<>();
-    private final Map<UUID, Long> lightningCooldowns = new HashMap<>();
-    private final Map<UUID, Long> gustCooldowns = new HashMap<>();
-    private final Map<UUID, Long> GPCooldowns = new HashMap<>();
-    private final Map<UUID, Long> VoidOrbCooldowns = new HashMap<>();
-    private final Map<UUID, Long> MapTeleportCooldowns = new HashMap<>();
+    final Map<UUID, Long> cooldowns = new HashMap<>();
+    final Map<UUID, Long> minecartCooldowns = new HashMap<>();
+    final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
+    final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
+    final Map<UUID, Long> charmCooldowns = new HashMap<>();
+    final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
+    final Map<UUID, Long> twistedFateSpellCooldowns = new HashMap<>();
+    final Map<UUID, Long> fireballCooldowns = new HashMap<>();
+    final Map<UUID, Long> teleportCooldowns = new HashMap<>();
+    final Map<UUID, Long> lightningCooldowns = new HashMap<>();
+    final Map<UUID, Long> gustCooldowns = new HashMap<>();
+    final Map<UUID, Long> GPCooldowns = new HashMap<>();
+    final Map<UUID, Long> VoidOrbCooldowns = new HashMap<>();
+    final Map<UUID, Long> MapTeleportCooldowns = new HashMap<>();
 //    private final Map<UUID, Long> cloneCooldowns = new HashMap<>();
-    private final Map<UUID, Long> MeteorCooldowns = new HashMap<>();
-    private final Map<UUID, Long> HealCloudCooldowns = new HashMap<>    ();
-    private final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
+    final Map<UUID, Long> MeteorCooldowns = new HashMap<>();
+    final Map<UUID, Long> HealCloudCooldowns = new HashMap<>    ();
+    final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
 
-    private final Map<UUID, Long> iceSphereCooldowns = new HashMap<>    ();
+    final Map<UUID, Long> iceSphereCooldowns = new HashMap<>    ();
 
     // cooldown duration in milliseconds
-    private final long fireballCooldownDuration = 1 * 1000; // 10
-    private final long teleportCooldownDuration = 1 * 1000; // 15
-    private final long lightningCooldownDuration = 1 * 1000; // 15
-    private final long gustCooldownDuration = 1 * 1000; // 15
-    private final long iceSphereCooldownDuration = 1 * 1000; // 20 seconds
-    private final long minecartCooldownDuration = 1 * 1000; // 30 seconds
-    private final long GPCooldownDuration = 1 * 1000; // 15 seconds
-    private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
-    private final long MapTeleportCooldownDuration = 1 * 1000; // 25 seconds
-    private final long MeteorCooldownDuration = 1 * 1000; // 25 seconds
-    private final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
-    private final long VoidOrbCooldownDuration = 0 * 1000; // 25 seconds
+    final long fireballCooldownDuration = 4 * 1000; // 10
+    final long teleportCooldownDuration = 1 * 1000; // 15
+    final long lightningCooldownDuration = 1 * 1000; // 15
+    final long gustCooldownDuration = 1 * 1000; // 15
+    final long iceSphereCooldownDuration = 1 * 1000; // 20 seconds
+    final long minecartCooldownDuration = 1 * 1000; // 30 seconds
+    final long GPCooldownDuration = 1 * 1000; // 15 seconds
+    final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
+    final long MapTeleportCooldownDuration = 1 * 1000; // 25 seconds
+    final long MeteorCooldownDuration = 1 * 1000; // 25 seconds
+    final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
+    final long VoidOrbCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
-    private final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
-    private final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
-    private final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
+    final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
+    final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
+    final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
+    final long charmSpellDuration = 1 * 1000; // 30 seconds
 
     // returns the remaining cooldown left
     int getRemainingFireballCooldownSeconds(UUID playerId) {
@@ -310,21 +299,6 @@ public class CooldownManager {
     }
     void setVoidOrbCooldown(UUID playerId) {
         VoidOrbCooldowns.put(playerId, System.currentTimeMillis());
-    }
-
-
-
-    void clearCooldowns(UUID playerId) {
-        fireballCooldowns.remove(playerId);
-        teleportCooldowns.remove(playerId);
-        lightningCooldowns.remove(playerId);
-        gustCooldowns.remove(playerId);
-        iceSphereCooldowns.remove(playerId);
-        minecartCooldowns.remove(playerId);
-        GPCooldowns.remove(playerId);
-        squidFlyingCooldowns.remove(playerId);
-        porkchopCooldowns.remove(playerId);
-        charmCooldowns.remove(playerId);
     }
 
     public long getOrDefault(UUID playerId, long defaultValue) {

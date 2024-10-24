@@ -79,7 +79,7 @@ public class SpellCastingManager implements Listener {
                 material == Material.ROSE_BUSH ||
                 material == Material.PEONY;
     }
-    static final double SWORD_SPEED = 1.5; // adjust speed as needed
+    static final double SWORD_SPEED = 1; // adjust speed as needed
     static final double SWORD_DAMAGE = 3.0; // damage dealt by sword 2 hearts
     static final int SWORD_LIFETIME = 100; // time in ticks before the sword disappears (5 seconds)
     static final double AIM_RADIUS = 2; // aim detection
@@ -237,7 +237,7 @@ public class SpellCastingManager implements Listener {
                     registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
                 }
                 world.strikeLightning(strikeLocation); // strike lightning at determined location
-            }, 30L); // 40L = 2 seconds delay (20 ticks per second)
+            }, 30L); // 1.5 sec delay (20 ticks per second)
         }
     }
 
@@ -247,7 +247,7 @@ public class SpellCastingManager implements Listener {
             double x = Math.cos(angle) * 1; // radius of 1 block
             double z = Math.sin(angle) * 1;
             Location particleLocation = location.clone().add(x, 1, z);
-            particleLocation.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLocation, 1); // particle effect
+            particleLocation.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, particleLocation, 1, 0, 0, 0, 1,null,true); // particle effect
         }
         location.getWorld().playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
     }
@@ -284,7 +284,7 @@ public class SpellCastingManager implements Listener {
                 double z = radius * Math.sin(Math.toRadians(angle));
 
                 Location particleLocation = player.getLocation().clone().add(x, height, z);
-                player.getWorld().spawnParticle(Particle.CRIT, particleLocation, 10, 0.2, 0.2, 0.2, 0.1);
+                player.getWorld().spawnParticle(Particle.CRIT, particleLocation, 10, 0.2, 0.2, 0.2, 0.1, null, false);
 
                 angle += 10;
             }
@@ -386,7 +386,7 @@ public class SpellCastingManager implements Listener {
         Location initialLocation = player.getLocation();
 
         // particle effects at initial location
-        world.spawnParticle(Particle.EXPLOSION_LARGE, initialLocation, 1, 0, 0, 0, 0);
+        world.spawnParticle(Particle.EXPLOSION_LARGE, initialLocation, 1, 0, 0, 0, 0, null, true);
 
         if (player.isOnGround()) {  // && player.getVelocity().getY() > 0 && !player.isFlying() && !player.isGliding()
             // launch the player up before bringing them down if not already in the air
@@ -405,7 +405,7 @@ public class SpellCastingManager implements Listener {
 
                     // particle effects for descent
                     for (double y = 0; y <= 10; y += 0.5) {
-                        world.spawnParticle(Particle.CLOUD, landingLocation.clone().add(0, y, 0), 1, 0, 0, 0, 0);
+                        world.spawnParticle(Particle.CLOUD, landingLocation.clone().add(0, y, 0), 1, 0, 0, 0, 0, null, true);
                     }
 
                     scatterBlocks(landingLocation); // scatter blocks relative to landing location
@@ -599,7 +599,7 @@ public class SpellCastingManager implements Listener {
 
                             // create particle location
                             Location particleLocation = location.clone().add(x, y, z);
-                            particleLocation.getWorld().spawnParticle(Particle.END_ROD, particleLocation, 1, 0, 0, 0, 0); // Spawn inward particle
+                            particleLocation.getWorld().spawnParticle(Particle.END_ROD, particleLocation, 1, 0, 0, 0, 0, null, true); // Spawn inward particle
                         }
 
                         // switch to outward phase after a certain time
@@ -617,7 +617,7 @@ public class SpellCastingManager implements Listener {
 
                             // create particle location
                             Location particleLocation = location.clone().add(x, y, z);
-                            particleLocation.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, particleLocation, 1, 0, 0, 0, 0);
+                            particleLocation.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, particleLocation, 1, 0, 0, 0, 0, null, true);
                         }
                     }
                 } else {
@@ -707,7 +707,7 @@ public class SpellCastingManager implements Listener {
                     @Override
                     public void run() {
                         // spawn particles at teleport location
-                        teleportLocation.getWorld().spawnParticle(Particle.END_ROD, teleportLocation, 5, 0.5, 0.5, 0.5, 0.1);
+                        teleportLocation.getWorld().spawnParticle(Particle.END_ROD, teleportLocation, 5, 0.5, 0.5, 0.5, 0.1, null, true);
                     }
                 };
                 particleRunnable.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // every tick (20 times per second)
@@ -776,7 +776,7 @@ public class SpellCastingManager implements Listener {
                     double x = Math.cos(theta) * METEOR_RADIUS * 2;
                     double z = Math.sin(theta) * METEOR_RADIUS * 2;
                     Location particleLocation = center.clone().add(x, 1, z);
-                    center.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 1, new Particle.DustOptions(Color.RED, 2));
+                    center.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 1, new Particle.DustOptions(Color.RED, 2) );
                 }
                 count++;
             }
@@ -1049,7 +1049,7 @@ public class SpellCastingManager implements Listener {
                         .add(xOffset + 0.25, heightOffset + 0.25, zOffset);
 
                 // spawn the particle effect
-                particleLocation.getWorld().spawnParticle(Particle.FLASH, particleLocation, 1, 0, 0, 0, 0.01);
+                particleLocation.getWorld().spawnParticle(Particle.FLASH, particleLocation, 1, 0, 0, 0, 0.1,null,true);
             }
         }
     }
@@ -1091,6 +1091,7 @@ public class SpellCastingManager implements Listener {
         swordStand.setVelocity(direction);
 
         // task to move sword and handle collision detection
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -1114,6 +1115,9 @@ public class SpellCastingManager implements Listener {
                 // teleport sword to updated location
                 swordStand.teleport(currentLocation);
 
+                // play a sound effect at the current location of the armor stand
+                currentLocation.getWorld().playSound(currentLocation, Sound.ENTITY_ENDER_EYE_DEATH, 1.0f, 1.0f);
+
                 // spawn particles for trail
                 spawnProjectileTrail(currentLocation, direction);
 
@@ -1123,18 +1127,30 @@ public class SpellCastingManager implements Listener {
                 // check for nearby entities to detect a hit using held item's location
                 for (Entity entity : swordTipLocation.getWorld().getNearbyEntities(swordTipLocation, AIM_RADIUS, AIM_RADIUS, AIM_RADIUS)) {
                     if (entity != player && entity != swordStand && entity instanceof LivingEntity) {
-                        if (entity.getBoundingBox().overlaps(entity.getBoundingBox().expand(AIM_RADIUS, AIM_RADIUS, AIM_RADIUS))) {
-                            // damage first entity hit and remove sword
-                            ((LivingEntity) entity).damage(SWORD_DAMAGE, player);
-                            swordStand.remove();
-                            activeSwords.remove(playerId);
-                            cancel();
-                            return;
+
+                        // line-of-sight check to ensure no wall is between sword and entity
+                        RayTraceResult rayTraceResult = swordTipLocation.getWorld().rayTraceBlocks(
+                                swordTipLocation,
+                                entity.getLocation().toVector().subtract(swordTipLocation.toVector()).normalize(),
+                                swordTipLocation.distance(entity.getLocation())
+                        );
+
+                        // if obstruction found, skip damaging the entity
+                        if (rayTraceResult != null && rayTraceResult.getHitBlock() != null) {
+                            continue;
                         }
+
+                        // damage first entity hit and remove sword
+                        ((LivingEntity) entity).damage(SWORD_DAMAGE, player);
+                        swordStand.remove();
+                        activeSwords.remove(playerId);
+                        cancel();
+                        return;
                     }
                 }
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L);
+
 
         // remove sword after defined lifetime
         Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
