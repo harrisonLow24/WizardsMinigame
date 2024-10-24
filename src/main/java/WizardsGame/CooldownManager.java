@@ -109,7 +109,6 @@ public class CooldownManager {
     private final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
     private final long KunaiCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
-    private final long meteorCooldownDuration = 1 * 1000; // 25 seconds
     private final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
     private final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
     private final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
