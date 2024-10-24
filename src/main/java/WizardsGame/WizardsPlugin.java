@@ -438,6 +438,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         if (!Cooldown.isOnHealCloudCooldown(playerId) && Mana.hasEnoughMana(playerId, HEALCLOUD_COST)) {
             Location targetLocation = Cast.getTargetLocation(player);
             if (targetLocation != null) {
+                targetLocation.setY(targetLocation.getY() + 1);
                 Cast.spawnHealingCircle(player, targetLocation); // spawn the healing circle
                 Cooldown.setHealCloudCooldown(playerId); // set cooldown after casting
                 Mana.deductMana(playerId, HEALCLOUD_COST);

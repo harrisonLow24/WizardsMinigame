@@ -1,11 +1,9 @@
 package WizardsGame;
 
-import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarFlag;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.*;
@@ -56,12 +54,12 @@ public class SpellCastingManager implements Listener {
 //    private static final int CLONE_DURATION = 100;
 
     //meteor
-    private static final int METEOR_COUNT = 10; // number of meteors in a cast
-    private static final int METEOR_DAMAGE = 8; // damage dealt by each meteor
-    private static final double METEOR_RADIUS = 3.0; // radius for meteors
-    private static final int METEOR_DELAY = 10; // delay between each meteor in ticks
-    private static final int MAX_CAST_RANGE = 25;
-    private static final double RANDOM_SPAWN_RADIUS = 5.0;
+    private static final int METEOR_COUNT = 10; // number of meteors in a cast 10
+    private static final int METEOR_DAMAGE = 6; // damage dealt by each meteor 8
+    private static final double METEOR_RADIUS = 4.0; // radius for meteors 3
+    private static final int METEOR_DELAY = 10; // delay between each meteor in ticks 10
+    private static final int MAX_CAST_RANGE = 25; // 25
+    private static final double RANDOM_SPAWN_RADIUS = 8.0; // 5
     private final HashMap<UUID, Player> projectileCasterMap = new HashMap<>();
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
@@ -963,11 +961,13 @@ public class SpellCastingManager implements Listener {
                 if (player.getLocation().getY() >= center.getY() - 2 && player.getLocation().getY() <= center.getY() + 2) {
                     double newHealth = Math.min(player.getHealth() + HEAL_AMOUNT, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
                     player.setHealth(newHealth); // heal player without exceeding max health
-                    player.sendMessage("§l§eYou are being healed!");
+//                    player.sendMessage("§l§eYou are being healed!");
                 }
             }
         }
     }
+
+
 
 
     int porkchopSpeed = 2;
