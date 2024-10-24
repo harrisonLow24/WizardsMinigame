@@ -86,9 +86,10 @@ public class CooldownManager {
     private final Map<UUID, Long> lightningCooldowns = new HashMap<>();
     private final Map<UUID, Long> gustCooldowns = new HashMap<>();
     private final Map<UUID, Long> GPCooldowns = new HashMap<>();
+    private final Map<UUID, Long> KunaiCooldowns = new HashMap<>();
     private final Map<UUID, Long> MapTeleportCooldowns = new HashMap<>();
 //    private final Map<UUID, Long> cloneCooldowns = new HashMap<>();
-    private final Map<UUID, Long> meteorCooldowns = new HashMap<>();
+    private final Map<UUID, Long> MeteorCooldowns = new HashMap<>();
     private final Map<UUID, Long> HealCloudCooldowns = new HashMap<>    ();
     private final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
 
@@ -104,7 +105,9 @@ public class CooldownManager {
     private final long GPCooldownDuration = 1 * 1000; // 15 seconds
     private final long squidFlyingCooldownDuration = 1 * 1000; // 25 seconds
     private final long MapTeleportCooldownDuration = 1 * 1000; // 25 seconds
+    private final long MeteorCooldownDuration = 1 * 1000; // 25 seconds
     private final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
+    private final long KunaiCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
     private final long meteorCooldownDuration = 1 * 1000; // 25 seconds
     private final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
@@ -150,11 +153,15 @@ public class CooldownManager {
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
     int getRemainingMeteorCooldownSeconds(UUID playerId) {
-        long remainingCooldown = MapTeleportCooldownDuration - (System.currentTimeMillis() - MapTeleportCooldowns.getOrDefault(playerId, 0L));
+        long remainingCooldown = MeteorCooldownDuration - (System.currentTimeMillis() - MeteorCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
     int getRemainingHealCloudCooldownSeconds(UUID playerId) {
         long remainingCooldown = HealCloudCooldownDuration - (System.currentTimeMillis() - HealCloudCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
+    int getRemainingKunaiCooldownSeconds(UUID playerId) {
+        long remainingCooldown = KunaiCooldownDuration - (System.currentTimeMillis() - KunaiCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
 
@@ -220,9 +227,12 @@ public class CooldownManager {
 //    public boolean isOnCloneCooldown(UUID playerId) {
 //        return cloneCooldowns.containsKey(playerId) && (System.currentTimeMillis() - cloneCooldowns.get(playerId) < cloneCooldownDuration);
 //    }
-boolean isOnMeteorCooldown(UUID playerId) {
-    return MapTeleportCooldowns.containsKey(playerId) && System.currentTimeMillis() - MapTeleportCooldowns.get(playerId) < MapTeleportCooldownDuration;
-}
+    boolean isOnMeteorCooldown(UUID playerId) {
+    return MeteorCooldowns.containsKey(playerId) && System.currentTimeMillis() - MeteorCooldowns.get(playerId) < MeteorCooldownDuration;
+    }
+    boolean isOnKunaiCooldown(UUID playerId) {
+        return KunaiCooldowns.containsKey(playerId) && System.currentTimeMillis() - KunaiCooldowns.get(playerId) < KunaiCooldownDuration;
+    }
 
     boolean isOnPorkchopCooldown(UUID playerId) {
         return porkchopCooldowns.containsKey(playerId) && System.currentTimeMillis() - porkchopCooldowns.get(playerId) < porkchopCooldownDuration;
@@ -281,7 +291,7 @@ boolean isOnMeteorCooldown(UUID playerId) {
 //        cloneCooldowns.put(playerId, System.currentTimeMillis());
 //    }
     void setMeteorCooldown(UUID playerId) {
-        meteorCooldowns.put(playerId, System.currentTimeMillis());
+        MeteorCooldowns.put(playerId, System.currentTimeMillis());
     }
     void setHealCloudCooldown(UUID playerId) {
         HealCloudCooldowns.put(playerId, System.currentTimeMillis());
@@ -298,6 +308,9 @@ boolean isOnMeteorCooldown(UUID playerId) {
     }
     void setGPCooldown(UUID playerId) {
         GPCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    void setKunaiCooldown(UUID playerId) {
+        KunaiCooldowns.put(playerId, System.currentTimeMillis());
     }
 
 

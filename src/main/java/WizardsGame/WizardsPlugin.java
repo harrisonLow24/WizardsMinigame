@@ -1,6 +1,8 @@
 package WizardsGame;
 
 import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -15,9 +17,9 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
+import org.bukkit.util.Vector;
 
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
@@ -44,6 +46,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             public void run() {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     checkAndUpdateWand(player);
+//                    Cast.updateActionBar(player);
                 }
             }
         }.runTaskTimer(this, 0, 20);
@@ -51,6 +54,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         getLogger().info("WizardsPlugin has been disabled!");
+        Mana.clearManaBars();
     }
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -81,9 +85,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
-            Mana.updateManaActionBar(player); // update mana action bar after a short delay
-        }, 1L); // short delay to ensure item has changed
+//        Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
+//            Cast.updateActionBar(player); // update mana action bar after a short delay
+//        }, 1L); // short delay to ensure item has changed
     }
 
 
@@ -120,7 +124,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     void startManaRegenTask() {
         // mana bar updated every 20 ticks / 1 second for MANA REGEN
-        getServer().getScheduler().runTaskTimer(this, this::regenerateMana, 0, 20);
+        getServer().getScheduler().runTaskTimer(this, this::regenerateMana, 0, 10);
         getServer().getScheduler().runTaskTimer(this, () -> {
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 Mana.updateManaActionBar(onlinePlayer);
@@ -138,7 +142,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 Mana.setPlayerMana(playerId, Mana.maxMana);
             }else {
                 // regen rate
-                double manaRegenRate = 5.0;
+                double manaRegenRate = 2.5;
                 double newMana = Math.min(currentMana + manaRegenRate, Mana.maxMana);
                 Mana.playerMana.put(playerId, newMana);
             }
@@ -169,11 +173,12 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     static final double MINECART_COST = 30.0;
     static final double GP_COST = 20.0;
     static final double FLYING_MANA_COST_PER_TICK = 1.5;
-    static final double VOIDWALKER_COST = 20;
+    static final double VOIDWALKER_COST = 80.0;
 //    private final int CLONE_COST = 20;
-    static final double METEOR_COST = 50;
-    static final double HEALCLOUD_COST = 15;
-    static final double RecallManaCost = 10.0;
+    static final double METEOR_COST = 50.0;
+    static final double HEALCLOUD_COST = 15.0;
+    static final double RecallManaCost = 25.0;
+    static final double SwordManaCost = 10.0;
     static final double CHARM_COST = 15.0;
     static final double PORKCHOP_COST = 10.0;
 
@@ -264,10 +269,13 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case HONEYCOMB -> handleMeteorCast(player, playerId);
             case TIPPED_ARROW -> handleHealCloudCast(player, playerId);
             case MUSIC_DISC_5 -> handleRecallCast(player, playerId);
+            case DIAMOND_SWORD -> handleSwordCast(player, playerId);
+
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
         }
     }
+
 
     void handleFireballCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
@@ -532,6 +540,21 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, recordInterval); // run every second
     }
+
+    void handleSwordCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            player.sendMessage("You cannot cast spells while teleported up!");
+            return;
+        }
+        if (!Cooldown.isOnKunaiCooldown(playerId) && Mana.hasEnoughMana(playerId, SwordManaCost)) {
+            Cast.SwordCast(player, playerId);
+            Cooldown.setKunaiCooldown(playerId);
+            Mana.deductMana(playerId, SwordManaCost); // deduct mana cost
+        } else if (Cooldown.isOnKunaiCooldown(playerId)) {
+            handleCooldownMessage(player, "Kunai", Cooldown.getRemainingKunaiCooldownSeconds(playerId));
+    }
+        }
+
 
 
 

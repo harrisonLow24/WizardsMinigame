@@ -14,6 +14,10 @@ public class WandManager {
         if (meta != null) {
             // set display name and lore based on the material
             switch (material) {
+                case STICK:
+                    meta.setDisplayName("§i§lGeneric Wand");
+                    meta.setLore(List.of("§gA basic wand with no special powers."));
+                    break;
                 case BLAZE_ROD:
                     meta.setDisplayName("§c§lFiery Wand");
                     meta.setLore(List.of("§gCast powerful fireballs.",
@@ -69,6 +73,11 @@ public class WandManager {
                     meta.setLore(List.of("§gGet out of trouble in a pinch!",
                             "§gHeal your allies!"));
                     break;
+                case DIAMOND_SWORD:
+                    meta.setDisplayName("§e§lKunai Throw");
+                    meta.setLore(List.of("§gSlice your enemies from a distance!",
+                            "§gWatch this!"));
+                    break;
                 default:
                     meta.setDisplayName("§i§lGeneric Wand");
                     meta.setLore(List.of("§gA basic wand with no special powers."));
@@ -94,7 +103,8 @@ public class WandManager {
                         item.getType() == Material.RECOVERY_COMPASS ||
                         item.getType() == Material.HONEYCOMB ||
                         item.getType() == Material.TIPPED_ARROW ||
-                        item.getType() == Material.MUSIC_DISC_5);
+                        item.getType() == Material.MUSIC_DISC_5 ||
+                        item.getType() == Material.DIAMOND_SWORD);
     }
 
 }

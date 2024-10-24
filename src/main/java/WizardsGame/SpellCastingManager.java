@@ -1,5 +1,7 @@
 package WizardsGame;
 
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
@@ -61,6 +63,27 @@ public class SpellCastingManager implements Listener {
     private static final int MAX_CAST_RANGE = 25; // 25
     private static final double RANDOM_SPAWN_RADIUS = 8.0; // 5
     private final HashMap<UUID, Player> projectileCasterMap = new HashMap<>();
+
+    private boolean isIgnoredBlock(Material material) {
+        // list of materials to ignore
+        return material == Material.SHORT_GRASS ||
+                material == Material.TALL_GRASS ||
+                material == Material.DANDELION ||
+                material == Material.POPPY ||
+                material == Material.BLUE_ORCHID ||
+                material == Material.ALLIUM ||
+                material == Material.AZURE_BLUET ||
+                material == Material.OXEYE_DAISY ||
+                material == Material.LILY_OF_THE_VALLEY ||
+                material == Material.ROSE_BUSH ||
+                material == Material.PEONY;
+    }
+    static final double SWORD_SPEED = 1.5; // adjust speed as needed
+    static final double SWORD_DAMAGE = 3.0; // damage dealt by sword 2 hearts
+    static final int SWORD_LIFETIME = 100; // time in ticks before the sword disappears (5 seconds)
+    static final double AIM_RADIUS = 1; // aim detection
+    final Map<UUID, ArmorStand> activeSwords = new HashMap<>();
+
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
         if (event.getEntity() instanceof Projectile) {
@@ -98,6 +121,42 @@ public class SpellCastingManager implements Listener {
         }
     }
 
+
+//    void updateActionBar(Player player) {
+//        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+//        String itemName;
+//
+//        // Define wand materials
+//        Material[] wandMaterials = {Material.STICK, Material.BLAZE_ROD}; // Add other materials as needed
+//
+//        // Check if the item is not null, is of a material type, and is a wand
+//        if (itemInHand != null && itemInHand.getType() != Material.AIR) {
+//            for (Material wandMaterial : wandMaterials) {
+//                if (itemInHand.getType() == wandMaterial) {
+//                    // Get the item's custom name or fallback to the material name
+//                    if (itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasDisplayName()) {
+//                        itemName = itemInHand.getItemMeta().getDisplayName();
+//                    } else {
+//                        itemName = itemInHand.getType().toString().replace("_", " ").toLowerCase();
+//                        itemName = ChatColor.GOLD + ChatColor.BOLD.toString() + itemName.substring(0, 1).toUpperCase() + itemName.substring(1); // Capitalize first letter
+//                    }
+//
+//                    // Create action bar message
+//                    StringBuilder manaBar = new StringBuilder(itemName);
+//                    TextComponent actionBar = new TextComponent(manaBar.toString());
+//                    actionBar.setColor(ChatColor.DARK_PURPLE.asBungee()); // Set color
+//
+//                    // Send action bar message to player
+//                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionBar);
+//                    return; // Exit method after sending the action bar
+//                }
+//            }
+//        }
+//
+//        // Clear the action bar or show a default message when not holding a wand
+//        TextComponent clearActionBar = new TextComponent("");
+//        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, clearActionBar); // Optionally clear the action bar
+//    }
     // fireball cast
     public void castFireball(Player caster) {
         Fireball fireball = caster.launchProjectile(Fireball.class);
@@ -967,6 +1026,75 @@ public class SpellCastingManager implements Listener {
         }
     }
 
+    private boolean isSolidBlock(Location location) {
+        Block block = location.getBlock();
+        Material blockType = block.getType();
+        // return true if the block is solid and not one of the ignored types
+        return blockType.isSolid() && !isIgnoredBlock(blockType);
+    }
+    void SwordCast(Player player, UUID playerId) {
+        Location spawnLocation = player.getEyeLocation().clone();
+        spawnLocation.setY(spawnLocation.getY() - 0); // sword relative to player
+        ArmorStand swordStand = (ArmorStand) player.getWorld().spawnEntity(spawnLocation, EntityType.ARMOR_STAND);
+        swordStand.setInvisible(true);
+        swordStand.setGravity(false);
+        swordStand.setMarker(true); // marker to avoid collisions
+        swordStand.setSmall(true); // smaller hitbox
+        swordStand.setArms(true);
+        swordStand.setItemInHand(new ItemStack(Material.DIAMOND_SWORD));
+
+        // store in swords map
+        activeSwords.put(playerId, swordStand);
+
+        // calculate direction and velocity
+        Vector direction = player.getEyeLocation().getDirection().normalize().multiply(SWORD_SPEED);
+        swordStand.setVelocity(direction);
+
+        // task to move sword and handle collision detection
+        Bukkit.getScheduler().runTaskTimer(WizardsPlugin.getInstance(), () -> {
+            if (swordStand.isDead() || !swordStand.isValid()) {
+                return;
+            }
+
+            // move the armor stand in the given direction
+            Location currentLocation = swordStand.getLocation();
+            currentLocation.add(direction);
+
+            // check if sword hits a solid block
+            if (isSolidBlock(currentLocation)) {
+                swordStand.remove();
+                activeSwords.remove(playerId);
+                return;
+            }
+
+            // teleport sword to the updated location
+            swordStand.teleport(currentLocation);
+
+            // get location of sword's hit area
+            Location swordTipLocation = currentLocation.clone().add(direction.clone().multiply(0.5));
+
+            // check for nearby entities to detect a hit using the sword's tip location
+            for (Entity entity : swordTipLocation.getWorld().getNearbyEntities(swordTipLocation, AIM_RADIUS, AIM_RADIUS, AIM_RADIUS)) {
+                if (entity != player && entity != swordStand && entity instanceof LivingEntity) {
+                    if (entity.getBoundingBox().overlaps(entity.getBoundingBox().expand(AIM_RADIUS, AIM_RADIUS, AIM_RADIUS))) {
+                        // damage first entity hit and remove sword
+                        ((LivingEntity) entity).damage(SWORD_DAMAGE, player);
+                        swordStand.remove();
+                        activeSwords.remove(playerId);
+                        return;
+                    }
+                }
+            }
+        }, 0L, 1L); // Run every tick
+
+        // task to remove sword after the defined lifetime
+        Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
+            if (swordStand.isValid()) {
+                swordStand.remove();
+                activeSwords.remove(playerId);
+            }
+        }, SWORD_LIFETIME);
+    }
 
 
 

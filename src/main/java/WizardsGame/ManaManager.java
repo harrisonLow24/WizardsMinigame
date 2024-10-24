@@ -73,18 +73,6 @@ public class ManaManager {
         }
     }
 
-    // mana bar as boss bar
-//    public void updateManaActionBar(Player player) {
-//        UUID playerId = player.getUniqueId();
-//        double currentMana = getCurrentMana(playerId);
-//        double manaPercentage = currentMana / maxMana;
-//
-//        BossBar bossBar = manaBossBars.computeIfAbsent(playerId, k -> Bukkit.createBossBar("", BarColor.BLUE, BarStyle.SOLID));
-//        bossBar.setTitle(ChatColor.YELLOW + "Mana: " + (int) (manaPercentage * 100) + "%");
-//        bossBar.setProgress(manaPercentage);
-//        bossBar.addPlayer(player);
-//    }
-
     private String getSpellInfo(ItemStack item) {
         if (item == null) return null;
 
@@ -120,34 +108,57 @@ public class ManaManager {
         }
     }
 
+    public void clearManaBars() {
+        for (BossBar bossBar : manaBossBars.values()) {
+            bossBar.removeAll(); // remove players
+        }
+        manaBossBars.clear(); // clear hashmap
+    }
+
+    // mana bar as boss bar
     public void updateManaActionBar(Player player) {
-    UUID playerId = player.getUniqueId();
-    double mana = getCurrentMana(playerId);
-    StringBuilder manaBar = new StringBuilder("Mana: [");
+        UUID playerId = player.getUniqueId();
+        double currentMana = getCurrentMana(playerId);
+        double manaPercentage = currentMana / maxMana;
 
-    int filledLength = (int) ((double) mana / maxMana * 20); // length of the filled portion
-    for (int i = 0; i < filledLength; i++) {
-        manaBar.append("█");
+        BossBar bossBar = manaBossBars.computeIfAbsent(playerId, k -> Bukkit.createBossBar("", BarColor.PURPLE, BarStyle.SOLID));
+        bossBar.setTitle(ChatColor.YELLOW + "§lMana: " + (int) (manaPercentage * 100) + "§l%");
+        bossBar.setProgress(manaPercentage);
+        bossBar.addPlayer(player);
     }
-    for (int i = filledLength; i < 20; i++) {
-        manaBar.append("░");
-    }
-    manaBar.append("] ").append(mana).append("/").append(maxMana); // display current and max mana
 
-// determine spell name and mana cost if the player holds a valid item
-// add item to action bar
-//    ItemStack itemInHand = player.getInventory().getItemInMainHand();
-//    String spellInfo = getSpellInfo(itemInHand);
-//    if (spellInfo != null) {
-//        manaBar.append(" | ").append(spellInfo); // add spell info to the action bar
+
+    //mana bar as action bar
+
+//    public void updateManaActionBar(Player player) {
+//    UUID playerId = player.getUniqueId();
+//    double mana = getCurrentMana(playerId);
+//    StringBuilder manaBar = new StringBuilder("Mana: [");
+//
+//    int filledLength = (int) ((double) mana / maxMana * 20); // length of the filled portion
+//    for (int i = 0; i < filledLength; i++) {
+//        manaBar.append("█");
 //    }
+//    for (int i = filledLength; i < 20; i++) {
+//        manaBar.append("░");
+//    }
+//    manaBar.append("] ").append(mana).append("/").append(maxMana); // display current and max mana
+//
+//// determine spell name and mana cost if the player holds a valid item
+//// add item to action bar
+////    ItemStack itemInHand = player.getInventory().getItemInMainHand();
+////    String spellInfo = getSpellInfo(itemInHand);
+////    if (spellInfo != null) {
+////        manaBar.append(" | ").append(spellInfo); // add spell info to the action bar
+////    }
+//
+//
+//    // create action bar
+//    TextComponent actionBar = new TextComponent(manaBar.toString());
+//    actionBar.setColor(ChatColor.DARK_PURPLE); // set color
+//
+//    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionBar);
+//}
 
-
-    // create action bar
-    TextComponent actionBar = new TextComponent(manaBar.toString());
-    actionBar.setColor(ChatColor.DARK_PURPLE); // set color
-
-    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionBar);
-}
 
 }
