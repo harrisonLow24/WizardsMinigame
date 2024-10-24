@@ -34,7 +34,7 @@ public class CharmSpell implements Listener {
         ItemStack item = player.getInventory().getItemInMainHand();
 
         // check if player right-clicked with a beetroot
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+        if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             if (item.getType() == Material.BEETROOT) {
                 // check charm spell cooldown
                 if (charmCooldowns.containsKey(player.getUniqueId())) {

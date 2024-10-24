@@ -31,7 +31,7 @@ public class TwistedFateSpell implements Listener {
         UUID playerId = player.getUniqueId();
         ItemStack wand = player.getInventory().getItemInMainHand();
 
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+        if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             if (wand.getType() == Material.END_PORTAL_FRAME) {
                 if (!cooldownManager.isOntwistedFateSpellCooldown(playerId)) {
                     if (manaManager.hasEnoughMana(playerId, teleportCost)) {

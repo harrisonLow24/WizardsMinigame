@@ -28,7 +28,7 @@ public class SpellListener implements Listener {
         ItemStack item = player.getInventory().getItemInMainHand();
 
         // check if left click
-        if ((event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) &&
+        if ((event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) &&
                 (item.getType() == Material.STICK || isSpellItem(item))) {
             spellMenu.openSpellMenu(player); // open spell menu
             event.setCancelled(true);
