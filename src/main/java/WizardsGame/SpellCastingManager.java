@@ -329,24 +329,73 @@ public class SpellCastingManager implements Listener {
         }, 0, 1);
     }
 
+    private double calculateFallDamage(Entity entity, double initialHeight) {
+        double currentHeight = entity.getLocation().getY();
+        double fallDistance = initialHeight - currentHeight;
+        if (fallDistance > 3) {
+            return fallDistance - 3;
+        }
+        return 0.0;
+    }
+
     void castGustSpell(UUID playerId) {
-        Player player = getPlayerById(playerId);
+        Player caster = getPlayerById(playerId);
         double gustRadius = 5.0; // radius of gust spell
         double gustStrength = 2.0; // strength of gust spell
 
         // push all nearby entities
-        assert player != null;
-        for (Entity entity : player.getNearbyEntities(gustRadius, gustRadius, gustRadius)) {
-//            if (entity instanceof Player) {
-//                // can add case for if player is detected
-//                continue;
-//            }
+        assert caster != null;
 
-            // calculate direction vector from player to entity
-            org.bukkit.util.Vector direction = entity.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
+        int particleCount = 30;
+        double innerCircleRadius = 1.0;
+        double outerCircleRadius = 2.0;
 
-            // apply gust by pushing entities away
+        caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_BLAZE_SHOOT, 1.0f, 1.0f);
+//        caster.getWorld().spawnParticle(Particle.CLOUD, caster.getLocation(), 30, 1, 1, 1, 0.1);
+        for (int i = 0; i < particleCount; i++) {
+            double angle = 2 * Math.PI * i / particleCount;
+            // coordinates for inner circle
+            double xInner = Math.cos(angle) * innerCircleRadius;
+            double zInner = Math.sin(angle) * innerCircleRadius;
+            Location innerParticleLocation = caster.getLocation().add(xInner, 0, zInner);
+            caster.getWorld().spawnParticle(Particle.CLOUD, innerParticleLocation, 1, 0, 0, 0, 1);
+        }
+        for (int i = 0; i < particleCount; i++) {
+            double angle = 2 * Math.PI * i / particleCount;
+            // coordinates for outer circle
+            double xOuter = Math.cos(angle) * outerCircleRadius;
+            double zOuter = Math.sin(angle) * outerCircleRadius;
+            Location outerParticleLocation = caster.getLocation().add(xOuter, 0, zOuter);
+            caster.getWorld().spawnParticle(Particle.CLOUD, outerParticleLocation, 1, 0, 0, 0, 1);
+        }
+
+        for (Entity entity : caster.getNearbyEntities(gustRadius, gustRadius, gustRadius)) {
+            double initialHeight = entity.getLocation().getY();
+
+            // calculate direction vector from caster to entity
+            org.bukkit.util.Vector direction = entity.getLocation().toVector().subtract(caster.getLocation().toVector()).normalize();
+
             entity.setVelocity(direction.multiply(gustStrength));
+
+            // task to check for fall damage
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    // check if entity is still valid and has fallen
+                    if (!entity.isValid() || entity.getLocation().getY() >= initialHeight) {
+                        return;
+                    }
+
+                    // calculate fall damage based on how far entity has fallen
+                    double fallDamage = calculateFallDamage(entity, initialHeight);
+
+                    // tie it to the caster
+                    if (fallDamage > 0 && entity instanceof LivingEntity livingEntity) {
+                        livingEntity.damage(fallDamage, caster);
+                    }
+                }
+            }.runTaskLater(WizardsPlugin.getInstance(), 1L);
+
         }
 
 //        player.sendMessage( ChatColor.WHITE.toString() + ChatColor.BOLD +"Gust spell cast!");
