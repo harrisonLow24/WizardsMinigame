@@ -1,21 +1,15 @@
 package WizardsGame;
 
 import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.type.Bed;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.RayTraceResult;
@@ -33,7 +27,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.Sound;
 import org.bukkit.entity.SmallFireball;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,12 +37,25 @@ import static WizardsGame.WizardsPlugin.getPlayerById;
 
 public class SpellCastingManager implements Listener {
 
-    double fireballDamage = 2.0;
-    double fireballSpeed = 0.5;
+    // DAMAGE: 2.0 = 1 HEART
+    private double getFireballDamage(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.FIERY_WAND);
+        return FIREBALL_BASE_DAMAGE + ((level - 1) * 1); // damage increases by 1 per level
+    }
+    private double getFireballSpeed(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.FIERY_WAND);
+        return FIREBALL_BASE_SPEED + ((level - 1) * 1); // damage increases by 1 per level
+    }
+    double FIREBALL_BASE_DAMAGE = 2.0;
+    double FIREBALL_BASE_SPEED = 0.5;
 
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
-    double lightningDamage = 2.0;
+    private double getLightningDamage(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.MJOLNIR);
+        return LIGHTNING_BASE_DAMAGE + ((level - 1) * 1);
+    }
+    double LIGHTNING_BASE_DAMAGE = 2.0;
 
     // map teleport / voidwalker spell
     private static final int TELEPORT_DURATION = 5; // duration player stays in the air (in seconds)
@@ -61,8 +67,16 @@ public class SpellCastingManager implements Listener {
 //    private static final int CLONE_DURATION = 100;
 
     // meteor spell
-    private static final int METEOR_COUNT = 10; // number of meteors in a cast 10
-    private static final int METEOR_DAMAGE = 6; // damage dealt by each meteor 8
+    private double getMeteorDamage(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
+        return METEOR_BASE_DAMAGE + ((level - 1) * 1);
+    }
+    private double getMeteorCount(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
+        return METEOR_BASE_COUNT + ((level - 1) * 1);
+    }
+    private static final int METEOR_BASE_COUNT = 10; // number of meteors in a cast 10
+    private static final int METEOR_BASE_DAMAGE = 6; // damage dealt by each meteor 8
     private static final double METEOR_RADIUS = 4.0; // radius for meteors 3
     private static final int METEOR_DELAY = 10; // delay between each meteor in ticks 10
     private static final int MAX_CAST_RANGE = 25; // 25
@@ -85,23 +99,48 @@ public class SpellCastingManager implements Listener {
                 material == Material.ROSE_BUSH ||
                 material == Material.PEONY;
     }
-    static final double SWORD_SPEED = 0.5; // adjust speed as needed
-    static final double SWORD_DAMAGE = 3.0; // damage dealt by sword 2 = 1 heart
+    private double getVoidOrbDamage(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.VOID_ORB);
+        return SWORD_BASE_DAMAGE + ((level - 1) * 1);
+    }
+    private double getVoidOrbSpeed(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.VOID_ORB);
+        return SWORD_BASE_SPEED + ((level - 1) * 1);
+    }
+    static final double SWORD_BASE_SPEED = 0.5; // adjust speed as needed
+    static final double SWORD_BASE_DAMAGE = 3.0; // damage dealt by sword 2 = 1 heart
     static final int SWORD_LIFETIME = 100; // time in ticks before the sword disappears (5 seconds)
     static final double AIM_RADIUS = 2; // aim detection
     final Map<UUID, ArmorStand> activeSwords = new HashMap<>();
 
 
     // heal spell
-    private static final int HEAL_RADIUS = 5;     // radius of the healing circle
-    private static final int HEAL_AMOUNT = 1;     // amount of health restored per heal tick
-    private static final int HEAL_DURATION = 6;  // duration of healing in seconds
+    private double getHealRadius(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.HEAL_CLOUD);
+        return HEAL_BASE_RADIUS + ((level - 1) * 1);
+    }
+    private double getHealAmount(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.HEAL_CLOUD);
+        return HEAL_BASE_AMOUNT + ((level - 1) * 1);
+    }
+    private static final int HEAL_BASE_RADIUS = 2; // radius of the healing circle
+    private static final int HEAL_BASE_AMOUNT = 1; // amount of health restored per heal tick
+    private static final int HEAL_DURATION = 6; // duration of healing in seconds
     private static final int HEAL_TICK_INTERVAL = 20; // heal interval (in ticks), 20 ticks = 1 second
 
 
     // mana bolt
     private static final double MANA_BOLT_SPEED = 1.0;
-    private static final double MANA_BOLT_DAMAGE = 4.0;
+    private double getManaBoltDamage(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.DRAGON_SPIT);
+        return MANA_BOLT_BASE_DAMAGE + ((level - 1) * 2); // damage increases by 2 per level
+    }
+    private double getManaBoltSpeed(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.DRAGON_SPIT);
+        return MANA_BOLT_BASE_SPEED + ((level - 1) * 1); // speed increases by 0.1 per level
+    }
+    private static final double MANA_BOLT_BASE_SPEED = 1.0;
+    private static final double MANA_BOLT_BASE_DAMAGE = 4.0;
     private static final double MANA_AIM_RADIUS = 1;
     private static final int MANA_BOLT_LIFETIME = 200;
     final Map<UUID, ArmorStand> activeBolts = new HashMap<>();
@@ -125,7 +164,10 @@ public class SpellCastingManager implements Listener {
         fireball.setYield(0); // explosion power to 0
         fireball.setIsIncendiary(false); // avoid setting fire
 
-        fireball.setVelocity(caster.getLocation().getDirection().multiply(fireballSpeed));
+        final double damage = getFireballDamage(caster.getUniqueId());
+        final double speed = getFireballSpeed(caster.getUniqueId());
+
+        fireball.setVelocity(caster.getLocation().getDirection().multiply(speed));
 
         new BukkitRunnable() {
             @Override
@@ -137,7 +179,7 @@ public class SpellCastingManager implements Listener {
                 for (Entity entity : fireball.getNearbyEntities(1, 1, 1)) {
                     if (entity instanceof LivingEntity && !entity.equals(caster)) {
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Fiery Wand"));
-                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, fireballDamage);
+                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
                         ((LivingEntity) entity).damage(finalDamage, caster);
                         // explosion effect at impact location
                         entity.getWorld().createExplosion(fireball.getLocation(), 0, false, false); // Visual explosion, no damage
@@ -173,6 +215,7 @@ public class SpellCastingManager implements Listener {
         World world = caster.getWorld();
         Vector direction = caster.getEyeLocation().getDirection();
         Location eyeLocation = caster.getEyeLocation();
+        final double damage = getLightningDamage(caster.getUniqueId());
 
         // variable to hold target entity if found
         LivingEntity targetEntity = null;
@@ -236,7 +279,7 @@ public class SpellCastingManager implements Listener {
             Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
                 if (finalTargetEntity != null) {
                     WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Mjölnir"));
-                    double finalDamage = calculateDamageWithArmor(finalTargetEntity1, lightningDamage);
+                    double finalDamage = calculateDamageWithArmor(finalTargetEntity1, damage);
                     finalTargetEntity.damage(finalDamage, caster);
 //                    finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
 
@@ -810,6 +853,7 @@ public class SpellCastingManager implements Listener {
                 ThreadLocalRandom.current().nextDouble(-5, 5)
         );
 
+
         Vector direction = targetLocation.toVector().subtract(meteorSpawnLocation.toVector()).normalize();
 
         SmallFireball meteor = player.getWorld().spawn(meteorSpawnLocation, SmallFireball.class);
@@ -826,7 +870,7 @@ public class SpellCastingManager implements Listener {
             public void run() {
                 if (meteor.isDead()) {
                     createCrater(targetLocation);
-                    applyMeteorDamage(targetLocation, METEOR_DAMAGE, player);
+                    applyMeteorDamage(targetLocation, player);
                     playImpactSound(targetLocation);
                     cancel();
                 }
@@ -834,12 +878,13 @@ public class SpellCastingManager implements Listener {
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, 2);
     }
 
-    private void spawnWarningParticles(Location center) {
+    private void spawnWarningParticles(Player player, Location center) {
         new BukkitRunnable() {
             private int count = 0;
+            final double count1 = getMeteorCount(player.getUniqueId());
             @Override
             public void run() {
-                if (count >= 100) { // show particles for 5 seconds (100 ticks)
+                if (count >= count1 * 10) { // show particles for 5 seconds (100 ticks)
                     cancel();
                     return;
                 }
@@ -876,14 +921,15 @@ public class SpellCastingManager implements Listener {
     }
     public void castMeteorShower(Player player, Location targetLocation) {
         // start particles in the target area
-        spawnWarningParticles(targetLocation);
+        spawnWarningParticles(player, targetLocation);
         playWarningSound(targetLocation);
+        final double count = getMeteorCount(player.getUniqueId());
         new BukkitRunnable() {
             int meteorCount = 0;
 
             @Override
             public void run() {
-                if (meteorCount < METEOR_COUNT) {
+                if (meteorCount < count) {
                     // randomize meteor's impact location around the target
                     Location randomizedLocation = getRandomizedLocation(targetLocation);
                     spawnMeteor(player, randomizedLocation);
@@ -971,7 +1017,7 @@ public class SpellCastingManager implements Listener {
         impactLocation.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, impactLocation, 1);
     }
 
-    private void applyMeteorDamage(Location impactLocation, int damage, Player caster) {
+    private void applyMeteorDamage(Location impactLocation, Player caster) {
         for (Entity entity : impactLocation.getWorld().getNearbyEntities(impactLocation, 4, 4, 4)) {
 //            if (entity instanceof Player) {
 //                Player target = (Player) entity;
@@ -982,6 +1028,7 @@ public class SpellCastingManager implements Listener {
 
                 LivingEntity livingEntity = (LivingEntity) entity;
                 WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Starfall Barrage"));
+                final double damage = getMeteorDamage(caster.getUniqueId());
                 double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
                 livingEntity.damage(finalDamage);
 
@@ -1051,8 +1098,10 @@ public class SpellCastingManager implements Listener {
     void spawnHealingCircle(Player caster, Location center) {
 //        caster.sendMessage("Healing Circle cast at " + center.toString() + "!");
 
+        final double radius = getHealRadius(caster.getUniqueId());
+
         // display particle effect for healing circle
-        center.getWorld().spawnParticle(Particle.HEART, center, 100, HEAL_RADIUS, 2, HEAL_RADIUS, 0.1);
+        center.getWorld().spawnParticle(Particle.HEART, center, (int) radius * 10, radius, 2, radius, 0.1);
 
         // create Boss Bar for players in healing radius
         BossBar healBossBar = Bukkit.createBossBar(
@@ -1072,10 +1121,10 @@ public class SpellCastingManager implements Listener {
                     healBossBar.removeAll(); // remove Boss Bar from all players
                     return;
                 }
-                healPlayersInCircle(center);
+                healPlayersInCircle(caster, center);
 
                 // update Boss Bar for players in healing radius
-                for (Entity entity : center.getWorld().getNearbyEntities(center, HEAL_RADIUS, 2, HEAL_RADIUS)) {
+                for (Entity entity : center.getWorld().getNearbyEntities(center, radius, 2, radius)) {
                     if (entity instanceof Player) {
                         Player player = (Player) entity;
                         healBossBar.addPlayer(player);
@@ -1086,14 +1135,14 @@ public class SpellCastingManager implements Listener {
                 }
                 // remove players who walked out of healing radius
                 for (Player player : healBossBar.getPlayers()) {
-                    if (player.getLocation().distance(center) > HEAL_RADIUS) {
+                    if (player.getLocation().distance(center) > radius) {
                         healBossBar.removePlayer(player); // Remove from Boss Bar
                     }
                 }
 
                 // particles every heal tick
-                center.getWorld().spawnParticle(Particle.HEART, center, 60, HEAL_RADIUS, 1, HEAL_RADIUS, 0.1);
-                drawParticleCircle(center, HEAL_RADIUS);
+                center.getWorld().spawnParticle(Particle.HEART, center, (int)radius * 10, radius, 1, radius, 0.1);
+                drawParticleCircle(center, radius);
                 elapsedTime++;
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, HEAL_TICK_INTERVAL); // Heal every second
@@ -1101,15 +1150,16 @@ public class SpellCastingManager implements Listener {
 
 
     // heal all players within the circle
-    private void healPlayersInCircle(Location center) {
+    private void healPlayersInCircle(Player caster,Location center) {
+        final double radius = getHealRadius(caster.getUniqueId());
+        final double healAmount = getHealAmount(caster.getUniqueId());
         // expand the vertical range for healing by using a cuboid check
-        for (Entity entity : center.getWorld().getNearbyEntities(center, HEAL_RADIUS, 2, HEAL_RADIUS)) {
-            if (entity instanceof Player) {
-                Player player = (Player) entity;
+        for (Entity entity : center.getWorld().getNearbyEntities(center, radius, 2, radius)) {
+            if (entity instanceof Player player) {
 
                 // check if player is within the vertical range (up to 2 blocks above)
                 if (player.getLocation().getY() >= center.getY() - 2 && player.getLocation().getY() <= center.getY() + 2) {
-                    double newHealth = Math.min(player.getHealth() + HEAL_AMOUNT, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+                    double newHealth = Math.min(player.getHealth() + healAmount, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
                     player.setHealth(newHealth); // heal player without exceeding max health
 //                    player.sendMessage("§l§eYou are being healed!");
                 }
@@ -1155,6 +1205,8 @@ public class SpellCastingManager implements Listener {
         spawnLocation.setY(spawnLocation.getY() - 0.35);
         spawnLocation.setX(spawnLocation.getX() - 0.35);
         ArmorStand swordStand = (ArmorStand) player.getWorld().spawnEntity(spawnLocation, EntityType.ARMOR_STAND);
+        final double damage = getVoidOrbDamage(player.getUniqueId());
+        final double speed = getVoidOrbSpeed(player.getUniqueId());
 
 //        Vector direction1 = player.getEyeLocation().getDirection();
 //
@@ -1177,7 +1229,7 @@ public class SpellCastingManager implements Listener {
         activeSwords.put(playerId, swordStand);
 
         // calculate direction and velocity
-        Vector direction = player.getEyeLocation().getDirection().normalize().multiply(SWORD_SPEED);
+        Vector direction = player.getEyeLocation().getDirection().normalize().multiply(speed);
         swordStand.setVelocity(direction);
 
         // task to move sword and handle collision detection
@@ -1232,7 +1284,7 @@ public class SpellCastingManager implements Listener {
 
                         // damage first entity hit and remove sword
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Void Orb"));
-                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, SWORD_DAMAGE);
+                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
                         ((LivingEntity) entity).damage(finalDamage, player);
                         swordStand.remove();
                         activeSwords.remove(playerId);
@@ -1263,7 +1315,10 @@ public class SpellCastingManager implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_SHOOT, 0.5f, 1.0f);
 
         Location eyeLocation = player.getEyeLocation();
-        Vector direction = eyeLocation.getDirection().normalize().multiply(MANA_BOLT_SPEED);
+//        Vector direction = eyeLocation.getDirection().normalize().multiply(MANA_BOLT_SPEED);
+        final double speed = getManaBoltSpeed(player.getUniqueId());
+        final double damage = getManaBoltDamage(player.getUniqueId());
+        Vector direction = player.getLocation().getDirection().normalize().multiply(speed);
 
         // armor stand as the projectile
         ArmorStand manaBolt = player.getWorld().spawn(eyeLocation.add(direction), ArmorStand.class);
@@ -1276,6 +1331,7 @@ public class SpellCastingManager implements Listener {
 
         // handle collision detection
         new BukkitRunnable() {
+
             @Override
             public void run() {
                 if (!manaBolt.isValid() || !activeBolts.containsKey(player.getUniqueId())) {
@@ -1320,7 +1376,7 @@ public class SpellCastingManager implements Listener {
                         // damage the first entity hit and remove the mana bolt
 //                        ((LivingEntity) entity).damage(MANA_BOLT_DAMAGE, player);
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Dragon Spit"));
-                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, MANA_BOLT_DAMAGE);
+                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
                         ((LivingEntity) entity).damage(finalDamage, player);
 
                         // particle effect and sound
