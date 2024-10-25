@@ -1075,7 +1075,28 @@ public class SpellCastingManager implements Listener {
 //            }
 //        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // run every tick
 //    }
+    private void drawHeartShape(Location center, Player player) {
+        // number of particles to create heart shape
+        int particleCount = 100;
 
+        float yaw = player.getLocation().getYaw();
+        double angleOffset = Math.toRadians(yaw);
+
+        // calculate heart shape
+        for (int i = 0; i < particleCount; i++) {
+            double t = (i / (double) particleCount) * (Math.PI * 2); // Angle
+            double x = 16 * Math.pow(Math.sin(t), 3);
+            double y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            double z = 16 * Math.cos(t);
+
+            // rotate heart shape based on player's orientation
+            double rotatedX = x * Math.cos(angleOffset) - z * Math.sin(angleOffset);
+            double rotatedZ = x * Math.sin(angleOffset) + z * Math.cos(angleOffset);
+
+            // particles
+            center.getWorld().spawnParticle(Particle.REDSTONE, center.clone().add(rotatedX / 20, 3 + y / 20, rotatedZ / 20), 1, new Particle.DustOptions(Color.RED, 1.0f));
+        }
+    }
     private void drawParticleCircle(Location center, double radius) {
         // number of particles around the circle
         int particleCount = 100; // density of circle
@@ -1101,7 +1122,7 @@ public class SpellCastingManager implements Listener {
         final double radius = getHealRadius(caster.getUniqueId());
 
         // display particle effect for healing circle
-        center.getWorld().spawnParticle(Particle.HEART, center, (int) radius * 10, radius, 2, radius, 0.1);
+        center.getWorld().spawnParticle(Particle.HEART, center, (int) radius * 2, radius - 3, 2, radius - 3, 0.1);
 
         // create Boss Bar for players in healing radius
         BossBar healBossBar = Bukkit.createBossBar(
@@ -1131,6 +1152,7 @@ public class SpellCastingManager implements Listener {
                         double progress = 1.0 - ((double) elapsedTime / HEAL_DURATION);
                         healBossBar.setProgress(progress);
                         healBossBar.setTitle("§e§lYou are being healed! Time Remaining: " + (HEAL_DURATION - elapsedTime) + "s");
+                        drawHeartShape(center, player);
                     }
                 }
                 // remove players who walked out of healing radius
@@ -1141,7 +1163,7 @@ public class SpellCastingManager implements Listener {
                 }
 
                 // particles every heal tick
-                center.getWorld().spawnParticle(Particle.HEART, center, (int)radius * 10, radius, 1, radius, 0.1);
+                center.getWorld().spawnParticle(Particle.HEART, center, (int)radius * 2, radius - 4, 1, radius - 4, 0.1);
                 drawParticleCircle(center, radius);
                 elapsedTime++;
             }
