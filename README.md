@@ -17,3 +17,7 @@ List of Spells:
 - Flight
 - Voidwalker
 - Starfall Barrage
+- Heal Cloud
+- Void Orb
+- Recall
+- Dragon Spit
