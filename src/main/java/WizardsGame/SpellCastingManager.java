@@ -43,29 +43,34 @@ import java.util.concurrent.ThreadLocalRandom;
 import static WizardsGame.WizardsPlugin.getPlayerById;
 
 public class SpellCastingManager implements Listener {
+
+    double fireballDamage = 2.0;
+    double fireballSpeed = 2.0;
+
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
-    double lightningDamage = 1.0;
+    double lightningDamage = 2.0;
 
-    //map teleport
+    // map teleport / voidwalker spell
     private static final int TELEPORT_DURATION = 5; // duration player stays in the air (in seconds)
     private static final int PLATFORM_SIZE = 150; // size of the platform (size x size)
     private static final int TELEPORT_UP_HEIGHT = 60; // height to teleport up
     private static final double SPEED_BOOST = 2.0; // speed while on barrier platform
 
-    //clone
+    // clone
 //    private static final int CLONE_DURATION = 100;
 
-    //meteor
+    // meteor spell
     private static final int METEOR_COUNT = 10; // number of meteors in a cast 10
     private static final int METEOR_DAMAGE = 6; // damage dealt by each meteor 8
     private static final double METEOR_RADIUS = 4.0; // radius for meteors 3
     private static final int METEOR_DELAY = 10; // delay between each meteor in ticks 10
     private static final int MAX_CAST_RANGE = 25; // 25
     private static final double RANDOM_SPAWN_RADIUS = 8.0; // 5
-    private final HashMap<UUID, Player> projectileCasterMap = new HashMap<>();
     private Map<UUID, UUID> spellCasters = new HashMap<>();
 
+
+    //void orb spell
     private boolean isIgnoredBlock(Material material) {
         // list of materials to ignore
         return material == Material.SHORT_GRASS ||
@@ -86,105 +91,60 @@ public class SpellCastingManager implements Listener {
     static final double AIM_RADIUS = 2; // aim detection
     final Map<UUID, ArmorStand> activeSwords = new HashMap<>();
 
-    @EventHandler
-    public void onProjectileHit(ProjectileHitEvent event) {
-        if (event.getEntity() instanceof Projectile) {
-            Projectile projectile = (Projectile) event.getEntity();
-            Player caster = projectileCasterMap.get(projectile.getUniqueId());
-            if (caster != null && event.getHitEntity() instanceof LivingEntity) {
-                LivingEntity target = (LivingEntity) event.getHitEntity();
-                target.damage(5, caster); // Damage tied to the caster
-            }
-            projectileCasterMap.remove(projectile.getUniqueId());
-        }
-    }
 
-    //event handler for entity deaths
+    // heal spell
+    private static final int HEAL_RADIUS = 5;     // radius of the healing circle
+    private static final int HEAL_AMOUNT = 1;     // amount of health restored per heal tick
+    private static final int HEAL_DURATION = 6;  // duration of healing in seconds
+    private static final int HEAL_TICK_INTERVAL = 20; // heal interval (in ticks), 20 ticks = 1 second
 
-    @EventHandler
-    public void onEntityDeath(EntityDeathEvent event) {
-        // fheck if entity that died is a Player
-        if (event.getEntity() instanceof Player) {
-            Player player = (Player) event.getEntity();
+    // mana bolt
 
-            // get last damage cause and verify if it's from another entity
-            if (player.getLastDamageCause() instanceof EntityDamageByEntityEvent) {
-                EntityDamageByEntityEvent lastDamageEvent = (EntityDamageByEntityEvent) player.getLastDamageCause();
+    private static final double MANA_BOLT_SPEED = 1.0; // Adjust as needed
+    private static final double MANA_BOLT_DAMAGE = 4.0; // Damage dealt by the Mana Bolt
+    private static final double MANA_AIM_RADIUS = 1; // Radius to check for nearby entities
+    private static final int MANA_BOLT_LIFETIME = 200;
+    final Map<UUID, ArmorStand> activeBolts = new HashMap<>();
 
-                // check if the damager is a player
-                if (lastDamageEvent.getDamager() instanceof Player) {
-                    Player killer = (Player) lastDamageEvent.getDamager();
-                    if (event instanceof PlayerDeathEvent) {
-                        PlayerDeathEvent playerDeathEvent = (PlayerDeathEvent) event;
-                        playerDeathEvent.setDeathMessage(player.getName() + " was slain by " + killer.getName() + "'s spell.");
-                    }
-                }
-            }
-        }
-    }
-    @EventHandler
-    public void onEntityDamage(EntityDamageByEntityEvent event) {
-        if (event.getDamager() instanceof ArmorStand) {
-            ArmorStand swordStand = (ArmorStand) event.getDamager();
-            UUID spellId = swordStand.getUniqueId();
-            if (spellCasters.containsKey(spellId)) {
-                UUID casterId = spellCasters.get(spellId);
-                Player caster = Bukkit.getPlayer(casterId);
-
-                if (caster != null && event.getEntity() instanceof Player) {
-                    Player victim = (Player) event.getEntity();
-                    victim.sendMessage("You were killed by " + caster.getName() + "'s spell!");
-                }
-            }
-        }
-    }
-
-
-
-    //    void updateActionBar(Player player) {
-//        ItemStack itemInHand = player.getInventory().getItemInMainHand();
-//        String itemName;
-//
-//        // Define wand materials
-//        Material[] wandMaterials = {Material.STICK, Material.BLAZE_ROD}; // Add other materials as needed
-//
-//        // Check if the item is not null, is of a material type, and is a wand
-//        if (itemInHand != null && itemInHand.getType() != Material.AIR) {
-//            for (Material wandMaterial : wandMaterials) {
-//                if (itemInHand.getType() == wandMaterial) {
-//                    // Get the item's custom name or fallback to the material name
-//                    if (itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasDisplayName()) {
-//                        itemName = itemInHand.getItemMeta().getDisplayName();
-//                    } else {
-//                        itemName = itemInHand.getType().toString().replace("_", " ").toLowerCase();
-//                        itemName = ChatColor.GOLD + ChatColor.BOLD.toString() + itemName.substring(0, 1).toUpperCase() + itemName.substring(1); // Capitalize first letter
-//                    }
-//
-//                    // Create action bar message
-//                    StringBuilder manaBar = new StringBuilder(itemName);
-//                    TextComponent actionBar = new TextComponent(manaBar.toString());
-//                    actionBar.setColor(ChatColor.DARK_PURPLE.asBungee()); // Set color
-//
-//                    // Send action bar message to player
-//                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, actionBar);
-//                    return; // Exit method after sending the action bar
-//                }
-//            }
-//        }
-//
-//        // Clear the action bar or show a default message when not holding a wand
-//        TextComponent clearActionBar = new TextComponent("");
-//        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, clearActionBar); // Optionally clear the action bar
-//    }
     // fireball cast
     public void castFireball(Player caster) {
         Fireball fireball = caster.launchProjectile(Fireball.class);
-        fireball.setYield(1); // remove block-breaking ability
-        fireball.setIsIncendiary(false); // avoid setting fires
-        // track the caster of this fireball
-        projectileCasterMap.put(fireball.getUniqueId(), caster);
-    }
+        fireball.setYield(1); // Remove block-breaking ability
+        fireball.setIsIncendiary(false); // Avoid setting fire
 
+        // Track the caster of this fireball (optional, uncomment if needed)
+        // projectileCasterMap.put(fireball.getUniqueId(), caster);
+
+        // Create a listener to handle the damage when the fireball hits an entity
+//        fireball.setOnGround(true); // Ensure it can trigger the impact event
+        fireball.setVelocity(caster.getLocation().getDirection().multiply(fireballSpeed));
+
+        // You can use a BukkitRunnable to check for impact
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!fireball.isValid()) {
+                    cancel();
+                    return;
+                }
+
+                for (Entity entity : fireball.getNearbyEntities(1, 1, 1)) {
+                    if (entity instanceof LivingEntity && !entity.equals(caster)) {
+                        // Apply damage to the entity
+                        ((LivingEntity) entity).damage(fireballDamage, caster);
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), caster.getUniqueId());
+
+                        // Optionally, you can play a sound or spawn particles here
+
+                        // Remove the fireball after hitting the target
+                        fireball.remove();
+                        cancel();
+                        return;
+                    }
+                }
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // Check every tick (1/20th of a second)
+    }
 
     public void castLightningSpell(Player caster) {
         World world = caster.getWorld();
@@ -249,10 +209,12 @@ public class SpellCastingManager implements Listener {
 
             // schedule task to strike lightning after a delay
             LivingEntity finalTargetEntity = targetEntity;
+            LivingEntity finalTargetEntity1 = targetEntity;
             Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
                 if (finalTargetEntity != null) {
                     finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
                     registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
+                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), caster.getUniqueId());
                 }
                 world.strikeLightning(strikeLocation); // strike lightning at determined location
             }, 30L); // 1.5 sec delay (20 ticks per second)
@@ -1007,12 +969,6 @@ public class SpellCastingManager implements Listener {
 //        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // run every tick
 //    }
 
-
-    private static final int HEAL_RADIUS = 5;     // radius of the healing circle
-    private static final int HEAL_AMOUNT = 1;     // amount of health restored per heal tick
-    private static final int HEAL_DURATION = 6;  // duration of healing in seconds
-    private static final int HEAL_TICK_INTERVAL = 20; // heal interval (in ticks), 20 ticks = 1 second
-
     private void drawParticleCircle(Location center, double radius) {
         // number of particles around the circle
         int particleCount = 100; // density of circle
@@ -1234,6 +1190,93 @@ public class SpellCastingManager implements Listener {
             }
         }, SWORD_LIFETIME);
         spellCasters.put(swordStand.getUniqueId(), playerId);
+    }
+
+
+
+    void launchManaBolt(Player player) {
+        player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getEyeLocation(), 10, 0.1, 0.1, 0.1, 0.05);
+
+        // sound effect
+        player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_SHOOT, 0.5f, 1.0f);
+
+        Location eyeLocation = player.getEyeLocation();
+        Vector direction = eyeLocation.getDirection().normalize().multiply(MANA_BOLT_SPEED);
+
+        // armor stand as the projectile
+        ArmorStand manaBolt = player.getWorld().spawn(eyeLocation.add(direction), ArmorStand.class);
+        manaBolt.setInvisible(true);
+        manaBolt.setGravity(false);
+        manaBolt.setMarker(true);
+
+        // store mana bolt in the activeBolts map
+        activeBolts.put(player.getUniqueId(), manaBolt);
+
+        // handle collision detection
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!manaBolt.isValid() || !activeBolts.containsKey(player.getUniqueId())) {
+                    activeBolts.remove(player.getUniqueId());
+                    cancel();
+                    return;
+                }
+
+                manaBolt.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 5, 0.1, 0.1, 0.1, 0.02);
+                manaBolt.getWorld().playSound(manaBolt.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f);
+
+                // update position
+                Location currentLocation = manaBolt.getLocation().add(direction);
+
+                // check if mana bolt hits a solid block
+                if (isSolidBlock(currentLocation)) {
+                    manaBolt.remove();
+                    activeBolts.remove(player.getUniqueId());
+                    cancel();
+                    return;
+                }
+
+                // teleport the mana bolt to the updated location
+                manaBolt.teleport(currentLocation);
+
+                // ccheck for nearby entities to detect a hit
+                for (Entity entity : manaBolt.getNearbyEntities(MANA_AIM_RADIUS, MANA_AIM_RADIUS, MANA_AIM_RADIUS)) {
+                    if (entity instanceof LivingEntity && !entity.equals(player)) {
+                        // line-of-sight check to ensure no wall is between mana bolt and the entity
+                        RayTraceResult rayTraceResult = manaBolt.getWorld().rayTraceBlocks(
+                                manaBolt.getLocation(),
+                                entity.getLocation().toVector().subtract(manaBolt.getLocation().toVector()).normalize(),
+                                manaBolt.getLocation().distance(entity.getLocation())
+                        );
+
+                        // obstruction found
+                        if (rayTraceResult != null && rayTraceResult.getHitBlock() != null) {
+                            continue;
+                        }
+
+                        // damage the first entity hit and remove the mana bolt
+                        ((LivingEntity) entity).damage(MANA_BOLT_DAMAGE, player);
+
+                        // particle effect and sound
+                        player.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 20, 0.2, 0.2, 0.2, 0.1);
+                        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, -2.0f);
+
+                        manaBolt.remove();
+                        activeBolts.remove(player.getUniqueId());
+                        cancel();
+                        return;
+                    }
+                }
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // every tick (1/20th of a second)
+
+        // remove the mana bolt after defined lifetime
+        Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
+            if (manaBolt.isValid()) {
+                manaBolt.remove();
+                activeBolts.remove(player.getUniqueId());
+            }
+        }, MANA_BOLT_LIFETIME);
     }
 
 

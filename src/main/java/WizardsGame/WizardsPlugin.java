@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -83,6 +84,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         ItemStack wand = player.getInventory().getItemInMainHand();
         if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             handleSpellCast(player, playerId, wand);
+//            event.setCancelled(true);
         }
     }
     @EventHandler
@@ -90,10 +92,66 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         // check if damage is dealt by a player & cast spell if so
         if (event.getDamager() instanceof Player) {
             Player player = (Player) event.getDamager();
-            UUID playerId = player.getUniqueId();
-            ItemStack wand = player.getInventory().getItemInMainHand();
-            handleSpellCast(player, playerId, wand);
+            if (!(event.getDamager() instanceof ArmorStand) || !isSpellProjectile(player)) {
+//                 handleSpellCast(player, playerId, wand);
+            }
         }
+    }
+    private static final int NUMBER_OF_DROPS = 5;
+    private static final double RADIUS = 1.0;
+    static final Map<UUID, UUID> lastDamager = new HashMap<>();
+
+    @EventHandler
+    public void onEntityDamage(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player) {
+            Player player = (Player) event.getDamager();
+            lastDamager.put(event.getEntity().getUniqueId(), player.getUniqueId());
+        }
+    }
+
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        // check if entity was killed by a spell
+        UUID damagerId = lastDamager.get(event.getEntity().getUniqueId());
+        if (damagerId != null) {
+            Player player = Bukkit.getPlayer(damagerId);
+            if (player != null) {
+                // sound effect for the caster
+                player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_DEATH, 1.0f, 1.0f);
+                player.sendMessage(ChatColor.GRAY + "You killed " + ChatColor.YELLOW + event.getEntity().getName() + ChatColor.GRAY +" with your spell!");
+            }
+        }
+
+        // death location of the entity
+        Location deathLocation = event.getEntity().getLocation();
+
+        Random random = new Random();
+
+        // drop red dye at random locations around death location
+        for (int i = 0; i < NUMBER_OF_DROPS; i++) {
+            // random coordinates within the specified radius
+            double xOffset = (random.nextDouble() * 2 - 1) * RADIUS;
+            double yOffset = (random.nextDouble() * 2 - 1) * RADIUS;
+            double zOffset = (random.nextDouble() * 2 - 1) * RADIUS;
+
+            Location dyeLocation = deathLocation.clone().add(new Vector(xOffset, yOffset, zOffset));
+            ItemStack dyeItem = new ItemStack(Material.RED_DYE, 1); // 1 red dye
+            Item item = dyeLocation.getWorld().dropItem(dyeLocation, dyeItem);
+            item.setPickupDelay(Integer.MAX_VALUE); // prevents picking up
+
+            // velocity to item to make it move outward
+            item.setVelocity(new Vector(random.nextDouble() * 0.2 - 0.1, 0.4, random.nextDouble() * 0.2 - 0.1));
+
+            // remove the item after 2 seconds (40 ticks)
+            Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), item::remove, 40);
+        }
+
+        // clean up last damager record
+        lastDamager.remove(event.getEntity().getUniqueId());
+    }
+    private boolean isSpellProjectile(Player player) {
+        return Cast.activeSwords.containsValue(player.getUniqueId()) || Cast.activeBolts.containsKey(player.getUniqueId());
+        // activeBolts.put(player.getUniqueId(), manaBolt);
     }
 
     @EventHandler
@@ -137,6 +195,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         SPELL_NAMES.put(Material.TIPPED_ARROW, "§lHeal Cloud");
         SPELL_NAMES.put(Material.MUSIC_DISC_5, "§lRecall");
         SPELL_NAMES.put(Material.HEART_OF_THE_SEA, "§lVoid Orb");
+        SPELL_NAMES.put(Material.AMETHYST_SHARD, "§lDragon Spit");
 
     }
     private String getSpellInfo(ItemStack itemInHand) {
@@ -211,6 +270,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         else if (itemInHand.getType() == Material.HEART_OF_THE_SEA) {
             return Cooldown.VoidOrbCooldownDuration - (System.currentTimeMillis() - Cooldown.VoidOrbCooldowns.getOrDefault(playerId, 0L));
         }
+        else if (itemInHand.getType() == Material.AMETHYST_SHARD) {
+            return Cooldown.manaBoltCooldownDuration - (System.currentTimeMillis() - Cooldown.manaBoltCooldowns.getOrDefault(playerId, 0L));
+        }
         return 0;
     }
 
@@ -249,6 +311,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
         if (itemInHand.getType() == Material.HEART_OF_THE_SEA) {
             return Cooldown.VoidOrbCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.AMETHYST_SHARD) {
+            return Cooldown.manaBoltCooldownDuration;
         }
 
         return 0;
@@ -319,6 +384,12 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------- SPELL  HANDLING -----------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+
     static final double FIREBALL_COST = 15.0;
     static final double TELEPORT_COST = 10.0;
     static final double LIGHTNING_COST = 20.0;
@@ -332,6 +403,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     static final double HEALCLOUD_COST = 15.0;
     static final double Recall_Cost = 25.0;
     static final double VoidOrb_Cost = 10.0;
+    static final double MANABOLT_COST = 10.0;
     static final double CHARM_COST = 15.0;
     static final double PORKCHOP_COST = 10.0;
 
@@ -356,7 +428,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         STARFALL_BARRAGE(Material.HONEYCOMB),
         HEAL_CLOUD(Material.TIPPED_ARROW),
         RECALL(Material.MUSIC_DISC_5),
-        VOID_ORB(Material.HEART_OF_THE_SEA);
+        VOID_ORB(Material.HEART_OF_THE_SEA),
+        DRAGON_SPIT(Material.AMETHYST_SHARD);
+
 
         private final Material material;
 
@@ -424,9 +498,29 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case TIPPED_ARROW -> handleHealCloudCast(player, playerId);
             case MUSIC_DISC_5 -> handleRecallCast(player, playerId);
             case HEART_OF_THE_SEA -> handleVoidOrbCast(player, playerId);
+            case AMETHYST_SHARD -> handleManaBoltCast(player, playerId);
 
             case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
+
+
+        }
+    }
+
+    private void handleManaBoltCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            sendTeleportWarning(player);
+            return;
+        }
+        if (!Cooldown.isOnManaBoltCooldown(playerId) && Mana.hasEnoughMana(playerId, MANABOLT_COST)){
+            Mana.deductMana(playerId, MANABOLT_COST);
+            Cooldown.setManaBoltCooldown(playerId);
+            Cast.launchManaBolt(player);
+        }
+        else if (Cooldown.isOnManaBoltCooldown(playerId)) {
+            handleCooldownMessage(player, "Dragon Spit", Cooldown.getRemainingManaBoltCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
         }
     }
 

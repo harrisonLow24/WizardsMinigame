@@ -213,6 +213,11 @@ public class SpellMenu {
                 details.add("§eCooldown: " + Cooldown.VoidOrbCooldownDuration / 1000 + "s");
                 details.add("§7Sends a ball of void energy at your enemies.");
             }
+            case DRAGON_SPIT -> {
+                details.add("§eMana: " + WizardsPlugin.MANABOLT_COST);
+                details.add("§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s");
+                details.add("§7Sends a ball of spit at your enemies.");
+            }
         }
 
         if (spellLevel > 0) {

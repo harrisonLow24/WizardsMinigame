@@ -74,6 +74,10 @@ public class WandManager {
                     lore.add("§gSend a ball of void energy at your opponents!");
                     lore.add("§gWatch this!");
                     break;
+                case AMETHYST_SHARD:
+                    lore.add("§gtest");
+                    lore.add("§gtest");
+                    break;
                 default:
                     lore.add("§gA basic wand with no special powers.");
                     break;
@@ -114,6 +118,8 @@ public class WandManager {
                 return "§a§lRecall";
             case HEART_OF_THE_SEA:
                 return "§e§lVoid Orb";
+            case AMETHYST_SHARD:
+                return "§e§lDragon Spit";
             default:
                 return "§i§lGeneric Wand";
         }
@@ -184,6 +190,10 @@ public class WandManager {
                 manaCost = (int) WizardsPlugin.VoidOrb_Cost;
                 cooldown = Cooldown.VoidOrbCooldownDuration;
                 break;
+            case AMETHYST_SHARD:
+                manaCost = (int) WizardsPlugin.MANABOLT_COST;
+                cooldown = Cooldown.manaBoltCooldownDuration;
+                break;
             default:
                 spellName = "§i§lGeneric Wand";
                 manaCost = 0;
@@ -209,6 +219,7 @@ public class WandManager {
                         item.getType() == Material.HONEYCOMB ||
                         item.getType() == Material.TIPPED_ARROW ||
                         item.getType() == Material.MUSIC_DISC_5 ||
-                        item.getType() == Material.HEART_OF_THE_SEA);
+                        item.getType() == Material.HEART_OF_THE_SEA||
+                        item.getType() == Material.AMETHYST_SHARD);
     }
 }

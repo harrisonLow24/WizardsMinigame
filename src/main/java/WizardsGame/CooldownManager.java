@@ -80,6 +80,7 @@ public class CooldownManager {
 //    private final Map<UUID, Long> cloneCooldowns = new HashMap<>();
     final Map<UUID, Long> MeteorCooldowns = new HashMap<>();
     final Map<UUID, Long> HealCloudCooldowns = new HashMap<>    ();
+    final Map<UUID, Long> manaBoltCooldowns = new HashMap<>();
     final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
 
     final Map<UUID, Long> iceSphereCooldowns = new HashMap<>    ();
@@ -98,6 +99,7 @@ public class CooldownManager {
     final long MeteorCooldownDuration = 20 * 1000; // 25 seconds
     final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
     final long VoidOrbCooldownDuration = 1 * 1000; // 25 seconds
+    final int manaBoltCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
     final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
     final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
@@ -152,6 +154,10 @@ public class CooldownManager {
     }
     int getRemainingVoidOrbCooldownSeconds(UUID playerId) {
         long remainingCooldown = VoidOrbCooldownDuration - (System.currentTimeMillis() - VoidOrbCooldowns.getOrDefault(playerId, 0L));
+        return (int) Math.ceil(remainingCooldown / 1000.0);
+    }
+    int getRemainingManaBoltCooldownSeconds(UUID playerId) {
+        long remainingCooldown = manaBoltCooldownDuration - (System.currentTimeMillis() - manaBoltCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
 
@@ -226,6 +232,9 @@ public class CooldownManager {
     boolean isOnVoidOrbCooldown(UUID playerId) {
         return VoidOrbCooldowns.containsKey(playerId) && System.currentTimeMillis() - VoidOrbCooldowns.get(playerId) < VoidOrbCooldownDuration;
     }
+    boolean isOnManaBoltCooldown(UUID playerId) {
+        return manaBoltCooldowns.containsKey(playerId) && System.currentTimeMillis() - manaBoltCooldowns.get(playerId) < manaBoltCooldownDuration;
+    }
 
     boolean isOnPorkchopCooldown(UUID playerId) {
         return porkchopCooldowns.containsKey(playerId) && System.currentTimeMillis() - porkchopCooldowns.get(playerId) < porkchopCooldownDuration;
@@ -288,6 +297,9 @@ public class CooldownManager {
     }
     void setHealCloudCooldown(UUID playerId) {
         HealCloudCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    void setManaBoltCooldown(UUID playerId) {
+        manaBoltCooldowns.put(playerId, System.currentTimeMillis());
     }
     void setPorkchopCooldown(UUID playerId) {
         porkchopCooldowns.put(playerId, System.currentTimeMillis());
