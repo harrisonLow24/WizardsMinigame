@@ -87,6 +87,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             // cant break blocks
             event.setCancelled(true);
         }
+
+        // cant break blocks
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 //            if(wand != SPELL_NAMES){
 //            event.setCancelled(true);
@@ -195,7 +197,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
         getServer().getPluginManager().registerEvents(new SpellListener(this, Menu), this);
 //        getServer().getPluginManager().registerEvents(new SquidFlight(), this);
-        new SpellBookMenu(this);
     }
 
     // commands
@@ -209,7 +210,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("togglefriendlyfire")).setExecutor(new WizardCommands(this));
     }
 
-    private static final Map<Material, String> SPELL_NAMES = new HashMap<>();
+    static final Map<Material, String> SPELL_NAMES = new HashMap<>();
     static {
         SPELL_NAMES.put(Material.STICK, "§lGeneric Wand");
         SPELL_NAMES.put(Material.BLAZE_ROD, "§lFiery Wand");
@@ -227,7 +228,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         SPELL_NAMES.put(Material.AMETHYST_SHARD, "§lDragon Spit");
 
     }
-    private String getSpellInfo(ItemStack itemInHand) {
+    String getSpellInfo(ItemStack itemInHand) {
         if (itemInHand != null) {
             // check if item type has a corresponding spell name
             String spellName = SPELL_NAMES.get(itemInHand.getType());

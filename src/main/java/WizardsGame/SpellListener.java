@@ -1,5 +1,6 @@
 package WizardsGame;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -9,12 +10,15 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
+import java.awt.*;
 import java.util.UUID;
 
 public class SpellListener implements Listener {
     private final WizardsPlugin spellManager;
     private final SpellMenu spellMenu;
+    SpellMenu Menu = new SpellMenu(WizardsPlugin.getInstance());
 
     public SpellListener(WizardsPlugin spellManager, SpellMenu spellMenu) {
         this.spellManager = spellManager;
@@ -37,9 +41,39 @@ public class SpellListener implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getClickedInventory() == null) return;
+
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clickedItem = event.getCurrentItem();
+        if (clickedItem == null) return;
+
+        // check if clicked item is a spell button
+        if (clickedItem != null && clickedItem.getType() != Material.AIR) {
+            ItemMeta meta = clickedItem.getItemMeta();
+            if (clickedItem.getType() == Material.GRAY_STAINED_GLASS_PANE || clickedItem.getType() == Material.GRAY_DYE ||
+                    clickedItem.getType() == Material.ELYTRA ||
+                    clickedItem.getType() == Material.TOTEM_OF_UNDYING ||
+                    clickedItem.getType() == Material.NETHERITE_SWORD) {
+                //prevent interaction with stained glass
+                event.setCancelled(true);
+                return;
+            }
+        }
         if (event.getView().getTitle().equals("Select a Spell")) {
-            Player player = (Player) event.getWhoClicked();
-            spellMenu.handleMenuClick(event, player);
+            if (event.isShiftClick()) {
+                event.setCancelled(true);
+                return;
+            }
+            UUID playerId = player.getUniqueId();
+            Material itemType = clickedItem.getType();
+            WizardsPlugin.SpellType selectedSpell = Menu.getSpellByMaterial(itemType);
+
+            if (selectedSpell != null && spellManager.canSelectSpell(playerId, selectedSpell)) {
+                player.getInventory().setItemInMainHand(new ItemStack(selectedSpell.getMaterial()));
+                player.sendMessage("You have selected the spell: " + selectedSpell.name());
+                player.closeInventory();
+            }
+            event.setCancelled(true);
         }
     }
 

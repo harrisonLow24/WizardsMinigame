@@ -49,6 +49,26 @@ public class SpellMenu {
             menu.setItem(slot, divider);
         }
 
+        // xet specific items in defined slots
+        ItemStack netheriteSword = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta swordMeta = netheriteSword.getItemMeta();
+        swordMeta.setDisplayName("§aCOMBAT");
+        netheriteSword.setItemMeta(swordMeta);
+        menu.setItem(1, netheriteSword);
+
+        ItemStack totemOfUndying = new ItemStack(Material.TOTEM_OF_UNDYING);
+        ItemMeta totemMeta = totemOfUndying.getItemMeta();
+        totemMeta.setDisplayName("§aMISC");
+        totemOfUndying.setItemMeta(totemMeta);
+        menu.setItem(4, totemOfUndying);
+
+        ItemStack elytra = new ItemStack(Material.ELYTRA);
+        ItemMeta elytraMeta = elytra.getItemMeta();
+        elytraMeta.setDisplayName("§aMOVEMENT");
+        elytra.setItemMeta(elytraMeta);
+        menu.setItem(7, elytra);
+
+
         // current index for each section
         int combatIndex = 0;
         int movementIndex = 0;
@@ -102,26 +122,6 @@ public class SpellMenu {
         player.openInventory(menu);
     }
 
-    public void handleMenuClick(InventoryClickEvent event, Player player) {
-        ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || clickedItem.getType() == Material.GRAY_DYE || clickedItem.getType() == Material.GRAY_STAINED_GLASS_PANE) {
-            event.setCancelled(true);
-            return; // do not allow interaction if spell is unowned
-        }
-
-        UUID playerId = player.getUniqueId();
-        Material itemType = clickedItem.getType();
-        WizardsPlugin.SpellType selectedSpell = getSpellByMaterial(itemType);
-
-        if (selectedSpell != null && spellManager.canSelectSpell(playerId, selectedSpell)) {
-            player.getInventory().setItemInMainHand(new ItemStack(selectedSpell.getMaterial()));
-            player.sendMessage("You have selected the spell: " + selectedSpell.name());
-            player.closeInventory();
-        }
-
-        event.setCancelled(true);
-    }
-
     WizardsPlugin.SpellType getSpellByMaterial(Material material) {
         for (WizardsPlugin.SpellType spell : WizardsPlugin.SpellType.values()) {
             if (spell.getMaterial() == material) {
@@ -134,7 +134,7 @@ public class SpellMenu {
     // determine catergories
     private SpellCategory getSpellCategory(WizardsPlugin.SpellType spellType) {
         switch (spellType) {
-            case FIERY_WAND, MJOLNIR, STARFALL_BARRAGE, BIG_MAN_SLAM, VOID_ORB -> {
+            case FIERY_WAND, MJOLNIR, STARFALL_BARRAGE, BIG_MAN_SLAM, VOID_ORB, DRAGON_SPIT-> {
                 return SpellCategory.COMBAT;
             }
             case SHROUDED_STEP, THE_GREAT_ESCAPE, GUST_FEATHER, WINGED_SHIELD, VOIDWALKER, RECALL -> {

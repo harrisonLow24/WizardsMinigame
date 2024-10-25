@@ -121,17 +121,13 @@ public class SpellCastingManager implements Listener {
                     cancel();
                     return;
                 }
-
                 for (Entity entity : fireball.getNearbyEntities(1, 1, 1)) {
                     if (entity instanceof LivingEntity && !entity.equals(caster)) {
-                        // Apply custom damage to the entity
-                        ((LivingEntity) entity).damage(fireballDamage, caster);
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Fiery Wand"));
-
+                        ((LivingEntity) entity).damage(fireballDamage, caster);
                         // explosion effect at impact location
                         entity.getWorld().createExplosion(fireball.getLocation(), 0, false, false); // Visual explosion, no damage
                         entity.getWorld().playSound(fireball.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
-
                         // remove fireball
                         fireball.remove();
                         cancel();
