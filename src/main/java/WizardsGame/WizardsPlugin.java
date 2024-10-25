@@ -84,7 +84,13 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         ItemStack wand = player.getInventory().getItemInMainHand();
         if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             handleSpellCast(player, playerId, wand);
+            // cant break blocks
+            event.setCancelled(true);
+        }
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+//            if(wand != SPELL_NAMES){
 //            event.setCancelled(true);
+//            }
         }
     }
     @EventHandler
@@ -99,32 +105,49 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
     private static final int NUMBER_OF_DROPS = 5;
     private static final double RADIUS = 1.0;
-    static final Map<UUID, UUID> lastDamager = new HashMap<>();
+    static final Map<UUID, SpellInfo> lastDamager = new HashMap<>();
 
-    @EventHandler
-    public void onEntityDamage(EntityDamageByEntityEvent event) {
-        if (event.getDamager() instanceof Player) {
-            Player player = (Player) event.getDamager();
-            lastDamager.put(event.getEntity().getUniqueId(), player.getUniqueId());
+    static class SpellInfo {
+        private final UUID casterId;
+        private final String spellName;
+
+        public SpellInfo(UUID casterId, String spellName) {
+            this.casterId = casterId;
+            this.spellName = spellName;
+        }
+
+        public UUID getCasterId() {
+            return casterId;
+        }
+
+        public String getSpellName() {
+            return spellName;
         }
     }
-
+    public void recordSpellUsed(Player caster, UUID entityId, String spellName) {
+        lastDamager.put(entityId, new SpellInfo(caster.getUniqueId(), spellName));
+    }
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        // check if entity was killed by a spell
-        UUID damagerId = lastDamager.get(event.getEntity().getUniqueId());
-        if (damagerId != null) {
+        // check if the entity was killed by a spell
+        SpellInfo damagerInfo = lastDamager.get(event.getEntity().getUniqueId());
+        if (damagerInfo != null) {
+            UUID damagerId = damagerInfo.getCasterId();
+            String spellName = damagerInfo.getSpellName();
             Player player = Bukkit.getPlayer(damagerId);
             if (player != null) {
                 // sound effect for the caster
                 player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_DEATH, 1.0f, 1.0f);
-                player.sendMessage(ChatColor.GRAY + "You killed " + ChatColor.YELLOW + event.getEntity().getName() + ChatColor.GRAY +" with your spell!");
+                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                    onlinePlayer.sendMessage(ChatColor.AQUA +"Death> " + ChatColor.YELLOW + event.getEntity().getName() +
+                            ChatColor.GRAY + " killed by " + ChatColor.YELLOW + player.getName() +
+                            ChatColor.GRAY + " with " + ChatColor.GREEN +ChatColor.ITALIC + spellName + ChatColor.GRAY + "!");
+                }
             }
         }
 
         // death location of the entity
         Location deathLocation = event.getEntity().getLocation();
-
         Random random = new Random();
 
         // drop red dye at random locations around death location
@@ -134,8 +157,13 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             double yOffset = (random.nextDouble() * 2 - 1) * RADIUS;
             double zOffset = (random.nextDouble() * 2 - 1) * RADIUS;
 
+            // create new location for the dye
             Location dyeLocation = deathLocation.clone().add(new Vector(xOffset, yOffset, zOffset));
+
+            // create item stack
             ItemStack dyeItem = new ItemStack(Material.RED_DYE, 1); // 1 red dye
+
+            // spawn item
             Item item = dyeLocation.getWorld().dropItem(dyeLocation, dyeItem);
             item.setPickupDelay(Integer.MAX_VALUE); // prevents picking up
 
@@ -149,10 +177,12 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         // clean up last damager record
         lastDamager.remove(event.getEntity().getUniqueId());
     }
+
     private boolean isSpellProjectile(Player player) {
         return Cast.activeSwords.containsValue(player.getUniqueId()) || Cast.activeBolts.containsKey(player.getUniqueId());
         // activeBolts.put(player.getUniqueId(), manaBolt);
     }
+
 
     @EventHandler
     public void onPlayerItemChange(PlayerItemHeldEvent event) {
@@ -163,7 +193,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     void registerEvents() {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
-        getServer().getPluginManager().registerEvents(new TwistedFateSpell(), this);
         getServer().getPluginManager().registerEvents(new SpellListener(this, Menu), this);
 //        getServer().getPluginManager().registerEvents(new SquidFlight(), this);
         new SpellBookMenu(this);
@@ -405,7 +434,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     static final double VoidOrb_Cost = 10.0;
     static final double MANABOLT_COST = 10.0;
     static final double CHARM_COST = 15.0;
-    static final double PORKCHOP_COST = 10.0;
 
     // recall spell ----------------------------------------------------------------------------------------------------
     private final int maxRecordedLocations = 5; // number of locations to record ( ho many seconds to teleport back )
@@ -500,7 +528,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case HEART_OF_THE_SEA -> handleVoidOrbCast(player, playerId);
             case AMETHYST_SHARD -> handleManaBoltCast(player, playerId);
 
-            case IRON_SHOVEL -> handlePorkchopCast(player, playerId);
             case BEETROOT -> handleCharmCast(player, playerId);
 
 
@@ -815,17 +842,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //            handleCooldownMessage(player, "Illusion", Cooldown.getRemainingCloneCooldown(playerId));
 //        }
 //    }
-    void handlePorkchopCast(Player player, UUID playerId) {
-        if (!Cooldown.isOnPorkchopCooldown(playerId) && Mana.hasEnoughMana(playerId, PORKCHOP_COST)) {
-            Cast.castPorkchopSpell(player);
-            Cooldown.setPorkchopCooldown(playerId);
-            Mana.deductMana(playerId, PORKCHOP_COST);
-        } else if (Cooldown.isOnPorkchopCooldown(playerId)) {
-            handleCooldownMessage(player, "Porkchop", Cooldown.getRemainingPorkchopCooldownSeconds(playerId));
-        }else{
-            handleManaMessage(player);
-        }
-    }
 
     void handleCharmCast(Player player, UUID playerId) {
         if (!Cooldown.isOnCharmCooldown(playerId) && Mana.hasEnoughMana(playerId, CHARM_COST)) {

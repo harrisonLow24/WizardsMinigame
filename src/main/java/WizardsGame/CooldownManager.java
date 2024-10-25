@@ -58,14 +58,12 @@ public class CooldownManager {
         HealCloudCooldowns.remove(playerId);
         twistedFateSpellCooldowns.remove(playerId);
         charmCooldowns.remove(playerId);
-        porkchopCooldowns.remove(playerId);
     }
     // store cooldowns in hashmaps
 
     final Map<UUID, Long> cooldowns = new HashMap<>();
     final Map<UUID, Long> minecartCooldowns = new HashMap<>();
     final Map<UUID, Long> squidFlyingCooldowns = new HashMap<>();
-    final Map<UUID, Long> porkchopCooldowns = new HashMap<>();
     final Map<UUID, Long> charmCooldowns = new HashMap<>();
     final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
     final Map<UUID, Long> twistedFateSpellCooldowns = new HashMap<>();
@@ -102,7 +100,6 @@ public class CooldownManager {
     final int manaBoltCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
     final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
-    final long porkchopCooldownDuration = 1 * 1000; // 12 seconds
     final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
     final long charmSpellDuration = 1 * 1000; // 30 seconds
 
@@ -163,10 +160,6 @@ public class CooldownManager {
 
     int getRemainingFrostBarrierCooldownSeconds(UUID playerId) {
         long remainingCooldown = frostBarrierCooldownDuration - (System.currentTimeMillis() - frostBarrierCooldowns.getOrDefault(playerId, 0L));
-        return (int) Math.ceil(remainingCooldown / 1000.0);
-    }
-    int getRemainingPorkchopCooldownSeconds(UUID playerId) {
-        long remainingCooldown = porkchopCooldownDuration - (System.currentTimeMillis() - porkchopCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
     public int getRemainingCharmCooldownSeconds(UUID playerId) {
@@ -236,9 +229,6 @@ public class CooldownManager {
         return manaBoltCooldowns.containsKey(playerId) && System.currentTimeMillis() - manaBoltCooldowns.get(playerId) < manaBoltCooldownDuration;
     }
 
-    boolean isOnPorkchopCooldown(UUID playerId) {
-        return porkchopCooldowns.containsKey(playerId) && System.currentTimeMillis() - porkchopCooldowns.get(playerId) < porkchopCooldownDuration;
-    }
     public boolean isOnCharmCooldown(UUID playerId) {
         if (!charmCooldowns.containsKey(playerId)) {
             return false;
@@ -300,9 +290,6 @@ public class CooldownManager {
     }
     void setManaBoltCooldown(UUID playerId) {
         manaBoltCooldowns.put(playerId, System.currentTimeMillis());
-    }
-    void setPorkchopCooldown(UUID playerId) {
-        porkchopCooldowns.put(playerId, System.currentTimeMillis());
     }
     void setCharmCooldown(UUID playerId) {
         double charmDuration = 10;

@@ -83,7 +83,7 @@ public class TeleportationManager implements Listener {
         }
 
         player.teleport(safeLocation);
-        player.sendMessage(ChatColor.BLUE.toString() + ChatColor.BOLD + "You cast the Teleportation spell!");
+//        player.sendMessage(ChatColor.BLUE.toString() + ChatColor.BOLD + "You cast the Teleportation spell!");
         isTeleporting = false; // reset teleporting status
     }
 

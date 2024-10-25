@@ -45,7 +45,7 @@ import static WizardsGame.WizardsPlugin.getPlayerById;
 public class SpellCastingManager implements Listener {
 
     double fireballDamage = 2.0;
-    double fireballSpeed = 2.0;
+    double fireballSpeed = 0.5;
 
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
@@ -85,8 +85,8 @@ public class SpellCastingManager implements Listener {
                 material == Material.ROSE_BUSH ||
                 material == Material.PEONY;
     }
-    static final double SWORD_SPEED = 1; // adjust speed as needed
-    static final double SWORD_DAMAGE = 3.0; // damage dealt by sword 2 hearts
+    static final double SWORD_SPEED = 0.5; // adjust speed as needed
+    static final double SWORD_DAMAGE = 3.0; // damage dealt by sword 2 = 1 heart
     static final int SWORD_LIFETIME = 100; // time in ticks before the sword disappears (5 seconds)
     static final double AIM_RADIUS = 2; // aim detection
     final Map<UUID, ArmorStand> activeSwords = new HashMap<>();
@@ -98,28 +98,22 @@ public class SpellCastingManager implements Listener {
     private static final int HEAL_DURATION = 6;  // duration of healing in seconds
     private static final int HEAL_TICK_INTERVAL = 20; // heal interval (in ticks), 20 ticks = 1 second
 
-    // mana bolt
 
-    private static final double MANA_BOLT_SPEED = 1.0; // Adjust as needed
-    private static final double MANA_BOLT_DAMAGE = 4.0; // Damage dealt by the Mana Bolt
-    private static final double MANA_AIM_RADIUS = 1; // Radius to check for nearby entities
+    // mana bolt
+    private static final double MANA_BOLT_SPEED = 1.0;
+    private static final double MANA_BOLT_DAMAGE = 4.0;
+    private static final double MANA_AIM_RADIUS = 1;
     private static final int MANA_BOLT_LIFETIME = 200;
     final Map<UUID, ArmorStand> activeBolts = new HashMap<>();
 
     // fireball cast
     public void castFireball(Player caster) {
         Fireball fireball = caster.launchProjectile(Fireball.class);
-        fireball.setYield(1); // Remove block-breaking ability
-        fireball.setIsIncendiary(false); // Avoid setting fire
+        fireball.setYield(0); // explosion power to 0
+        fireball.setIsIncendiary(false); // avoid setting fire
 
-        // Track the caster of this fireball (optional, uncomment if needed)
-        // projectileCasterMap.put(fireball.getUniqueId(), caster);
-
-        // Create a listener to handle the damage when the fireball hits an entity
-//        fireball.setOnGround(true); // Ensure it can trigger the impact event
         fireball.setVelocity(caster.getLocation().getDirection().multiply(fireballSpeed));
 
-        // You can use a BukkitRunnable to check for impact
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -130,21 +124,40 @@ public class SpellCastingManager implements Listener {
 
                 for (Entity entity : fireball.getNearbyEntities(1, 1, 1)) {
                     if (entity instanceof LivingEntity && !entity.equals(caster)) {
-                        // Apply damage to the entity
+                        // Apply custom damage to the entity
                         ((LivingEntity) entity).damage(fireballDamage, caster);
-                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), caster.getUniqueId());
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Fiery Wand"));
 
-                        // Optionally, you can play a sound or spawn particles here
+                        // explosion effect at impact location
+                        entity.getWorld().createExplosion(fireball.getLocation(), 0, false, false); // Visual explosion, no damage
+                        entity.getWorld().playSound(fireball.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
 
-                        // Remove the fireball after hitting the target
+                        // remove fireball
                         fireball.remove();
                         cancel();
                         return;
                     }
                 }
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // Check every tick (1/20th of a second)
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // every tick (1/20th of a second)
+
+        // listener for missed fireballs
+        Bukkit.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onProjectileHit(ProjectileHitEvent event) {
+                if (event.getEntity().equals(fireball)) {
+                    // explosion effect at landing location if fireball misses
+                    Location hitLocation = fireball.getLocation();
+                    hitLocation.getWorld().createExplosion(hitLocation, 0, false, false); // Visual explosion, no damage
+                    // sound at missed location
+                    hitLocation.getWorld().playSound(hitLocation, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+
+                    fireball.remove();
+                }
+            }
+        }, WizardsPlugin.getInstance());
     }
+
 
     public void castLightningSpell(Player caster) {
         World world = caster.getWorld();
@@ -214,7 +227,8 @@ public class SpellCastingManager implements Listener {
                 if (finalTargetEntity != null) {
                     finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
                     registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
-                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), caster.getUniqueId());
+//                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), caster.getUniqueId());
+                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Mjölnir"));
                 }
                 world.strikeLightning(strikeLocation); // strike lightning at determined location
             }, 30L); // 1.5 sec delay (20 ticks per second)
@@ -354,6 +368,7 @@ public class SpellCastingManager implements Listener {
                     // tie it to the caster
                     if (fallDamage > 0 && entity instanceof LivingEntity livingEntity) {
                         livingEntity.damage(fallDamage, caster);
+                        WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Gust"));
                     }
                 }
             }.runTaskLater(WizardsPlugin.getInstance(), 1L);
@@ -469,6 +484,7 @@ public class SpellCastingManager implements Listener {
                     double launchVelocity = 1.2;
                     launchEntitiesExcludingCaster(player, initialLocation, launchRadius, launchVelocity);
 
+
                 } else {
                     // apply upward velocity to cancel fall velocity
                     player.setVelocity(new Vector(0, -1.5, 0));
@@ -505,6 +521,7 @@ public class SpellCastingManager implements Listener {
                 // launch entities upward and away
                 Vector launchVector = new Vector(awayDirection.getX(), launchVelocity, awayDirection.getZ());
                 livingEntity.setVelocity(launchVector);
+                WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Big Man Slam"));
             }
         }
     }
@@ -693,9 +710,12 @@ public class SpellCastingManager implements Listener {
                 } else {
 //                    player.sendMessage("You have " + timeLeft + " seconds to move!");
                     bossBar.setProgress((double) timeLeft / TELEPORT_DURATION);
+
                     // progressive sound effect
-                    player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f + (soundIndex * 0.075f));
-                    soundIndex++;
+                    if(timeLeft >=0) {
+                        player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f + (soundIndex * 0.1f));
+                        soundIndex++;
+                    }
                     timeLeft--;
                 }
             }
@@ -779,19 +799,19 @@ public class SpellCastingManager implements Listener {
 
         SmallFireball meteor = player.getWorld().spawn(meteorSpawnLocation, SmallFireball.class);
         meteor.setDirection(direction);
-        meteor.setYield(0); // Set explosion power to 0 to handle custom damage
-        meteor.setIsIncendiary(false); // Prevent setting blocks on fire
+        meteor.setYield(0); // explosion power
+        meteor.setIsIncendiary(false); // prevent setting blocks on fire
 
-        // Meteor sound
+//        WizardsPlugin.lastDamager.put(meteor.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Starfall Barrage"));
+
         meteorSpawnLocation.getWorld().playSound(meteorSpawnLocation, Sound.ENTITY_BLAZE_SHOOT, 1.0f, 0.5f);
 
-        // Schedule a crater creation when the meteor lands
         new BukkitRunnable() {
             @Override
             public void run() {
                 if (meteor.isDead()) {
                     createCrater(targetLocation);
-                    applyMeteorDamage(targetLocation, METEOR_DAMAGE);
+                    applyMeteorDamage(targetLocation, METEOR_DAMAGE, player);
                     playImpactSound(targetLocation);
                     cancel();
                 }
@@ -915,7 +935,7 @@ public class SpellCastingManager implements Listener {
         impactLocation.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, impactLocation, 1);
     }
 
-    private void applyMeteorDamage(Location impactLocation, int damage) {
+    private void applyMeteorDamage(Location impactLocation, int damage, Player caster) {
         for (Entity entity : impactLocation.getWorld().getNearbyEntities(impactLocation, 4, 4, 4)) {
 //            if (entity instanceof Player) {
 //                Player target = (Player) entity;
@@ -925,6 +945,7 @@ public class SpellCastingManager implements Listener {
                 // apply damage to any living entity
                 LivingEntity livingEntity = (LivingEntity) entity;
                 livingEntity.damage(damage);
+                WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Starfall Barrage"));
 
                 // knockback effect
                 Vector knockback = livingEntity.getLocation().toVector().subtract(impactLocation.toVector()).normalize();
@@ -1172,6 +1193,7 @@ public class SpellCastingManager implements Listener {
 
                         // damage first entity hit and remove sword
                         ((LivingEntity) entity).damage(SWORD_DAMAGE, player);
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Void Orb"));
                         swordStand.remove();
                         activeSwords.remove(playerId);
                         cancel();
@@ -1195,7 +1217,7 @@ public class SpellCastingManager implements Listener {
 
 
     void launchManaBolt(Player player) {
-        player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getEyeLocation(), 10, 0.1, 0.1, 0.1, 0.05);
+        player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getEyeLocation(), 10, 0.1, 0.1, 0.1, 0.05, null, true);
 
         // sound effect
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_SHOOT, 0.5f, 1.0f);
@@ -1222,7 +1244,7 @@ public class SpellCastingManager implements Listener {
                     return;
                 }
 
-                manaBolt.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 5, 0.1, 0.1, 0.1, 0.02);
+                manaBolt.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 5, 0.1, 0.1, 0.1, 0.02, null, true);
                 manaBolt.getWorld().playSound(manaBolt.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.0f);
 
                 // update position
@@ -1256,9 +1278,10 @@ public class SpellCastingManager implements Listener {
 
                         // damage the first entity hit and remove the mana bolt
                         ((LivingEntity) entity).damage(MANA_BOLT_DAMAGE, player);
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Dragon Spit"));
 
                         // particle effect and sound
-                        player.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 20, 0.2, 0.2, 0.2, 0.1);
+                        player.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 20, 0.2, 0.2, 0.2, 0.1, null, true);
                         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, -2.0f);
 
                         manaBolt.remove();
@@ -1277,21 +1300,5 @@ public class SpellCastingManager implements Listener {
                 activeBolts.remove(player.getUniqueId());
             }
         }, MANA_BOLT_LIFETIME);
-    }
-
-
-
-    int porkchopSpeed = 2;
-    public void castPorkchopSpell(Player player) {
-        // create and launch porkchop
-        ItemStack porkchopItem = new ItemStack(Material.PORKCHOP);
-        Item porkchopEntity = player.getWorld().dropItem(player.getEyeLocation(), porkchopItem);
-        porkchopEntity.setVelocity(player.getLocation().getDirection().multiply(porkchopSpeed)); // porkchop speed
-
-        // store player's UUID in item's metadata
-        ItemMeta itemMeta = porkchopItem.getItemMeta();
-        itemMeta.getPersistentDataContainer().set(new NamespacedKey(String.valueOf(this), "caster"), PersistentDataType.STRING, player.getUniqueId().toString());
-        porkchopItem.setItemMeta(itemMeta);
-        player.getWorld().playSound(player, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0f, 1.0f);
     }
 }
