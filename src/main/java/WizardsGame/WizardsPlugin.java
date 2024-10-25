@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -130,7 +131,14 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         lastDamager.put(entityId, new SpellInfo(caster.getUniqueId(), spellName));
     }
     @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        event.setDeathMessage(null);
+    }
+    @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
+
+        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
+        
         // check if the entity was killed by a spell
         SpellInfo damagerInfo = lastDamager.get(event.getEntity().getUniqueId());
         if (damagerInfo != null) {
@@ -143,8 +151,13 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendMessage(ChatColor.AQUA +"Death> " + ChatColor.YELLOW + event.getEntity().getName() +
                             ChatColor.GRAY + " killed by " + ChatColor.YELLOW + player.getName() +
-                            ChatColor.GRAY + " with " + ChatColor.GREEN +ChatColor.ITALIC + spellName + ChatColor.GRAY + "!");
+                            ChatColor.GRAY + " with " + ChatColor.GREEN + ChatColor.ITALIC + spellName + ChatColor.GRAY + "!");
                 }
+            }
+        }else{
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                onlinePlayer.sendMessage(ChatColor.AQUA +"Death> " + ChatColor.YELLOW + event.getEntity().getName() +
+                        ChatColor.GRAY + " fell into " + ChatColor.YELLOW + ChatColor.ITALIC + "The Void"  + ChatColor.GRAY + "!");
             }
         }
 

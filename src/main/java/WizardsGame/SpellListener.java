@@ -28,7 +28,6 @@ public class SpellListener implements Listener {
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        UUID playerId = player.getUniqueId();
         ItemStack item = player.getInventory().getItemInMainHand();
 
         // check if left click
@@ -45,22 +44,17 @@ public class SpellListener implements Listener {
 
         Player player = (Player) event.getWhoClicked();
         ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null) return;
-
-        // check if clicked item is a spell button
-        if (clickedItem != null && clickedItem.getType() != Material.AIR) {
-            ItemMeta meta = clickedItem.getItemMeta();
+        if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
+        if (event.isShiftClick()) {
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getView().getTitle().equals("Select a Spell")) {
             if (clickedItem.getType() == Material.GRAY_STAINED_GLASS_PANE || clickedItem.getType() == Material.GRAY_DYE ||
                     clickedItem.getType() == Material.ELYTRA ||
                     clickedItem.getType() == Material.TOTEM_OF_UNDYING ||
                     clickedItem.getType() == Material.NETHERITE_SWORD) {
                 //prevent interaction with stained glass
-                event.setCancelled(true);
-                return;
-            }
-        }
-        if (event.getView().getTitle().equals("Select a Spell")) {
-            if (event.isShiftClick()) {
                 event.setCancelled(true);
                 return;
             }
@@ -74,6 +68,13 @@ public class SpellListener implements Listener {
                 player.closeInventory();
             }
             event.setCancelled(true);
+        }else {
+            Material itemType = clickedItem.getType();
+            if (WizardsPlugin.SPELL_NAMES.containsKey(itemType)) {
+                event.setCancelled(true);
+                event.setCursor(null);
+//                player.sendMessage(String.valueOf(WizardsPlugin.SPELL_NAMES.get(itemType)));
+            }
         }
     }
 
