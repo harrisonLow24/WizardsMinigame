@@ -83,13 +83,14 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
         ItemStack wand = player.getInventory().getItemInMainHand();
+
+        // cant break blocks
         if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             handleSpellCast(player, playerId, wand);
-            // cant break blocks
             event.setCancelled(true);
         }
 
-        // cant break blocks
+        // cant place blocks
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 //            if(wand != SPELL_NAMES){
 //            event.setCancelled(true);
@@ -225,23 +226,24 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     static final Map<Material, String> SPELL_NAMES = new HashMap<>();
     static {
-        SPELL_NAMES.put(Material.STICK, "§lGeneric Wand");
-        SPELL_NAMES.put(Material.BLAZE_ROD, "§lFiery Wand");
-        SPELL_NAMES.put(Material.IRON_SWORD, "§lShrouded Step");
-        SPELL_NAMES.put(Material.IRON_PICKAXE, "§lMjölnir");
-        SPELL_NAMES.put(Material.FEATHER, "§lGust Feather");
-        SPELL_NAMES.put(Material.MINECART, "§lThe Great Escape");
-        SPELL_NAMES.put(Material.IRON_INGOT, "§lBig Man Slam");
-        SPELL_NAMES.put(Material.SHIELD, "§lWinged Shield");
-        SPELL_NAMES.put(Material.RECOVERY_COMPASS, "§lVoidwalker");
-        SPELL_NAMES.put(Material.HONEYCOMB, "§lStarfall Barrage");
-        SPELL_NAMES.put(Material.TIPPED_ARROW, "§lHeal Cloud");
-        SPELL_NAMES.put(Material.MUSIC_DISC_5, "§lRecall");
-        SPELL_NAMES.put(Material.HEART_OF_THE_SEA, "§lVoid Orb");
-        SPELL_NAMES.put(Material.AMETHYST_SHARD, "§lDragon Spit");
+//        ChatColor.BOLD +
+        SPELL_NAMES.put(Material.STICK, "Generic Wand");
+        SPELL_NAMES.put(Material.BLAZE_ROD, "Fiery Wand");
+        SPELL_NAMES.put(Material.IRON_SWORD, "Shrouded Step");
+        SPELL_NAMES.put(Material.IRON_PICKAXE, "Mjölnir");
+        SPELL_NAMES.put(Material.FEATHER, "Gust Feather");
+        SPELL_NAMES.put(Material.MINECART, "The Great Escape");
+        SPELL_NAMES.put(Material.IRON_INGOT, "Big Man Slam");
+        SPELL_NAMES.put(Material.SHIELD, "Winged Shield");
+        SPELL_NAMES.put(Material.RECOVERY_COMPASS, "Voidwalker");
+        SPELL_NAMES.put(Material.HONEYCOMB, "Starfall Barrage");
+        SPELL_NAMES.put(Material.TIPPED_ARROW, "Heal Cloud");
+        SPELL_NAMES.put(Material.MUSIC_DISC_5, "Recall");
+        SPELL_NAMES.put(Material.HEART_OF_THE_SEA, "Void Orb");
+        SPELL_NAMES.put(Material.AMETHYST_SHARD, "Dragon Spit");
 
     }
-    String getSpellInfo(ItemStack itemInHand) {
+    static String getSpellInfo(ItemStack itemInHand) {
         if (itemInHand != null) {
             // check if item type has a corresponding spell name
             String spellName = SPELL_NAMES.get(itemInHand.getType());
@@ -256,13 +258,17 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         String spellName = getSpellInfo(itemInHand); // get spell name based on the item type
         long cooldownDuration = getCooldownDuration(itemInHand); // get the cooldown duration for that spell
         long remainingCooldown = getRemainingCooldown(player.getUniqueId(), itemInHand); // get the remaining cooldown
+        WizardsPlugin.SpellType spellType = SpellMenu.getSpellByMaterial(itemInHand.getType());
+        int spellLevel = WizardsPlugin.getSpellLevel(player.getUniqueId(), spellType);
 
         StringBuilder actionBarMessage = new StringBuilder();
 
         if (spellName != null) {
             // color based on cooldown state
             ChatColor spellColor = remainingCooldown > 0 ? ChatColor.RED : ChatColor.GREEN;
-            actionBarMessage.append(spellColor).append(spellName).append(ChatColor.RESET).append(" ");
+            actionBarMessage.append(spellColor).append(ChatColor.BOLD + spellName).append(ChatColor.RESET).append(" ");
+            actionBarMessage.append(ChatColor.BLUE).append(ChatColor.BOLD + "| Lv ").append(spellLevel).append(" ");
+
 
             if (remainingCooldown > 0) {
                 int totalBlocks = 24; // total blocks in the bar
@@ -559,7 +565,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cast.launchManaBolt(player);
         }
         else if (Cooldown.isOnManaBoltCooldown(playerId)) {
-            handleCooldownMessage(player, "Dragon Spit", Cooldown.getRemainingManaBoltCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingManaBoltCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -576,7 +582,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setFireballCooldown(playerId);
             Mana.deductMana(playerId, FIREBALL_COST);
         } else if (Cooldown.isOnFireballCooldown(playerId)) {
-            handleCooldownMessage(player, "Fireball", Cooldown.getRemainingFireballCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingFireballCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -592,7 +598,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setTeleportCooldown(playerId);
             Mana.deductMana(playerId, TELEPORT_COST);
         } else if (Cooldown.isOnTeleportCooldown(playerId)) {
-            handleCooldownMessage(player, "Teleport", Cooldown.getRemainingRecallCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingRecallCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -609,7 +615,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Mana.deductMana(playerId, LIGHTNING_COST);
             Cast.startLightningEffect(playerId);
         } else if (Cooldown.isOnLightningCooldown(playerId)) {
-            handleCooldownMessage(player, "Lightning", Cooldown.getRemainingLightningCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingLightningCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -625,7 +631,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setGustCooldown(playerId);
             Mana.deductMana(playerId, GUST_COST);
         } else if (Cooldown.isOnGustCooldown(playerId)) {
-            handleCooldownMessage(player, "Gust", Cooldown.getRemainingGustCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingGustCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -654,7 +660,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
             player.playSound(player.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.0F, 1.0F);
         } else if (Cooldown.isOnSquidFlyingCooldown(playerId)) {
-            handleCooldownMessage(player, "Flying", Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -670,7 +676,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setMinecartCooldown(playerId);
             Mana.deductMana(playerId, MINECART_COST);
         } else if (Cooldown.isOnMinecartCooldown(playerId)) {
-            handleCooldownMessage(player, "Minecart", Cooldown.getRemainingMinecartCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingMinecartCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -686,7 +692,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setGPCooldown(playerId);
             Mana.deductMana(playerId, GP_COST);
         } else if (Cooldown.isOnGPCooldown(playerId)) {
-            handleCooldownMessage(player, "Big Man Slam", Cooldown.getRemainingGPCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingGPCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -701,7 +707,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setMapTeleportCooldown(playerId);
             Mana.deductMana(playerId, VOIDWALKER_COST);
         } else if (Cooldown.isOnMapTeleportCooldown(playerId)) {
-            handleCooldownMessage(player, "Map Teleport", Cooldown.getRemainingMapTeleportCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingMapTeleportCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -721,7 +727,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 Mana.deductMana(playerId, METEOR_COST);
             }
         } else if (Cooldown.isOnMeteorCooldown(playerId)) {
-            handleCooldownMessage(player, "Meteor Shower", Cooldown.getRemainingMeteorCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingMeteorCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -740,7 +746,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 Cooldown.setHealCloudCooldown(playerId); // set cooldown after casting
                 Mana.deductMana(playerId, HEALCLOUD_COST);
             } else if (Cooldown.isOnHealCloudCooldown(playerId)) {
-                handleCooldownMessage(player, "Heal Cloud", Cooldown.getRemainingHealCloudCooldownSeconds(playerId));
+                handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingHealCloudCooldownSeconds(playerId));
             }else{
                 handleManaMessage(player);
             }
@@ -769,7 +775,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 player.sendMessage("No location record found. Please wait a moment.");
             }
         } else if (Cooldown.isOnRecallCooldown(playerId)) {
-            handleCooldownMessage(player, "Chorus Fruit Teleport", Cooldown.getRemainingRecallCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingRecallCooldownSeconds(playerId));
         } else {
             handleManaMessage(player);
         }
@@ -840,7 +846,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setVoidOrbCooldown(playerId);
             Mana.deductMana(playerId, VoidOrb_Cost); // deduct mana cost
         } else if (Cooldown.isOnVoidOrbCooldown(playerId)) {
-            handleCooldownMessage(player, "Void Orb", Cooldown.getRemainingVoidOrbCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingVoidOrbCooldownSeconds(playerId));
     }
         }
 
@@ -863,7 +869,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Cooldown.setCharmCooldown(playerId);
             Mana.deductMana(playerId, CHARM_COST);
         } else if (Cooldown.isOnCharmCooldown(playerId)) {
-            handleCooldownMessage(player, "Charm", Cooldown.getRemainingCharmCooldownSeconds(playerId));
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingCharmCooldownSeconds(playerId));
         }else{
             handleManaMessage(player);
         }
@@ -872,7 +878,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private HashMap<Player, Long> lastTeleportMessage = new HashMap<>();
     private HashMap<Player, Long> lastCooldownMessage = new HashMap<>();
     private HashMap<Player, Long> lastManaMessage = new HashMap<>();
-    private static final long MESSAGE_COOLDOWN = 1000;
+    static final HashMap<Player, Long> lastDropMessage = new HashMap<>();
+    static final long MESSAGE_COOLDOWN = 1000;
 
     private void sendTeleportWarning(Player player) {
         long currentTime = System.currentTimeMillis();
@@ -887,7 +894,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         long currentTime = System.currentTimeMillis();
         if (!lastCooldownMessage.containsKey(player) || (currentTime - lastCooldownMessage.get(player)) > MESSAGE_COOLDOWN) {
 
-            player.sendMessage(ChatColor.RED + spellName + " on cooldown. Please wait " + ChatColor.BOLD + remainingSeconds + ChatColor.RED + " seconds before casting again.");
+            player.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + spellName + ChatColor.RED + " on cooldown. Please wait " + ChatColor.BOLD + remainingSeconds + ChatColor.RED + " seconds before casting again.");
             lastCooldownMessage.put(player, currentTime);
         }
     }

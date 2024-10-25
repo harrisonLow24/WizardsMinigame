@@ -121,7 +121,7 @@ public class SpellMenu {
         player.openInventory(menu);
     }
 
-    WizardsPlugin.SpellType getSpellByMaterial(Material material) {
+    static WizardsPlugin.SpellType getSpellByMaterial(Material material) {
         for (WizardsPlugin.SpellType spell : WizardsPlugin.SpellType.values()) {
             if (spell.getMaterial() == material) {
                 return spell;

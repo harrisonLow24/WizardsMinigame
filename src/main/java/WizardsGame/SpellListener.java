@@ -7,6 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.entity.Player;
@@ -50,6 +51,11 @@ public class SpellListener implements Listener {
             event.setCancelled(true);
             return;
         }
+//        if (!event.getClickedInventory().equals(player.getOpenInventory().getTopInventory())){
+//            player.sendMessage(ChatColor.RED + "no");
+//            event.setCancelled(true);
+//            return;
+//        }
         if (event.getView().getTitle().equals("Select a Spell")) {
             if (clickedItem.getType() == Material.GRAY_STAINED_GLASS_PANE || clickedItem.getType() == Material.GRAY_DYE ||
                     clickedItem.getType() == Material.ELYTRA ||
@@ -65,31 +71,36 @@ public class SpellListener implements Listener {
 
             if (selectedSpell != null && spellManager.canSelectSpell(playerId, selectedSpell)) {
                 player.getInventory().setItemInMainHand(new ItemStack(selectedSpell.getMaterial()));
-                player.sendMessage("You have selected the spell: " + selectedSpell.name());
+                player.sendMessage(ChatColor.GRAY + "You have selected the spell: " + ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + selectedSpell.name());
                 player.closeInventory();
             }
             event.setCancelled(true);
         }
-        if (event.getView().getTitle().equals("Chest")) {
-            UUID playerId = player.getUniqueId();
-            Material itemType = clickedItem.getType();
-            WizardsPlugin.SpellType spellType = spellMenu.getSpellByMaterial(itemType);
+        if (event.getView().getTitle().equals("Chest") ) {
+            if(event.getClickedInventory().equals(player.getOpenInventory().getTopInventory())){
+                UUID playerId = player.getUniqueId();
+                Material itemType = clickedItem.getType();
+                WizardsPlugin.SpellType spellType = spellMenu.getSpellByMaterial(itemType);
+                String spellName = WizardsPlugin.getSpellInfo(clickedItem.getData().toItemStack());
 
-            // if the clicked item is a spell item
-            if (spellType != null) {
-                event.setCancelled(true); // prevent taking item from the chest
-                spellManager.addSpellToPlayer(playerId, spellType); // increase spell level
-                clickedItem.setAmount(0); // remove the item from the chest
-                player.sendMessage(ChatColor.GRAY + "You have acquired the spell: " + ChatColor.GREEN + ChatColor.BOLD + spellType.name() + ChatColor.GRAY + " and its level has been increased!");
-            }
-        }else {
-            Material itemType = clickedItem.getType();
-            if (WizardsPlugin.SPELL_NAMES.containsKey(itemType)) {
+                if (spellType != null) {
+                    event.setCancelled(true); // prevent taking item from the chest
+                    spellManager.addSpellToPlayer(playerId, spellType); // increase spell level
+                    clickedItem.setAmount(0); // remove item from the chest
+                    if(WizardsPlugin.getSpellLevel(playerId, spellType) == 1 ){
+                        player.sendMessage(ChatColor.LIGHT_PURPLE  + "" + ChatColor.BOLD + spellType.name() + "> " + ChatColor.GREEN
+                                + " Spell Acquired" );
+                    }else {
+                        player.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + spellName + "> " + ChatColor.GREEN
+                                + " Level +1 -> " + ChatColor.GREEN + "" + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, spellType));
+                    }
+                }
+            }if (!event.getClickedInventory().equals(player.getOpenInventory().getTopInventory())){
                 event.setCancelled(true);
-                event.setCursor(null);
-//                player.sendMessage(String.valueOf(WizardsPlugin.SPELL_NAMES.get(itemType)));
+                player.sendMessage(ChatColor.RED +"" + ChatColor.BOLD + "You cannot move this spell!");
             }
         }
+
     }
 
     @EventHandler
@@ -98,14 +109,38 @@ public class SpellListener implements Listener {
         UUID playerId = player.getUniqueId();
         Item itemEntity = event.getItem();
         ItemStack item = event.getItem().getItemStack();
+        String spellName = WizardsPlugin.getSpellInfo(item);
         WizardsPlugin.SpellType spellType = spellMenu.getSpellByMaterial(item.getType());
 
         if (spellType != null) {
             spellManager.addSpellToPlayer(playerId, spellType);
-            player.sendMessage(ChatColor.GRAY + "You have acquired the spell: " + ChatColor.GREEN + ChatColor.BOLD + spellType.name() + ChatColor.GRAY + " and its level has been increased!");
+            if(WizardsPlugin.getSpellLevel(playerId, spellType) == 1 ){
+                player.sendMessage(ChatColor.LIGHT_PURPLE  + "" + ChatColor.BOLD + spellName + "> " + ChatColor.GREEN
+                        + " Spell Acquired" );
+            }else {
+                player.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + spellName + "> " + ChatColor.GREEN
+                        + " Level +1 -> " + ChatColor.GREEN + "" + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, spellType));
+            }
             itemEntity.remove();
         }
+    }
+    @EventHandler
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        ItemStack droppedItem = event.getItemDrop().getItemStack();
+        long currentTime = System.currentTimeMillis();
 
+        // check if dropped item is a spell
+        if (isSpellItem(droppedItem)) {
+            if (WizardsPlugin.lastDropMessage.containsKey(player) && (currentTime - WizardsPlugin.lastDropMessage.get(player) < WizardsPlugin.MESSAGE_COOLDOWN)) {
+                event.setCancelled(true); // cancel drop
+                return;
+            }
+            // cancel the drop & set cooldown
+            event.setCancelled(true);
+            WizardsPlugin.lastDropMessage.put(player, currentTime);
+            player.sendMessage(ChatColor.RED + "You cannot drop spells!");
+        }
     }
 
     private boolean isSpellItem(ItemStack item) {
