@@ -3,7 +3,8 @@
 WIP
 
 
-Right click a Book to open the spell menu.
+Right click a Stick to open the spell menu.
+/unlockspells to unlock all spells
 
 List of Spells:
 
@@ -16,3 +17,7 @@ List of Spells:
 - Flight
 - Voidwalker
 - Starfall Barrage
+- Heal Cloud
+- Void Orb
+- Recall
+- Dragon Spit
