@@ -75,10 +75,18 @@ public class SpellCastingManager implements Listener {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
         return METEOR_BASE_COUNT + ((level - 1) * 1);
     }
+    private double getMeteorDelay(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
+        return METEOR_BASE_DELAY - ((level - 1) * 1);
+    }
+    private double getMeteorRadius(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
+        return METEOR_BASE_RADIUS + ((level - 1) * 0.5);
+    }
     private static final int METEOR_BASE_COUNT = 10; // number of meteors in a cast 10
     private static final int METEOR_BASE_DAMAGE = 6; // damage dealt by each meteor 8
-    private static final double METEOR_RADIUS = 4.0; // radius for meteors 3
-    private static final int METEOR_DELAY = 10; // delay between each meteor in ticks 10
+    private static final double METEOR_BASE_RADIUS = 3.0; // radius for meteors 3
+    private static final int METEOR_BASE_DELAY = 10; // delay between each meteor in ticks 10
     private static final int MAX_CAST_RANGE = 25; // 25
     private static final double RANDOM_SPAWN_RADIUS = 8.0; // 5
     private Map<UUID, UUID> spellCasters = new HashMap<>();
@@ -869,7 +877,7 @@ public class SpellCastingManager implements Listener {
             @Override
             public void run() {
                 if (meteor.isDead()) {
-                    createCrater(targetLocation);
+                    createCrater(player, targetLocation);
                     applyMeteorDamage(targetLocation, player);
                     playImpactSound(targetLocation);
                     cancel();
@@ -882,6 +890,7 @@ public class SpellCastingManager implements Listener {
         new BukkitRunnable() {
             private int count = 0;
             final double count1 = getMeteorCount(player.getUniqueId());
+            final double radius = getMeteorRadius(player.getUniqueId());
             @Override
             public void run() {
                 if (count >= count1 * 10) { // show particles for 5 seconds (100 ticks)
@@ -889,10 +898,10 @@ public class SpellCastingManager implements Listener {
                     return;
                 }
                 for (double theta = 0; theta < Math.PI * 2; theta += Math.PI / 15) {
-                    double x = Math.cos(theta) * METEOR_RADIUS * 2;
-                    double z = Math.sin(theta) * METEOR_RADIUS * 2;
+                    double x = Math.cos(theta) * radius * 3;
+                    double z = Math.sin(theta) * radius * 3;
                     Location particleLocation = center.clone().add(x, 1, z);
-                    center.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 1, new Particle.DustOptions(Color.RED, 2) );
+                    center.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 1, new Particle.DustOptions(Color.RED, 3) );
                 }
                 count++;
             }
@@ -924,6 +933,7 @@ public class SpellCastingManager implements Listener {
         spawnWarningParticles(player, targetLocation);
         playWarningSound(targetLocation);
         final double count = getMeteorCount(player.getUniqueId());
+        final double delay = getMeteorDelay(player.getUniqueId());
         new BukkitRunnable() {
             int meteorCount = 0;
 
@@ -938,7 +948,7 @@ public class SpellCastingManager implements Listener {
                     cancel();
                 }
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 0, METEOR_DELAY);
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, (int)delay);
     }
 // WizardsPlugin.getInstance()
 
@@ -999,13 +1009,14 @@ public class SpellCastingManager implements Listener {
         return (blockBelow.getType() != Material.AIR) ? blockBelow.getLocation() : null;
     }
 
-    private void createCrater(Location impactLocation) {
+    private void createCrater(Player player, Location impactLocation) {
+        final double radius = getMeteorRadius(player.getUniqueId());
         for (int x = -3; x <= 3; x++) {
             for (int y = -2; y <= 0; y++) {
                 for (int z = -3; z <= 3; z++) {
                     Location craterLocation = impactLocation.clone().add(x, y, z);
                     double distance = craterLocation.distance(impactLocation);
-                    if (distance <= METEOR_RADIUS) {
+                    if (distance <= radius) {
                         Block block = craterLocation.getBlock();
                         if (block.getType() != Material.BEDROCK && block.getType() != Material.WATER) {
                             block.setType(Material.AIR); // create crater by removing blocks

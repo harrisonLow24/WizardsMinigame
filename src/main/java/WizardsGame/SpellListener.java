@@ -2,6 +2,7 @@ package WizardsGame;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -68,6 +69,19 @@ public class SpellListener implements Listener {
                 player.closeInventory();
             }
             event.setCancelled(true);
+        }
+        if (event.getView().getTitle().equals("Chest")) {
+            UUID playerId = player.getUniqueId();
+            Material itemType = clickedItem.getType();
+            WizardsPlugin.SpellType spellType = spellMenu.getSpellByMaterial(itemType);
+
+            // if the clicked item is a spell item
+            if (spellType != null) {
+                event.setCancelled(true); // prevent taking item from the chest
+                spellManager.addSpellToPlayer(playerId, spellType); // increase spell level
+                clickedItem.setAmount(0); // remove the item from the chest
+                player.sendMessage(ChatColor.GRAY + "You have acquired the spell: " + ChatColor.GREEN + ChatColor.BOLD + spellType.name() + ChatColor.GRAY + " and its level has been increased!");
+            }
         }else {
             Material itemType = clickedItem.getType();
             if (WizardsPlugin.SPELL_NAMES.containsKey(itemType)) {
@@ -82,12 +96,16 @@ public class SpellListener implements Listener {
     public void onPlayerPickupItem(PlayerPickupItemEvent event) {
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
+        Item itemEntity = event.getItem();
         ItemStack item = event.getItem().getItemStack();
         WizardsPlugin.SpellType spellType = spellMenu.getSpellByMaterial(item.getType());
 
         if (spellType != null) {
-            spellManager.addSpellToPlayer(playerId, spellType); // increase spell level when picked up
+            spellManager.addSpellToPlayer(playerId, spellType);
+            player.sendMessage(ChatColor.GRAY + "You have acquired the spell: " + ChatColor.GREEN + ChatColor.BOLD + spellType.name() + ChatColor.GRAY + " and its level has been increased!");
+            itemEntity.remove();
         }
+
     }
 
     private boolean isSpellItem(ItemStack item) {

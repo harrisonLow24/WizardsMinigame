@@ -485,8 +485,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
     private static final Map<UUID, Map<SpellType, Integer>> playerSpells = new HashMap<>(); // each player’s owned spells
-    private final int maxSpellLevel = 5; // max level
-    public void increaseSpellLevel(UUID playerId, SpellType spellType) {
+    private static final int maxSpellLevel = 5; // max level
+    public static void increaseSpellLevel(UUID playerId, SpellType spellType) {
         Map<SpellType, Integer> spells = playerSpells.computeIfAbsent(playerId, k -> new HashMap<>());
         int currentLevel = spells.getOrDefault(spellType, 0);
 
