@@ -834,10 +834,31 @@ public class SpellCastingManager implements Listener {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // adjust frequency
     }
+    private void playWarningSound(Location targetLocation) {
+        new BukkitRunnable() {
+            private int count = 0;
+
+            @Override
+            public void run() {
+                if (count >= 10) {
+                    cancel();
+                    return;
+                }
+                if (count % 2 == 0) {
+                    targetLocation.getWorld().playSound(targetLocation, Sound.BLOCK_NOTE_BLOCK_BELL, 2.0f, 1f);
+
+                }
+                if (count % 2 != 0) {
+                    targetLocation.getWorld().playSound(targetLocation, Sound.BLOCK_NOTE_BLOCK_BELL, 2.0f, 0.5f);
+                }
+                count++;
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 5);
+    }
     public void castMeteorShower(Player player, Location targetLocation) {
         // start particles in the target area
         spawnWarningParticles(targetLocation);
-
+        playWarningSound(targetLocation);
         new BukkitRunnable() {
             int meteorCount = 0;
 
