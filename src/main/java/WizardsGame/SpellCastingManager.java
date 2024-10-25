@@ -106,6 +106,19 @@ public class SpellCastingManager implements Listener {
     private static final int MANA_BOLT_LIFETIME = 200;
     final Map<UUID, ArmorStand> activeBolts = new HashMap<>();
 
+
+    private double calculateDamageWithArmor(LivingEntity entity, double baseDamage) {
+        // get armor value of the entity
+        double armor = entity.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ARMOR).getValue();
+        double armorToughness = entity.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ARMOR_TOUGHNESS).getValue();
+
+        // armor formula based on minecraft mechanics
+        double damageReduction = (Math.min(20.0, armor) * (1 - (4 / (4 + armorToughness)))) / 25.0;
+        double finalDamage = baseDamage * (1.0 - damageReduction);
+
+        return Math.max(finalDamage, 0.0); // ensure damage isn't negative
+    }
+
     // fireball cast
     public void castFireball(Player caster) {
         Fireball fireball = caster.launchProjectile(Fireball.class);
@@ -124,7 +137,8 @@ public class SpellCastingManager implements Listener {
                 for (Entity entity : fireball.getNearbyEntities(1, 1, 1)) {
                     if (entity instanceof LivingEntity && !entity.equals(caster)) {
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Fiery Wand"));
-                        ((LivingEntity) entity).damage(fireballDamage, caster);
+                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, fireballDamage);
+                        ((LivingEntity) entity).damage(finalDamage, caster);
                         // explosion effect at impact location
                         entity.getWorld().createExplosion(fireball.getLocation(), 0, false, false); // Visual explosion, no damage
                         entity.getWorld().playSound(fireball.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
@@ -221,10 +235,13 @@ public class SpellCastingManager implements Listener {
             LivingEntity finalTargetEntity1 = targetEntity;
             Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
                 if (finalTargetEntity != null) {
-                    finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
+                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Mjölnir"));
+                    double finalDamage = calculateDamageWithArmor(finalTargetEntity1, lightningDamage);
+                    finalTargetEntity.damage(finalDamage, caster);
+//                    finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
+
                     registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
 //                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), caster.getUniqueId());
-                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Mjölnir"));
                 }
                 world.strikeLightning(strikeLocation); // strike lightning at determined location
             }, 30L); // 1.5 sec delay (20 ticks per second)
@@ -363,8 +380,9 @@ public class SpellCastingManager implements Listener {
 
                     // tie it to the caster
                     if (fallDamage > 0 && entity instanceof LivingEntity livingEntity) {
-                        livingEntity.damage(fallDamage, caster);
                         WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Gust"));
+                        livingEntity.damage(fallDamage, caster);
+
                     }
                 }
             }.runTaskLater(WizardsPlugin.getInstance(), 1L);
@@ -500,7 +518,8 @@ public class SpellCastingManager implements Listener {
                 Bukkit.getPluginManager().callEvent(damageEvent);
 
                 if (!damageEvent.isCancelled()) {
-                    livingEntity.damage(damageAmount);
+                    double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damageAmount);
+                    livingEntity.damage(finalDamage);
                 }
             }
         }
@@ -960,9 +979,12 @@ public class SpellCastingManager implements Listener {
 //            }
             if (entity instanceof LivingEntity) {
                 // apply damage to any living entity
+
                 LivingEntity livingEntity = (LivingEntity) entity;
-                livingEntity.damage(damage);
                 WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Starfall Barrage"));
+                double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
+                livingEntity.damage(finalDamage);
+
 
                 // knockback effect
                 Vector knockback = livingEntity.getLocation().toVector().subtract(impactLocation.toVector()).normalize();
@@ -1209,8 +1231,9 @@ public class SpellCastingManager implements Listener {
                         }
 
                         // damage first entity hit and remove sword
-                        ((LivingEntity) entity).damage(SWORD_DAMAGE, player);
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Void Orb"));
+                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, SWORD_DAMAGE);
+                        ((LivingEntity) entity).damage(finalDamage, player);
                         swordStand.remove();
                         activeSwords.remove(playerId);
                         cancel();
@@ -1293,9 +1316,12 @@ public class SpellCastingManager implements Listener {
                             continue;
                         }
 
+
                         // damage the first entity hit and remove the mana bolt
-                        ((LivingEntity) entity).damage(MANA_BOLT_DAMAGE, player);
+//                        ((LivingEntity) entity).damage(MANA_BOLT_DAMAGE, player);
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Dragon Spit"));
+                        double finalDamage = calculateDamageWithArmor((LivingEntity) entity, MANA_BOLT_DAMAGE);
+                        ((LivingEntity) entity).damage(finalDamage, player);
 
                         // particle effect and sound
                         player.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 20, 0.2, 0.2, 0.2, 0.1, null, true);

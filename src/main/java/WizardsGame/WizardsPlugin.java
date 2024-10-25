@@ -137,7 +137,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
 
-        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
+//        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
         
         // check if the entity was killed by a spell
         SpellInfo damagerInfo = lastDamager.get(event.getEntity().getUniqueId());
