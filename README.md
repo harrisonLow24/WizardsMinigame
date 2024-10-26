@@ -1,4 +1,4 @@
-# Wizards Plugin
+# Wizards Plugin Minecraft 1.20.4
 
 WIP
 
