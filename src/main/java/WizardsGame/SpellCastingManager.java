@@ -39,12 +39,12 @@ public class SpellCastingManager implements Listener {
 
     // DAMAGE: 2.0 = 1 HEART
     private double getFireballDamage(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.FIERY_WAND);
-        return FIREBALL_BASE_DAMAGE + ((level - 1) * 1); // damage increases by 1 per level
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Fiery_Wand);
+        return FIREBALL_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
     private double getFireballSpeed(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.FIERY_WAND);
-        return FIREBALL_BASE_SPEED + ((level - 1) * 1); // damage increases by 1 per level
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Fiery_Wand);
+        return FIREBALL_BASE_SPEED + ((level - 1) * 0.25); // speed increases by <num> per level
     }
     double FIREBALL_BASE_DAMAGE = 2.0;
     double FIREBALL_BASE_SPEED = 0.5;
@@ -52,8 +52,8 @@ public class SpellCastingManager implements Listener {
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
     private double getLightningDamage(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.MJOLNIR);
-        return LIGHTNING_BASE_DAMAGE + ((level - 1) * 1);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Mjölnir);
+        return LIGHTNING_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
     double LIGHTNING_BASE_DAMAGE = 2.0;
 
@@ -68,25 +68,30 @@ public class SpellCastingManager implements Listener {
 
     // meteor spell
     private double getMeteorDamage(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
-        return METEOR_BASE_DAMAGE + ((level - 1) * 1);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
+        return METEOR_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
     private double getMeteorCount(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
         return METEOR_BASE_COUNT + ((level - 1) * 1);
     }
     private double getMeteorDelay(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
         return METEOR_BASE_DELAY - ((level - 1) * 1);
     }
+    private double getMeteorInitDelay(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
+        return METEOR_BASE_INIT_DELAY + ((level - 1) * 10);
+    }
     private double getMeteorRadius(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.STARFALL_BARRAGE);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
         return METEOR_BASE_RADIUS + ((level - 1) * 0.5);
     }
     private static final int METEOR_BASE_COUNT = 10; // number of meteors in a cast 10
     private static final int METEOR_BASE_DAMAGE = 6; // damage dealt by each meteor 8
     private static final double METEOR_BASE_RADIUS = 3.0; // radius for meteors 3
     private static final int METEOR_BASE_DELAY = 10; // delay between each meteor in ticks 10
+    private static final int METEOR_BASE_INIT_DELAY = 0;
     private static final int MAX_CAST_RANGE = 25; // 25
     private static final double RANDOM_SPAWN_RADIUS = 8.0; // 5
     private Map<UUID, UUID> spellCasters = new HashMap<>();
@@ -108,11 +113,11 @@ public class SpellCastingManager implements Listener {
                 material == Material.PEONY;
     }
     private double getVoidOrbDamage(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.VOID_ORB);
-        return SWORD_BASE_DAMAGE + ((level - 1) * 1);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Void_Orb);
+        return SWORD_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
     private double getVoidOrbSpeed(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.VOID_ORB);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Void_Orb);
         return SWORD_BASE_SPEED + ((level - 1) * 1);
     }
     static final double SWORD_BASE_SPEED = 0.5; // adjust speed as needed
@@ -124,11 +129,11 @@ public class SpellCastingManager implements Listener {
 
     // heal spell
     private double getHealRadius(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.HEAL_CLOUD);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Heal_Cloud);
         return HEAL_BASE_RADIUS + ((level - 1) * 1);
     }
     private double getHealAmount(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.HEAL_CLOUD);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Heal_Cloud);
         return HEAL_BASE_AMOUNT + ((level - 1) * 1);
     }
     private static final int HEAL_BASE_RADIUS = 2; // radius of the healing circle
@@ -140,11 +145,11 @@ public class SpellCastingManager implements Listener {
     // mana bolt
     private static final double MANA_BOLT_SPEED = 1.0;
     private double getManaBoltDamage(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.DRAGON_SPIT);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Dragon_Spit);
         return MANA_BOLT_BASE_DAMAGE + ((level - 1) * 2); // damage increases by 2 per level
     }
     private double getManaBoltSpeed(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.DRAGON_SPIT);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Dragon_Spit);
         return MANA_BOLT_BASE_SPEED + ((level - 1) * 1); // speed increases by 0.1 per level
     }
     private static final double MANA_BOLT_BASE_SPEED = 1.0;
@@ -855,6 +860,7 @@ public class SpellCastingManager implements Listener {
 
 
     private void spawnMeteor(Player player, Location targetLocation) {
+        final int initDelay = (int) getMeteorInitDelay(player.getUniqueId());
         Location meteorSpawnLocation = targetLocation.clone().add(
                 ThreadLocalRandom.current().nextDouble(-5, 5), // random horizontal offset
                 40, // fixed height above target
@@ -883,7 +889,7 @@ public class SpellCastingManager implements Listener {
                     cancel();
                 }
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 2);
+        }.runTaskTimer(WizardsPlugin.getInstance(), initDelay, 2);
     }
 
     private void spawnWarningParticles(Player player, Location center) {
@@ -929,6 +935,7 @@ public class SpellCastingManager implements Listener {
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, 5);
     }
     public void castMeteorShower(Player player, Location targetLocation) {
+        final int initDelay = (int) getMeteorInitDelay(player.getUniqueId());
         // start particles in the target area
         spawnWarningParticles(player, targetLocation);
         playWarningSound(targetLocation);
@@ -948,7 +955,7 @@ public class SpellCastingManager implements Listener {
                     cancel();
                 }
             }
-        }.runTaskTimer(WizardsPlugin.getInstance(), 0, (int)delay);
+        }.runTaskTimer(WizardsPlugin.getInstance(), initDelay, (int)delay);
     }
 // WizardsPlugin.getInstance()
 

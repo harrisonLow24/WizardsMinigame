@@ -26,6 +26,15 @@ public class SpellMenu {
     public SpellMenu(WizardsPlugin spellManager) {
         this.spellManager = spellManager;
     }
+    private String formatSpellName(String spellName) {
+        String formattedName = spellName.replace("_", " ").toLowerCase();
+        String[] words = formattedName.split(" ");
+        StringBuilder formatted = new StringBuilder();
+        for (String word : words) {
+            formatted.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1)).append(" ");
+        }
+        return formatted.toString().trim();
+    }
 
     public void openSpellMenu(Player player) {
         UUID playerId = player.getUniqueId();
@@ -79,7 +88,7 @@ public class SpellMenu {
             ItemMeta meta = spellItem.getItemMeta();
 
             // spell name with level
-            meta.setDisplayName("§a§l" + spellType.name() + " §7(Level " + spellLevel + ")");
+            meta.setDisplayName("§a§l" + formatSpellName(spellType.name()) + " §7(Level " + spellLevel + ")");
 
             // spell details as lore
             List<String> spellLore = getSpellDetails(spellType, spellLevel);
@@ -133,13 +142,13 @@ public class SpellMenu {
     // determine catergories
     private SpellCategory getSpellCategory(WizardsPlugin.SpellType spellType) {
         switch (spellType) {
-            case FIERY_WAND, MJOLNIR, STARFALL_BARRAGE, BIG_MAN_SLAM, VOID_ORB, DRAGON_SPIT-> {
+            case Fiery_Wand, Mjölnir, Starfall_Barrage, Big_Man_Slam, Void_Orb, Dragon_Spit-> {
                 return SpellCategory.COMBAT;
             }
-            case SHROUDED_STEP, THE_GREAT_ESCAPE, GUST_FEATHER, WINGED_SHIELD, VOIDWALKER, RECALL -> {
+            case Shrouded_Step, The_Great_Escape, Gust , Winged_Shield, VoidWalker, Recall -> {
                 return SpellCategory.MOVEMENT;
             }
-            case HEAL_CLOUD -> {
+            case Heal_Cloud -> {
                 return SpellCategory.MISC;
             }
             default -> {
@@ -152,67 +161,67 @@ public class SpellMenu {
     private List<String> getSpellDetails(WizardsPlugin.SpellType spellType, int spellLevel) {
         List<String> details = new ArrayList<>();
         switch (spellType) {
-            case FIERY_WAND -> {
+            case Fiery_Wand -> {
                 details.add("§eMana: " + WizardsPlugin.FIREBALL_COST);
                 details.add("§eCooldown: " + Cooldown.fireballCooldownDuration / 1000 + "s");
                 details.add("§7Launches a fireball at your enemies.");
             }
-            case SHROUDED_STEP -> {
+            case Shrouded_Step -> {
                 details.add("§eMana: " + WizardsPlugin.TELEPORT_COST);
                 details.add("§eCooldown: " + Cooldown.teleportCooldownDuration / 1000 + "s");
                 details.add("§7Teleport a short distance.");
             }
-            case MJOLNIR -> {
+            case Mjölnir -> {
                 details.add("§eMana: " + WizardsPlugin.LIGHTNING_COST);
                 details.add("§eCooldown: " + Cooldown.lightningCooldownDuration / 1000 + "s");
                 details.add("§7Summons a lightning strike.");
             }
-            case THE_GREAT_ESCAPE -> {
+            case The_Great_Escape -> {
                 details.add("§eMana: " + WizardsPlugin.MINECART_COST);
                 details.add("§eCooldown: " + Cooldown.minecartCooldownDuration / 1000 + "s");
                 details.add("§7Send you a short distance in a minecart.");
             }
-            case GUST_FEATHER -> {
+            case Gust -> {
                 details.add("§eMana: " + WizardsPlugin.GUST_COST);
                 details.add("§eCooldown: " + Cooldown.gustCooldownDuration / 1000 + "s");
                 details.add("§7Pushes enemies away.");
             }
-            case WINGED_SHIELD -> {
+            case Winged_Shield -> {
                 details.add("§eMana: " + WizardsPlugin.FLYING_MANA_COST_PER_TICK);
                 details.add("§eCooldown: " + Cooldown.squidFlyingCooldownDuration / 1000 + "s");
                 details.add("§7Enables flight for a short duration.");
             }
-            case BIG_MAN_SLAM -> {
+            case Big_Man_Slam -> {
                 details.add("§eMana: " + WizardsPlugin.GP_COST);
                 details.add("§eCooldown: " + Cooldown.GPCooldownDuration / 1000 + "s");
                 details.add("§7Crushes enemies with a slam.");
             }
-            case VOIDWALKER -> {
+            case VoidWalker -> {
                 details.add("§eMana: " + WizardsPlugin.VOIDWALKER_COST);
                 details.add("§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s");
                 details.add("§7Teleports you using an alternate dimension.");
             }
-            case STARFALL_BARRAGE -> {
+            case Starfall_Barrage -> {
                 details.add("§eMana: " + WizardsPlugin.METEOR_COST);
                 details.add("§eCooldown: " + Cooldown.MeteorCooldownDuration / 1000 + "s");
                 details.add("§7Calls down a barrage of meteors.");
             }
-            case HEAL_CLOUD -> {
+            case Heal_Cloud -> {
                 details.add("§eMana: " + WizardsPlugin.HEALCLOUD_COST);
                 details.add("§eCooldown: " + Cooldown.HealCloudCooldownDuration / 1000 + "s");
                 details.add("§7Heals you and nearby allies over time.");
             }
-            case RECALL -> {
+            case Recall -> {
                 details.add("§eMana: " + WizardsPlugin.Recall_Cost);
                 details.add("§eCooldown: " + Cooldown.RecallCooldownDuration / 1000 + "s");
                 details.add("§7Teleport backwards 5 seconds.");
             }
-            case VOID_ORB -> {
+            case Void_Orb -> {
                 details.add("§eMana: " + WizardsPlugin.VoidOrb_Cost);
                 details.add("§eCooldown: " + Cooldown.VoidOrbCooldownDuration / 1000 + "s");
                 details.add("§7Sends a ball of void energy at your enemies.");
             }
-            case DRAGON_SPIT -> {
+            case Dragon_Spit -> {
                 details.add("§eMana: " + WizardsPlugin.MANABOLT_COST);
                 details.add("§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s");
                 details.add("§7Sends a ball of spit at your enemies.");

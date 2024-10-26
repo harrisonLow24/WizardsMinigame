@@ -16,6 +16,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -87,7 +88,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         // cant break blocks
         if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             handleSpellCast(player, playerId, wand);
-            event.setCancelled(true);
+//            event.setCancelled(true);
         }
 
         // cant place blocks
@@ -128,12 +129,21 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             return spellName;
         }
     }
-    public void recordSpellUsed(Player caster, UUID entityId, String spellName) {
-        lastDamager.put(entityId, new SpellInfo(caster.getUniqueId(), spellName));
-    }
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         event.setDeathMessage(null);
+    }
+    private boolean isSpell(ItemStack item) {
+        return SpellListener.isSpellItem(item);
+    }
+    private List<ItemStack> getPlayerSpells(Player player) {
+        List<ItemStack> spells = new ArrayList<>();
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && isSpell(item)) {
+                spells.add(item.clone()); // clone the item
+            }
+        }
+        return spells;
     }
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
@@ -161,6 +171,35 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                         ChatColor.GRAY + " fell into " + ChatColor.YELLOW + ChatColor.ITALIC + "The Void"  + ChatColor.GRAY + "!");
             }
         }
+
+        if (event.getEntity() instanceof Player) {
+            Player deadPlayer = (Player) event.getEntity();
+            List<ItemStack> playerSpells = getPlayerSpells(deadPlayer); // retrieve dead player's spells
+
+            // drop each spell
+            for (ItemStack spellItem : playerSpells) {
+                if (spellItem != null && spellItem.getType() != Material.AIR) {
+                    // customize display name of the item
+                    String spellName = WizardsPlugin.getSpellInfo(spellItem);
+                    ItemMeta meta = spellItem.getItemMeta();
+                    if (meta != null) {
+                        spellItem.setItemMeta(meta);
+                    }
+                    Location deathLocation = deadPlayer.getLocation();
+                    Item droppedItem = deathLocation.getWorld().dropItemNaturally(deathLocation, spellItem);
+
+                    // unpickable for a short time
+//                    droppedItem.setPickupDelay(Integer.MAX_VALUE);
+
+//                    droppedItem.setGlowing(true);
+
+                    // custom name to be always visible on the ground
+                    droppedItem.setCustomName(ChatColor.YELLOW + "" + ChatColor.BOLD + spellName);
+                    droppedItem.setCustomNameVisible(true);
+                }
+            }
+        }
+
 
         // death location of the entity
         Location deathLocation = event.getEntity().getLocation();
@@ -465,19 +504,19 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
 
     public enum SpellType {
-        FIERY_WAND(Material.BLAZE_ROD),
-        SHROUDED_STEP(Material.IRON_SWORD),
-        MJOLNIR(Material.IRON_PICKAXE),
-        THE_GREAT_ESCAPE(Material.MINECART),
-        GUST_FEATHER(Material.FEATHER),
-        WINGED_SHIELD(Material.SHIELD),
-        BIG_MAN_SLAM(Material.IRON_INGOT),
-        VOIDWALKER(Material.RECOVERY_COMPASS),
-        STARFALL_BARRAGE(Material.HONEYCOMB),
-        HEAL_CLOUD(Material.TIPPED_ARROW),
-        RECALL(Material.MUSIC_DISC_5),
-        VOID_ORB(Material.HEART_OF_THE_SEA),
-        DRAGON_SPIT(Material.AMETHYST_SHARD);
+        Fiery_Wand(Material.BLAZE_ROD),
+        Shrouded_Step(Material.IRON_SWORD),
+        Mjölnir(Material.IRON_PICKAXE),
+        The_Great_Escape(Material.MINECART),
+        Gust(Material.FEATHER),
+        Winged_Shield(Material.SHIELD),
+        Big_Man_Slam(Material.IRON_INGOT),
+        VoidWalker(Material.RECOVERY_COMPASS),
+        Starfall_Barrage(Material.HONEYCOMB),
+        Heal_Cloud(Material.TIPPED_ARROW),
+        Recall(Material.MUSIC_DISC_5),
+        Void_Orb(Material.HEART_OF_THE_SEA),
+        Dragon_Spit(Material.AMETHYST_SHARD);
 
 
         private final Material material;
