@@ -121,7 +121,7 @@ public class WandManager {
             case AMETHYST_SHARD:
                 return "§e§lDragon Spit";
             case NAUTILUS_SHELL:
-                return "§e§lCod Gun";
+                return "§e§lCod Shooter";
             default:
                 return "";
         }

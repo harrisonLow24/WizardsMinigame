@@ -150,7 +150,7 @@ public class SpellMenu {
             case Shrouded_Step, The_Great_Escape, Gust , Winged_Shield, VoidWalker, Recall -> {
                 return SpellCategory.MOVEMENT;
             }
-            case Heal_Cloud, Cod_Gun-> {
+            case Heal_Cloud, Cod_Shooter-> {
                 return SpellCategory.MISC;
             }
             default -> {
@@ -259,7 +259,7 @@ public class SpellMenu {
                 desc = "§7Sends a ball of spit at your enemies.";
                 damage = Cast.getManaBoltDamage(playerId);
             }
-            case Cod_Gun -> {
+            case Cod_Shooter -> {
                 mana = "§eMana: " + WizardsPlugin.COD_COST;
                 cooldown = "§eCooldown: " + Cooldown.CodCooldownDuration / 1000 + "s";
                 desc = "§7Knock your enemies back with the power of fish.";

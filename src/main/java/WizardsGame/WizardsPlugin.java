@@ -293,7 +293,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         SPELL_NAMES.put(Material.MUSIC_DISC_5, "Recall");
         SPELL_NAMES.put(Material.HEART_OF_THE_SEA, "Void Orb");
         SPELL_NAMES.put(Material.AMETHYST_SHARD, "Dragon Spit");
-        SPELL_NAMES.put(Material.NAUTILUS_SHELL, "Cod Gun");
+        SPELL_NAMES.put(Material.NAUTILUS_SHELL, "Cod Shooter");
 
     }
     static String getSpellInfo(ItemStack itemInHand) {
@@ -538,7 +538,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Recall(Material.MUSIC_DISC_5),
         Void_Orb(Material.HEART_OF_THE_SEA),
         Dragon_Spit(Material.AMETHYST_SHARD),
-        Cod_Gun(Material.NAUTILUS_SHELL);
+        Cod_Shooter(Material.NAUTILUS_SHELL);
 
         private final Material material;
 
@@ -607,7 +607,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case MUSIC_DISC_5 -> handleRecallCast(player, playerId);
             case HEART_OF_THE_SEA -> handleVoidOrbCast(player, playerId);
             case AMETHYST_SHARD -> handleManaBoltCast(player, playerId);
-            case NAUTILUS_SHELL -> handleCodGunCast(player, playerId);
+            case NAUTILUS_SHELL -> handleCodShooterCast(player, playerId);
 
             case BEETROOT -> handleCharmCast(player, playerId);
 
@@ -909,7 +909,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    private void handleCodGunCast(Player player, UUID playerId) {
+    private void handleCodShooterCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;

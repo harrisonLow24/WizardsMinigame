@@ -170,14 +170,14 @@ public class SpellCastingManager implements Listener {
     private static final int MANA_BOLT_LIFETIME = 200;
     final Map<UUID, ArmorStand> activeBolts = new HashMap<>();
 
-    // cod gun
+    // cod shooter
 
     double getFishCount(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Cod_Gun);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Cod_Shooter);
         return FISH_BASE_COUNT + ((level - 1) * 5);
     }
     double getFishKnockback(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Cod_Gun);
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Cod_Shooter);
         return FISH_BASE_KB + ((level - 1) * 0.1);
     }
     double FISH_BASE_COUNT = 20.0;
@@ -1559,7 +1559,7 @@ public class SpellCastingManager implements Listener {
                         }
                         knockback += (Math.random() * 0.5 - 0.25);
                         // height of knockback
-                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Cod Gun"));
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Cod Shooter"));
                         ((LivingEntity) entity).setVelocity(knockbackDirection.multiply(knockback).setY(0.5));
                     }
                 }
