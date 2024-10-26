@@ -198,6 +198,19 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                     droppedItem.setCustomNameVisible(true);
                 }
             }
+            for (ItemStack armorPiece : deadPlayer.getInventory().getArmorContents()) {
+                if (armorPiece != null && armorPiece.getType() != Material.AIR) {
+                    Location deathLocation = deadPlayer.getLocation();
+                    Item droppedItem = deathLocation.getWorld().dropItemNaturally(deathLocation, armorPiece);
+
+                    // name display
+                    String armorName = armorPiece.hasItemMeta() && armorPiece.getItemMeta().hasDisplayName()
+                            ? armorPiece.getItemMeta().getDisplayName()
+                            : armorPiece.getType().toString().replace('_', ' ');
+                    droppedItem.setCustomName(ChatColor.YELLOW + "" + ChatColor.BOLD + armorName);
+//                    droppedItem.setCustomNameVisible(true);
+                }
+            }
         }
 
 
@@ -544,7 +557,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private void checkAndUpdateWand(Player player) {
         ItemStack wand = player.getInventory().getItemInMainHand();
         if (WandManager.isWand(wand)) {
-            wand = WandManager.createWand(wand.getType()); // create item with the correct properties
+            wand = WandManager.createWand(wand.getType(), player); // create item with the correct properties
             player.getInventory().setItemInMainHand(wand); // update item
             playersWithWands.add(player.getUniqueId()); // track player
         } else {

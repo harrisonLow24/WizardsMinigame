@@ -38,11 +38,11 @@ import static WizardsGame.WizardsPlugin.getPlayerById;
 public class SpellCastingManager implements Listener {
 
     // DAMAGE: 2.0 = 1 HEART
-    private double getFireballDamage(UUID playerId) {
+    double getFireballDamage(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Fiery_Wand);
         return FIREBALL_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
-    private double getFireballSpeed(UUID playerId) {
+    double getFireballSpeed(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Fiery_Wand);
         return FIREBALL_BASE_SPEED + ((level - 1) * 0.25); // speed increases by <num> per level
     }
@@ -51,11 +51,23 @@ public class SpellCastingManager implements Listener {
 
     public final Map<UUID, Integer> lightningEffectDuration = new HashMap<>();
     private final Map<UUID, Boolean> lightningEffectTriggered = new HashMap<>();
-    private double getLightningDamage(UUID playerId) {
+    double getLightningDamage(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Mjölnir);
         return LIGHTNING_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
     double LIGHTNING_BASE_DAMAGE = 2.0;
+
+    // GP spell
+    double getGPDamage(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Big_Man_Slam);
+        return GP_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
+    }
+    double getGPRadius(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Big_Man_Slam);
+        return GP_BASE_RADIUS + ((level - 1) * 0.5); // speed increases by <num> per level
+    }
+    double GP_BASE_RADIUS = 5.0;
+    double GP_BASE_DAMAGE = 2.0;
 
     // map teleport / voidwalker spell
     private static final int TELEPORT_DURATION = 5; // duration player stays in the air (in seconds)
@@ -67,23 +79,23 @@ public class SpellCastingManager implements Listener {
 //    private static final int CLONE_DURATION = 100;
 
     // meteor spell
-    private double getMeteorDamage(UUID playerId) {
+    double getMeteorDamage(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
-        return METEOR_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
+        return METEOR_BASE_DAMAGE + ((level - 1) * 0.5); // damage increases by <num>/2 hearts per level
     }
-    private double getMeteorCount(UUID playerId) {
+    double getMeteorCount(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
-        return METEOR_BASE_COUNT + ((level - 1) * 1);
+        return METEOR_BASE_COUNT + ((level - 1) * 2);
     }
-    private double getMeteorDelay(UUID playerId) {
+    double getMeteorDelay(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
         return METEOR_BASE_DELAY - ((level - 1) * 1);
     }
-    private double getMeteorInitDelay(UUID playerId) {
+    double getMeteorInitDelay(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
         return METEOR_BASE_INIT_DELAY + ((level - 1) * 10);
     }
-    private double getMeteorRadius(UUID playerId) {
+    double getMeteorRadius(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Starfall_Barrage);
         return METEOR_BASE_RADIUS + ((level - 1) * 0.5);
     }
@@ -112,13 +124,13 @@ public class SpellCastingManager implements Listener {
                 material == Material.ROSE_BUSH ||
                 material == Material.PEONY;
     }
-    private double getVoidOrbDamage(UUID playerId) {
+    double getVoidOrbDamage(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Void_Orb);
         return SWORD_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
-    private double getVoidOrbSpeed(UUID playerId) {
+    double getVoidOrbSpeed(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Void_Orb);
-        return SWORD_BASE_SPEED + ((level - 1) * 1);
+        return SWORD_BASE_SPEED + ((level - 1) * 0.1);
     }
     static final double SWORD_BASE_SPEED = 0.5; // adjust speed as needed
     static final double SWORD_BASE_DAMAGE = 3.0; // damage dealt by sword 2 = 1 heart
@@ -128,29 +140,28 @@ public class SpellCastingManager implements Listener {
 
 
     // heal spell
-    private double getHealRadius(UUID playerId) {
+//    double getHealRadius(UUID playerId) {
+//        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Heal_Cloud);
+//        return HEAL_BASE_RADIUS + ((level - 1) * 0.5);
+//    }
+    double getHealAmount(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Heal_Cloud);
-        return HEAL_BASE_RADIUS + ((level - 1) * 1);
+        return HEAL_BASE_AMOUNT + ((level - 1) * 0.5);
     }
-    private double getHealAmount(UUID playerId) {
-        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Heal_Cloud);
-        return HEAL_BASE_AMOUNT + ((level - 1) * 1);
-    }
-    private static final int HEAL_BASE_RADIUS = 2; // radius of the healing circle
+    static final int HEAL_BASE_RADIUS = 2; // radius of the healing circle
     private static final int HEAL_BASE_AMOUNT = 1; // amount of health restored per heal tick
-    private static final int HEAL_DURATION = 6; // duration of healing in seconds
+    private static final int HEAL_DURATION = 4; // duration of healing in seconds
     private static final int HEAL_TICK_INTERVAL = 20; // heal interval (in ticks), 20 ticks = 1 second
 
 
     // mana bolt
-    private static final double MANA_BOLT_SPEED = 1.0;
-    private double getManaBoltDamage(UUID playerId) {
+    double getManaBoltDamage(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Dragon_Spit);
-        return MANA_BOLT_BASE_DAMAGE + ((level - 1) * 2); // damage increases by 2 per level
+        return MANA_BOLT_BASE_DAMAGE + ((level - 1) * 0.5); // damage increases by 0.5 per level
     }
-    private double getManaBoltSpeed(UUID playerId) {
+    double getManaBoltSpeed(UUID playerId) {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Dragon_Spit);
-        return MANA_BOLT_BASE_SPEED + ((level - 1) * 1); // speed increases by 0.1 per level
+        return MANA_BOLT_BASE_SPEED + ((level - 1) * 0.1); // speed increases by 0.1 per level
     }
     private static final double MANA_BOLT_BASE_SPEED = 1.0;
     private static final double MANA_BOLT_BASE_DAMAGE = 4.0;
@@ -514,7 +525,7 @@ public class SpellCastingManager implements Listener {
                 // check if the player is on a block
                 if (player.isOnGround()) {
                     // create a circular impact
-                    double radius = 5.0;
+                    final double radius = getGPRadius(player.getUniqueId());
                     Location landingLocation = player.getLocation();
 
                     // particle effects for descent
@@ -522,7 +533,7 @@ public class SpellCastingManager implements Listener {
                         world.spawnParticle(Particle.CLOUD, landingLocation.clone().add(0, y, 0), 1, 0, 0, 0, 0, null, true);
                     }
 
-                    scatterBlocks(landingLocation); // scatter blocks relative to landing location
+                    scatterBlocks(landingLocation, player); // scatter blocks relative to landing location
 
                     for (double x = -radius; x <= radius; x += 0.5) {
                         for (double z = -radius; z <= radius; z += 0.5) {
@@ -565,18 +576,20 @@ public class SpellCastingManager implements Listener {
     }
 
     private void dealDamageToEntities(Player player, World world, Location landingLocation) {
-        double damageRadius = 5.0;
-        double damageAmount = 2.0; // hearts of damage
-        for (Entity entity : landingLocation.getWorld().getNearbyEntities(landingLocation, damageRadius, damageRadius, damageRadius)) {
+        final double damage = getGPDamage(player.getUniqueId());
+        final double radius = getGPRadius(player.getUniqueId());
+        for (Entity entity : landingLocation.getWorld().getNearbyEntities(landingLocation, radius, radius, radius)) {
             if (entity instanceof LivingEntity && !entity.equals(player)) {
                 LivingEntity livingEntity = (LivingEntity) entity;
-                EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(player, livingEntity, DamageCause.ENTITY_ATTACK, damageAmount);
-                Bukkit.getPluginManager().callEvent(damageEvent);
-
-                if (!damageEvent.isCancelled()) {
-                    double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damageAmount);
-                    livingEntity.damage(finalDamage);
-                }
+                WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Big Man Slam"));
+                double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
+                livingEntity.damage(finalDamage, player);
+//                EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(player, livingEntity, DamageCause.ENTITY_ATTACK, finalDamage);
+//                Bukkit.getPluginManager().callEvent(damageEvent);
+//                if (!damageEvent.isCancelled()) {
+//                    double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
+//                    livingEntity.damage(finalDamage);
+//                }
             }
         }
     }
@@ -604,9 +617,9 @@ public class SpellCastingManager implements Listener {
 
         return new Vector(randomX, randomY, randomZ);
     }
-    private void scatterBlocks(Location location) {
+    private void scatterBlocks(Location location, Player player) {
         World world = location.getWorld();
-        double scatterRadius = 5.0;
+        final double scatterRadius = getGPRadius(player.getUniqueId());
         double minVelocity = 0.5;
         double maxVelocity = 1.5;
 
@@ -1137,8 +1150,8 @@ public class SpellCastingManager implements Listener {
     void spawnHealingCircle(Player caster, Location center) {
 //        caster.sendMessage("Healing Circle cast at " + center.toString() + "!");
 
-        final double radius = getHealRadius(caster.getUniqueId());
-
+//        final double radius = getHealRadius(caster.getUniqueId());
+        final double radius = HEAL_BASE_RADIUS;
         // display particle effect for healing circle
         center.getWorld().spawnParticle(Particle.HEART, center, (int) radius * 2, radius - 3, 2, radius - 3, 0.1);
 
@@ -1191,7 +1204,8 @@ public class SpellCastingManager implements Listener {
 
     // heal all players within the circle
     private void healPlayersInCircle(Player caster,Location center) {
-        final double radius = getHealRadius(caster.getUniqueId());
+//        final double radius = getHealRadius(caster.getUniqueId());
+        final double radius = HEAL_BASE_RADIUS;
         final double healAmount = getHealAmount(caster.getUniqueId());
         // expand the vertical range for healing by using a cuboid check
         for (Entity entity : center.getWorld().getNearbyEntities(center, radius, 2, radius)) {
@@ -1355,7 +1369,6 @@ public class SpellCastingManager implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_SHOOT, 0.5f, 1.0f);
 
         Location eyeLocation = player.getEyeLocation();
-//        Vector direction = eyeLocation.getDirection().normalize().multiply(MANA_BOLT_SPEED);
         final double speed = getManaBoltSpeed(player.getUniqueId());
         final double damage = getManaBoltDamage(player.getUniqueId());
         Vector direction = player.getLocation().getDirection().normalize().multiply(speed);

@@ -1,6 +1,7 @@
 package WizardsGame;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -16,6 +17,7 @@ public class SpellMenu {
     private final WizardsPlugin spellManager;
     CooldownManager Cooldown = new CooldownManager();
     ManaManager Mana = new ManaManager();
+    SpellCastingManager Cast = new SpellCastingManager();
 
     public enum SpellCategory {
         COMBAT,
@@ -88,10 +90,10 @@ public class SpellMenu {
             ItemMeta meta = spellItem.getItemMeta();
 
             // spell name with level
-            meta.setDisplayName("§a§l" + formatSpellName(spellType.name()) + " §7(Level " + spellLevel + ")");
+            meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + formatSpellName(spellType.name()) + ChatColor.BLUE +" Lv " + spellLevel + "");
 
             // spell details as lore
-            List<String> spellLore = getSpellDetails(spellType, spellLevel);
+            List<String> spellLore = getSpellDetails(spellType, spellLevel, playerId, 0);
             meta.setLore(spellLore);
 
             // update meta
@@ -158,81 +160,115 @@ public class SpellMenu {
     }
 
     // spell details
-    private List<String> getSpellDetails(WizardsPlugin.SpellType spellType, int spellLevel) {
+    List<String> getSpellDetails(WizardsPlugin.SpellType spellType, int spellLevel, UUID playerId, int a) {
         List<String> details = new ArrayList<>();
+        double damage = 0;
+        double heal = 0;
+        double radius = 0;
+        int hasBoth = 0;
+        String mana = "";
+        String cooldown = "";
+        String desc = "";
+//        if (spellLevel > 0) {
+//            details.add("§aLevel: " + spellLevel);
+//        }else {
+//            details.add("§cNot owned!");
+//            return details;
+//        }
+        if (spellLevel <= 0){
+            details.add("§cNot owned!");
+            return details;
+        }
         switch (spellType) {
             case Fiery_Wand -> {
-                details.add("§eMana: " + WizardsPlugin.FIREBALL_COST);
-                details.add("§eCooldown: " + Cooldown.fireballCooldownDuration / 1000 + "s");
-                details.add("§7Launches a fireball at your enemies.");
+                mana = "§eMana: " + WizardsPlugin.FIREBALL_COST;
+                cooldown = "§eCooldown: " + Cooldown.fireballCooldownDuration / 1000 + "s";
+                desc = "§7Launches a fireball at your enemies.";
+                damage = Cast.getFireballDamage(playerId);
             }
             case Shrouded_Step -> {
-                details.add("§eMana: " + WizardsPlugin.TELEPORT_COST);
-                details.add("§eCooldown: " + Cooldown.teleportCooldownDuration / 1000 + "s");
-                details.add("§7Teleport a short distance.");
+                mana = "§eMana: " + WizardsPlugin.TELEPORT_COST;
+                cooldown = "§eCooldown: " + Cooldown.teleportCooldownDuration / 1000 + "s";
+                desc = "§7Teleport a short distance.";
             }
             case Mjölnir -> {
-                details.add("§eMana: " + WizardsPlugin.LIGHTNING_COST);
-                details.add("§eCooldown: " + Cooldown.lightningCooldownDuration / 1000 + "s");
-                details.add("§7Summons a lightning strike.");
+                mana = "§eMana: " + WizardsPlugin.LIGHTNING_COST;
+                cooldown = "§eCooldown: " + Cooldown.lightningCooldownDuration / 1000 + "s";
+                desc = "§7Summons a lightning strike.";
+                damage = Cast.getLightningDamage(playerId);
             }
             case The_Great_Escape -> {
-                details.add("§eMana: " + WizardsPlugin.MINECART_COST);
-                details.add("§eCooldown: " + Cooldown.minecartCooldownDuration / 1000 + "s");
-                details.add("§7Send you a short distance in a minecart.");
+                mana = "§eMana: " + WizardsPlugin.MINECART_COST;
+                cooldown = "§eCooldown: " + Cooldown.minecartCooldownDuration / 1000 + "s";
+                desc = "§7Send you a short distance in a minecart.";
             }
             case Gust -> {
-                details.add("§eMana: " + WizardsPlugin.GUST_COST);
-                details.add("§eCooldown: " + Cooldown.gustCooldownDuration / 1000 + "s");
-                details.add("§7Pushes enemies away.");
+                mana = "§eMana: " + WizardsPlugin.GUST_COST;
+                cooldown = "§eCooldown: " + Cooldown.gustCooldownDuration / 1000 + "s";
+                desc = "§7Pushes enemies away.";
             }
             case Winged_Shield -> {
-                details.add("§eMana: " + WizardsPlugin.FLYING_MANA_COST_PER_TICK);
-                details.add("§eCooldown: " + Cooldown.squidFlyingCooldownDuration / 1000 + "s");
-                details.add("§7Enables flight for a short duration.");
+                mana = "§eMana: " + WizardsPlugin.FLYING_MANA_COST_PER_TICK;
+                cooldown = "§eCooldown: " + Cooldown.squidFlyingCooldownDuration / 1000 + "s";
+                desc = "§7Enables flight for a short duration.";
             }
             case Big_Man_Slam -> {
-                details.add("§eMana: " + WizardsPlugin.GP_COST);
-                details.add("§eCooldown: " + Cooldown.GPCooldownDuration / 1000 + "s");
-                details.add("§7Crushes enemies with a slam.");
+                mana = "§eMana: " + WizardsPlugin.GP_COST;
+                cooldown = "§eCooldown: " + Cooldown.GPCooldownDuration / 1000 + "s";
+                desc = "§7Crushes enemies with a slam.";
+                damage = Cast.getGPDamage(playerId);
+                radius = Cast.getGPRadius(playerId);
+                hasBoth = 1;
             }
             case VoidWalker -> {
-                details.add("§eMana: " + WizardsPlugin.VOIDWALKER_COST);
-                details.add("§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s");
-                details.add("§7Teleports you using an alternate dimension.");
+                mana = "§eMana: " + WizardsPlugin.VOIDWALKER_COST;
+                cooldown = "§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s";
+                desc = "§7Teleports you using an alternate dimension.";
             }
             case Starfall_Barrage -> {
-                details.add("§eMana: " + WizardsPlugin.METEOR_COST);
-                details.add("§eCooldown: " + Cooldown.MeteorCooldownDuration / 1000 + "s");
-                details.add("§7Calls down a barrage of meteors.");
+                mana = "§eMana: " + WizardsPlugin.METEOR_COST;
+                cooldown = "§eCooldown: " + Cooldown.MeteorCooldownDuration / 1000 + "s";
+                desc = "§7Calls down a barrage of meteors.";
+                damage = Cast.getMeteorDamage(playerId);
+                radius = Cast.getMeteorRadius(playerId);
+                hasBoth = 1;
             }
             case Heal_Cloud -> {
-                details.add("§eMana: " + WizardsPlugin.HEALCLOUD_COST);
-                details.add("§eCooldown: " + Cooldown.HealCloudCooldownDuration / 1000 + "s");
-                details.add("§7Heals you and nearby allies over time.");
+                mana = "§eMana: " + WizardsPlugin.HEALCLOUD_COST;
+                cooldown = "§eCooldown: " + Cooldown.HealCloudCooldownDuration / 1000 + "s";
+                desc = "§7Heals you and nearby allies over time.";
+                heal = Cast.getHealAmount(playerId);
+                radius = Cast.HEAL_BASE_RADIUS;
             }
             case Recall -> {
-                details.add("§eMana: " + WizardsPlugin.Recall_Cost);
-                details.add("§eCooldown: " + Cooldown.RecallCooldownDuration / 1000 + "s");
-                details.add("§7Teleport backwards 5 seconds.");
+                mana = "§eMana: " + WizardsPlugin.Recall_Cost;
+                cooldown = "§eCooldown: " + Cooldown.RecallCooldownDuration / 1000 + "s";
+                desc = "§7Teleport backwards 5 seconds.";
             }
             case Void_Orb -> {
-                details.add("§eMana: " + WizardsPlugin.VoidOrb_Cost);
-                details.add("§eCooldown: " + Cooldown.VoidOrbCooldownDuration / 1000 + "s");
-                details.add("§7Sends a ball of void energy at your enemies.");
+                mana = "§eMana: " + WizardsPlugin.VoidOrb_Cost;
+                cooldown = "§eCooldown: " + Cooldown.VoidOrbCooldownDuration / 1000 + "s";
+                desc = "§7Sends a ball of void energy at your enemies.";
+                damage = Cast.getVoidOrbDamage(playerId);
             }
             case Dragon_Spit -> {
-                details.add("§eMana: " + WizardsPlugin.MANABOLT_COST);
-                details.add("§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s");
-                details.add("§7Sends a ball of spit at your enemies.");
+                mana = "§eMana: " + WizardsPlugin.MANABOLT_COST;
+                cooldown = "§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s";
+                desc = "§7Sends a ball of spit at your enemies.";
+                damage = Cast.getManaBoltDamage(playerId);
             }
         }
-
-        if (spellLevel > 0) {
-            details.add("§aLevel: " + spellLevel);
-        } else {
-            details.add("§cNot owned!");
+        if (a == 0) {
+            details.add(mana);
+            details.add(cooldown);
+        }if (radius > 1 && damage > 0){
+            details.add("§cDamage: " + damage / 2 + " §c❤ |" + " §cRadius: " + radius);
+        }if (damage > 0 && hasBoth == 0) {
+            details.add("§cDamage: " + damage / 2 + " §c❤");
+        }if (heal > 0) {
+            details.add("§cHeal: " + heal / 2 + " §c❤/s |" + " §cRadius: " + radius);
         }
+            details.add(desc);
 
         return details;
     }
