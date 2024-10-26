@@ -75,6 +75,9 @@ public class WandManager {
                 case AMETHYST_SHARD:
                     lore.add("§gSend a ball of spit at your opponents!");
                     break;
+                case NAUTILUS_SHELL:
+                    lore.add("§gKnock your enemies back with the power of fish!");
+                    break;
                 default:
                     lore.add("§gA basic wand with no special powers.");
                     break;
@@ -117,6 +120,8 @@ public class WandManager {
                 return "§e§lVoid Orb";
             case AMETHYST_SHARD:
                 return "§e§lDragon Spit";
+            case NAUTILUS_SHELL:
+                return "§e§lCod Gun";
             default:
                 return "";
         }
@@ -128,6 +133,8 @@ public class WandManager {
         double damage = 0;
         double heal = 0;
         double radius = 0;
+        double knockback = 0;
+        double fishCount = 0;
         int basic = 0;
 
         switch (material) {
@@ -205,6 +212,12 @@ public class WandManager {
                 cooldown = Cooldown.manaBoltCooldownDuration;
                 damage = Cast.getManaBoltDamage(playerId);
                 break;
+            case NAUTILUS_SHELL:
+                manaCost = (int) WizardsPlugin.COD_COST;
+                cooldown = Cooldown.CodCooldownDuration;
+                knockback = Cast.getFishKnockback(playerId);
+                fishCount = Cast.getFishCount(playerId);
+                break;
             default:
                 spellName = "§i§lBasic Wand";
                 basic = 1;
@@ -221,6 +234,8 @@ public class WandManager {
             return("§cDamage: " + damage / 2 + " §c❤");
         }if (heal > 0) {
             return("§cHeal: " + heal / 2 + " §c❤/s |" + " §cRadius: " + radius);
+        }if (knockback > 0) {
+            return("§cKnockback: " + knockback +" | " + " §cCount: " + fishCount);
         } else{
             return("");
         }
@@ -242,6 +257,7 @@ public class WandManager {
                         item.getType() == Material.TIPPED_ARROW ||
                         item.getType() == Material.MUSIC_DISC_5 ||
                         item.getType() == Material.HEART_OF_THE_SEA||
-                        item.getType() == Material.AMETHYST_SHARD);
+                        item.getType() == Material.AMETHYST_SHARD||
+                        item.getType() == Material.NAUTILUS_SHELL);
     }
 }

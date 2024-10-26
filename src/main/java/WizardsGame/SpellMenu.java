@@ -150,7 +150,7 @@ public class SpellMenu {
             case Shrouded_Step, The_Great_Escape, Gust , Winged_Shield, VoidWalker, Recall -> {
                 return SpellCategory.MOVEMENT;
             }
-            case Heal_Cloud -> {
+            case Heal_Cloud, Cod_Gun-> {
                 return SpellCategory.MISC;
             }
             default -> {
@@ -165,6 +165,8 @@ public class SpellMenu {
         double damage = 0;
         double heal = 0;
         double radius = 0;
+        double knockback = 0;
+        double fishCount = 0;
         int hasBoth = 0;
         String mana = "";
         String cooldown = "";
@@ -253,9 +255,17 @@ public class SpellMenu {
             }
             case Dragon_Spit -> {
                 mana = "§eMana: " + WizardsPlugin.MANABOLT_COST;
-                cooldown = "§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s";
+                cooldown = "§eCooldown: " + Cooldown.manaBoltCooldownDuration / 1000 + "s";
                 desc = "§7Sends a ball of spit at your enemies.";
                 damage = Cast.getManaBoltDamage(playerId);
+            }
+            case Cod_Gun -> {
+                mana = "§eMana: " + WizardsPlugin.COD_COST;
+                cooldown = "§eCooldown: " + Cooldown.CodCooldownDuration / 1000 + "s";
+                desc = "§7Knock your enemies back with the power of fish.";
+                knockback = Cast.getFishKnockback(playerId);
+                fishCount = Cast.getFishCount(playerId);
+
             }
         }
         if (a == 0) {
@@ -267,6 +277,8 @@ public class SpellMenu {
             details.add("§cDamage: " + damage / 2 + " §c❤");
         }if (heal > 0) {
             details.add("§cHeal: " + heal / 2 + " §c❤/s |" + " §cRadius: " + radius);
+        }if (knockback > 0) {
+            details.add("§cKnockback: " + knockback +" | " + " §cCount: " + fishCount);
         }
             details.add(desc);
 

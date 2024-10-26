@@ -293,6 +293,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         SPELL_NAMES.put(Material.MUSIC_DISC_5, "Recall");
         SPELL_NAMES.put(Material.HEART_OF_THE_SEA, "Void Orb");
         SPELL_NAMES.put(Material.AMETHYST_SHARD, "Dragon Spit");
+        SPELL_NAMES.put(Material.NAUTILUS_SHELL, "Cod Gun");
 
     }
     static String getSpellInfo(ItemStack itemInHand) {
@@ -374,6 +375,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         else if (itemInHand.getType() == Material.AMETHYST_SHARD) {
             return Cooldown.manaBoltCooldownDuration - (System.currentTimeMillis() - Cooldown.manaBoltCooldowns.getOrDefault(playerId, 0L));
         }
+        else if (itemInHand.getType() == Material.NAUTILUS_SHELL) {
+            return Cooldown.CodCooldownDuration - (System.currentTimeMillis() - Cooldown.codCooldowns.getOrDefault(playerId, 0L));
+        }
         return 0;
     }
 
@@ -415,6 +419,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
         if (itemInHand.getType() == Material.AMETHYST_SHARD) {
             return Cooldown.manaBoltCooldownDuration;
+        }
+        if (itemInHand.getType() == Material.NAUTILUS_SHELL) {
+            return Cooldown.CodCooldownDuration;
         }
 
         return 0;
@@ -505,6 +512,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     static final double Recall_Cost = 25.0;
     static final double VoidOrb_Cost = 10.0;
     static final double MANABOLT_COST = 10.0;
+    static final double COD_COST = 15.0;
     static final double CHARM_COST = 15.0;
 
     // recall spell ----------------------------------------------------------------------------------------------------
@@ -529,8 +537,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Heal_Cloud(Material.TIPPED_ARROW),
         Recall(Material.MUSIC_DISC_5),
         Void_Orb(Material.HEART_OF_THE_SEA),
-        Dragon_Spit(Material.AMETHYST_SHARD);
-
+        Dragon_Spit(Material.AMETHYST_SHARD),
+        Cod_Gun(Material.NAUTILUS_SHELL);
 
         private final Material material;
 
@@ -599,31 +607,13 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case MUSIC_DISC_5 -> handleRecallCast(player, playerId);
             case HEART_OF_THE_SEA -> handleVoidOrbCast(player, playerId);
             case AMETHYST_SHARD -> handleManaBoltCast(player, playerId);
+            case NAUTILUS_SHELL -> handleCodGunCast(player, playerId);
 
             case BEETROOT -> handleCharmCast(player, playerId);
 
 
         }
     }
-
-    private void handleManaBoltCast(Player player, UUID playerId) {
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnManaBoltCooldown(playerId) && Mana.hasEnoughMana(playerId, MANABOLT_COST)){
-            Mana.deductMana(playerId, MANABOLT_COST);
-            Cooldown.setManaBoltCooldown(playerId);
-            Cast.launchManaBolt(player);
-        }
-        else if (Cooldown.isOnManaBoltCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingManaBoltCooldownSeconds(playerId));
-        }else{
-            handleManaMessage(player);
-        }
-    }
-
-
     void handleFireballCast(Player player, UUID playerId) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
@@ -902,7 +892,39 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
         }
 
+    private void handleManaBoltCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            sendTeleportWarning(player);
+            return;
+        }
+        if (!Cooldown.isOnManaBoltCooldown(playerId) && Mana.hasEnoughMana(playerId, MANABOLT_COST)){
+            Mana.deductMana(playerId, MANABOLT_COST);
+            Cooldown.setManaBoltCooldown(playerId);
+            Cast.launchManaBolt(player);
+        }
+        else if (Cooldown.isOnManaBoltCooldown(playerId)) {
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingManaBoltCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
+        }
+    }
 
+    private void handleCodGunCast(Player player, UUID playerId) {
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            sendTeleportWarning(player);
+            return;
+        }
+        if (!Cooldown.isOnCodCooldown(playerId) && Mana.hasEnoughMana(playerId, COD_COST)){
+            Mana.deductMana(playerId, COD_COST);
+            Cooldown.setCodCooldown(playerId);
+            Cast.shootFish(player);
+        }
+        else if (Cooldown.isOnCodCooldown(playerId)) {
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingCodCooldownSeconds(playerId));
+        }else{
+            handleManaMessage(player);
+        }
+    }
 
 
 //    void handleCloneCast(Player player, UUID playerId) {

@@ -4,6 +4,7 @@ import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -169,6 +170,26 @@ public class SpellCastingManager implements Listener {
     private static final int MANA_BOLT_LIFETIME = 200;
     final Map<UUID, ArmorStand> activeBolts = new HashMap<>();
 
+    // cod gun
+
+    double getFishCount(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Cod_Gun);
+        return FISH_BASE_COUNT + ((level - 1) * 5);
+    }
+    double getFishKnockback(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Cod_Gun);
+        return FISH_BASE_KB + ((level - 1) * 0.1);
+    }
+    double FISH_BASE_COUNT = 20.0;
+    double FISH_BASE_KB = 1.0;
+
+
+
+
+
+
+
+
 
     private double calculateDamageWithArmor(LivingEntity entity, double baseDamage) {
         // get armor value of the entity
@@ -310,8 +331,29 @@ public class SpellCastingManager implements Listener {
                     registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
 //                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), caster.getUniqueId());
                 }
-                world.strikeLightning(strikeLocation); // strike lightning at determined location
+                world.strikeLightningEffect(strikeLocation); // strike lightning effect at determined location
+                igniteSurroundingBlocks(world, strikeLocation);
+
             }, 30L); // 1.5 sec delay (20 ticks per second)
+        }
+    }
+    private void igniteSurroundingBlocks(World world, Location strikeLocation) {
+        Random random = new Random();
+        int numberOfFires = 2 + random.nextInt(3); // randomly between 2 and 5 blocks to set on fire
+
+        for (int i = 0; i < numberOfFires; i++) {
+            // random blocks within a radius of 2 around strike location
+            int xOffset = random.nextInt(5) - 2;
+            int zOffset = random.nextInt(5) - 2;
+            Location fireLocation = strikeLocation.clone().add(xOffset, 0, zOffset);
+
+            Block block = fireLocation.getBlock();
+            Block blockAbove = block.getRelative(BlockFace.UP);
+
+            // set fire if the block above is air
+            if (blockAbove.getType() == Material.AIR && block.getType().isSolid()) {
+                blockAbove.setType(Material.FIRE);
+            }
         }
     }
 
@@ -1452,5 +1494,84 @@ public class SpellCastingManager implements Listener {
                 activeBolts.remove(player.getUniqueId());
             }
         }, MANA_BOLT_LIFETIME);
+    }
+
+    private EntityType getRandomFishType() {
+        EntityType[] fishTypes = {EntityType.COD, EntityType.SALMON, EntityType.PUFFERFISH, EntityType.TROPICAL_FISH};
+        Random random = new Random();
+        return fishTypes[random.nextInt(fishTypes.length)];
+    }
+
+    void shootFish(Player player) {
+        double count = getFishCount(player.getUniqueId());
+        new BukkitRunnable() {
+            int fishCount = 0; // track number of fish spawned
+            @Override
+            public void run() {
+                if (fishCount < count) {
+                    Location eyeLocation = player.getEyeLocation();
+                    Vector direction = eyeLocation.getDirection();
+                    Location spawnLocation = eyeLocation.add(direction.clone().multiply(1));
+
+                    spawnFish(spawnLocation, direction, player);
+                    fishCount++;
+                } else {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1);
+    }
+    void spawnFish(Location location, Vector direction, Player player) {
+        World world = location.getWorld();
+        if (world == null) return;
+
+        EntityType fishType = getRandomFishType();
+
+        Location adjustedLocation = location.clone();
+        adjustedLocation.setY(location.getY() - 0.5);
+
+        // create a fish at the adjusted spawn location
+        Entity fish = world.spawnEntity(adjustedLocation, fishType);
+
+        // fish's velocity
+        fish.setVelocity(direction.clone().multiply(3));
+
+        // disable gravity
+//        ((LivingEntity) fish).setGravity(false);
+
+        // apply knockback upon collision
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // check for nearby entities
+                for (Entity entity : world.getNearbyEntities(fish.getLocation(), 1.0, 1.0, 1.0)) {
+                    if (entity instanceof LivingEntity && !entity.equals(player) && !(entity instanceof Fish)) {
+                        // knockback based on the direction from the fish to the entity
+                        Vector knockbackDirection = entity.getLocation().toVector().subtract(fish.getLocation().toVector()).normalize();
+
+                        // dynamic knockback
+                        double distance = fish.getLocation().distance(entity.getLocation());
+                        double knockback = getFishKnockback(player.getUniqueId());
+
+                        // knockback strength proportional to the distance
+                        if (distance < 3) {
+                            knockback += (3 - distance); // knockback increased for close entities
+                        }
+                        knockback += (Math.random() * 0.5 - 0.25);
+                        // height of knockback
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Cod Gun"));
+                        ((LivingEntity) entity).setVelocity(knockbackDirection.multiply(knockback).setY(0.5));
+                    }
+                }
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 1L, 1L);
+
+        // remove the fish after a certain time
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                fish.remove();
+            }
+        }.runTaskLater(WizardsPlugin.getInstance(), 200);
     }
 }

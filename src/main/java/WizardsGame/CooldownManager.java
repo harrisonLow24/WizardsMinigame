@@ -79,9 +79,7 @@ public class CooldownManager {
     final Map<UUID, Long> MeteorCooldowns = new HashMap<>();
     final Map<UUID, Long> HealCloudCooldowns = new HashMap<>    ();
     final Map<UUID, Long> manaBoltCooldowns = new HashMap<>();
-    final Map<UUID, Long> frostBarrierCooldowns = new HashMap<>();
-
-    final Map<UUID, Long> iceSphereCooldowns = new HashMap<>    ();
+    final Map<UUID, Long> codCooldowns = new HashMap<>();
 
     // cooldown duration in milliseconds
     final long fireballCooldownDuration = 2 * 1000; // 10
@@ -98,9 +96,8 @@ public class CooldownManager {
     final long HealCloudCooldownDuration = 1 * 1000; // 25 seconds
     final long VoidOrbCooldownDuration = 1 * 1000; // 25 seconds
     final int manaBoltCooldownDuration = 1 * 1000; // 25 seconds
+    final int CodCooldownDuration = 1 * 1000; // 25 seconds
     //    private final long cloneCooldownDuration = 1 * 1000; // 30 seconds
-    final long frostBarrierCooldownDuration = 1 * 1000; // 25 seconds
-    final long twistedFateSpellDuration = 1 * 1000; // 30 seconds
     final long charmSpellDuration = 1 * 1000; // 30 seconds
 
     // returns the remaining cooldown left
@@ -123,10 +120,6 @@ public class CooldownManager {
     }
     int getRemainingGustCooldownSeconds(UUID playerId) {
         long remainingCooldown = gustCooldownDuration - (System.currentTimeMillis() - gustCooldowns.getOrDefault(playerId, 0L));
-        return (int) Math.ceil(remainingCooldown / 1000.0);
-    }
-    int getRemainingIceSphereCooldownSeconds(UUID playerId) {
-        long remainingCooldown = iceSphereCooldownDuration - (System.currentTimeMillis() - iceSphereCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
     int getRemainingMinecartCooldownSeconds(UUID playerId) {
@@ -157,9 +150,8 @@ public class CooldownManager {
         long remainingCooldown = manaBoltCooldownDuration - (System.currentTimeMillis() - manaBoltCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
-
-    int getRemainingFrostBarrierCooldownSeconds(UUID playerId) {
-        long remainingCooldown = frostBarrierCooldownDuration - (System.currentTimeMillis() - frostBarrierCooldowns.getOrDefault(playerId, 0L));
+    int getRemainingCodCooldownSeconds(UUID playerId) {
+        long remainingCooldown = CodCooldownDuration - (System.currentTimeMillis() - codCooldowns.getOrDefault(playerId, 0L));
         return (int) Math.ceil(remainingCooldown / 1000.0);
     }
     public int getRemainingCharmCooldownSeconds(UUID playerId) {
@@ -172,10 +164,6 @@ public class CooldownManager {
 
         int remainingSeconds = (int) Math.max(0, (cooldownEndTime - currentTime) / 1000);
         return remainingSeconds;
-    }
-    int getRemainingtwistedFateSpellCooldownSeconds(UUID playerId) {
-        long remainingCooldown = twistedFateSpellDuration - (System.currentTimeMillis() - twistedFateSpellCooldowns.getOrDefault(playerId, 0L));
-        return (int) Math.ceil(remainingCooldown / 1000.0);
     }
     int getRemainingGPCooldownSeconds(UUID playerId) {
         long remainingCooldown = GPCooldownDuration - (System.currentTimeMillis() - GPCooldowns.getOrDefault(playerId, 0L));
@@ -201,9 +189,6 @@ public class CooldownManager {
     boolean isOnGustCooldown(UUID playerId) {
         return gustCooldowns.containsKey(playerId) && System.currentTimeMillis() - gustCooldowns.get(playerId) < gustCooldownDuration;
     }
-    boolean isOnIceSphereCooldown(UUID playerId) {
-        return iceSphereCooldowns.containsKey(playerId) && System.currentTimeMillis() - iceSphereCooldowns.get(playerId) < iceSphereCooldownDuration;
-    }
     boolean isOnMinecartCooldown(UUID playerId) {
         return minecartCooldowns.containsKey(playerId) && System.currentTimeMillis() - minecartCooldowns.get(playerId) < minecartCooldownDuration;
     }
@@ -228,6 +213,9 @@ public class CooldownManager {
     boolean isOnManaBoltCooldown(UUID playerId) {
         return manaBoltCooldowns.containsKey(playerId) && System.currentTimeMillis() - manaBoltCooldowns.get(playerId) < manaBoltCooldownDuration;
     }
+    boolean isOnCodCooldown(UUID playerId) {
+        return codCooldowns.containsKey(playerId) && System.currentTimeMillis() - codCooldowns.get(playerId) < CodCooldownDuration;
+    }
 
     public boolean isOnCharmCooldown(UUID playerId) {
         if (!charmCooldowns.containsKey(playerId)) {
@@ -238,9 +226,6 @@ public class CooldownManager {
         long currentTime = System.currentTimeMillis();
 
         return currentTime < cooldownEndTime;
-    }
-    boolean isOntwistedFateSpellCooldown(UUID playerId) {
-        return twistedFateSpellCooldowns.containsKey(playerId) && System.currentTimeMillis() - twistedFateSpellCooldowns.get(playerId) < twistedFateSpellDuration;
     }
     boolean isOnGPCooldown(UUID playerId) {
         return GPCooldowns.containsKey(playerId) && System.currentTimeMillis() - GPCooldowns.get(playerId) < GPCooldownDuration;
@@ -264,17 +249,11 @@ public class CooldownManager {
     void setGustCooldown(UUID playerId) {
         gustCooldowns.put(playerId, System.currentTimeMillis());
     }
-    void setIceSphereCooldown(UUID playerId) {
-        iceSphereCooldowns.put(playerId, System.currentTimeMillis());
-    }
     void setMinecartCooldown(UUID playerId) {
         minecartCooldowns.put(playerId, System.currentTimeMillis());
     }
     void setSquidFlyingCooldown(UUID playerId) {
         squidFlyingCooldowns.put(playerId, System.currentTimeMillis());
-    }
-    void setFrostBarrierCooldown(UUID playerId) {
-        frostBarrierCooldowns.put(playerId, System.currentTimeMillis());
     }
     void setMapTeleportCooldown(UUID playerId) {
         MapTeleportCooldowns.put(playerId, System.currentTimeMillis());
@@ -290,6 +269,9 @@ public class CooldownManager {
     }
     void setManaBoltCooldown(UUID playerId) {
         manaBoltCooldowns.put(playerId, System.currentTimeMillis());
+    }
+    void setCodCooldown(UUID playerId) {
+        codCooldowns.put(playerId, System.currentTimeMillis());
     }
     void setCharmCooldown(UUID playerId) {
         double charmDuration = 10;
