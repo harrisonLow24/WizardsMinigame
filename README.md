@@ -1,5 +1,5 @@
-# Wizards Plugin Minecraft 1.20.4
-
+# Wizards Plugin
+Tested on Minecraft 1.20.4
 WIP
 
 
