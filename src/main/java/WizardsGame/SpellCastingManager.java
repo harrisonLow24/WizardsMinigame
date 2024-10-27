@@ -37,6 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static WizardsGame.WizardsPlugin.getPlayerById;
 
 public class SpellCastingManager implements Listener {
+    TeamManager Team = new TeamManager();
 
     // DAMAGE: 2.0 = 1 HEART
     double getFireballDamage(UUID playerId) {
@@ -231,6 +232,12 @@ public class SpellCastingManager implements Listener {
                 for (Entity entity : fireball.getNearbyEntities(1, 1, 1)) {
                     if (entity instanceof LivingEntity && !entity.equals(caster)) {
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Fiery Wand"));
+                        // on the same team, do not apply damage
+                        if (Team.isPlayerOnTeam(entity.getUniqueId()) &&
+                                Team.isPlayerOnTeam(caster.getUniqueId()) &&
+                                Team.getPlayerTeam(entity.getUniqueId()).equals(Team.getPlayerTeam(caster.getUniqueId()))) {
+                            return;
+                        }
                         double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
                         ((LivingEntity) entity).damage(finalDamage, caster);
                         // explosion effect at impact location
@@ -333,6 +340,12 @@ public class SpellCastingManager implements Listener {
                 for (Entity entity : world.getNearbyEntities(strikeLocation, radius, radius, radius)) {
                 if (entity instanceof LivingEntity finalTargetEntity && !entity.equals(caster)) {
                     WizardsPlugin.lastDamager.put(finalTargetEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Mjölnir"));
+                    // on the same team, do not apply damage
+                    if (Team.isPlayerOnTeam(entity.getUniqueId()) &&
+                            Team.isPlayerOnTeam(caster.getUniqueId()) &&
+                            Team.getPlayerTeam(entity.getUniqueId()).equals(Team.getPlayerTeam(caster.getUniqueId()))) {
+                        return;
+                    }
                     double finalDamage = calculateDamageWithArmor(finalTargetEntity, damage);
                     finalTargetEntity.damage(finalDamage, caster);
 //                    finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
@@ -623,15 +636,21 @@ public class SpellCastingManager implements Listener {
         }.runTaskTimer(WizardsPlugin.getInstance(), delay, 1L); // delay 1 second = 20 ticks
     }
 
-    private void dealDamageToEntities(Player player, World world, Location landingLocation) {
-        final double damage = getGPDamage(player.getUniqueId());
-        final double radius = getGPRadius(player.getUniqueId());
+    private void dealDamageToEntities(Player caster, World world, Location landingLocation) {
+        final double damage = getGPDamage(caster.getUniqueId());
+        final double radius = getGPRadius(caster.getUniqueId());
         for (Entity entity : landingLocation.getWorld().getNearbyEntities(landingLocation, radius, radius, radius)) {
-            if (entity instanceof LivingEntity && !entity.equals(player)) {
+            if (entity instanceof LivingEntity && !entity.equals(caster)) {
                 LivingEntity livingEntity = (LivingEntity) entity;
-                WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Big Man Slam"));
+                WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Big Man Slam"));
+                // on the same team, do not apply damage
+                if (Team.isPlayerOnTeam(entity.getUniqueId()) &&
+                        Team.isPlayerOnTeam(caster.getUniqueId()) &&
+                        Team.getPlayerTeam(entity.getUniqueId()).equals(Team.getPlayerTeam(caster.getUniqueId()))) {
+                    return;
+                }
                 double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
-                livingEntity.damage(finalDamage, player);
+                livingEntity.damage(finalDamage, caster);
 //                EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(player, livingEntity, DamageCause.ENTITY_ATTACK, finalDamage);
 //                Bukkit.getPluginManager().callEvent(damageEvent);
 //                if (!damageEvent.isCancelled()) {
@@ -1106,6 +1125,12 @@ public class SpellCastingManager implements Listener {
 
                 LivingEntity livingEntity = (LivingEntity) entity;
                 WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Starfall Barrage"));
+                // on the same team, do not apply damage
+                if (Team.isPlayerOnTeam(entity.getUniqueId()) &&
+                        Team.isPlayerOnTeam(caster.getUniqueId()) &&
+                        Team.getPlayerTeam(entity.getUniqueId()).equals(Team.getPlayerTeam(caster.getUniqueId()))) {
+                    return;
+                }
                 final double damage = getMeteorDamage(caster.getUniqueId());
                 double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
                 livingEntity.damage(finalDamage);
@@ -1301,14 +1326,14 @@ public class SpellCastingManager implements Listener {
         // return true if the block is solid and not one of the ignored types
         return blockType.isSolid() && !isIgnoredBlock(blockType);
     }
-    void VoidOrbCast(Player player, UUID playerId) {
-        Location spawnLocation = player.getEyeLocation().clone();
+    void VoidOrbCast(Player caster, UUID playerId) {
+        Location spawnLocation = caster.getEyeLocation().clone();
         // armor stand relative to player
         spawnLocation.setY(spawnLocation.getY() - 0.35);
         spawnLocation.setX(spawnLocation.getX() - 0.35);
-        ArmorStand swordStand = (ArmorStand) player.getWorld().spawnEntity(spawnLocation, EntityType.ARMOR_STAND);
-        final double damage = getVoidOrbDamage(player.getUniqueId());
-        final double speed = getVoidOrbSpeed(player.getUniqueId());
+        ArmorStand swordStand = (ArmorStand) caster.getWorld().spawnEntity(spawnLocation, EntityType.ARMOR_STAND);
+        final double damage = getVoidOrbDamage(caster.getUniqueId());
+        final double speed = getVoidOrbSpeed(caster.getUniqueId());
 
 //        Vector direction1 = player.getEyeLocation().getDirection();
 //
@@ -1331,7 +1356,7 @@ public class SpellCastingManager implements Listener {
         activeSwords.put(playerId, swordStand);
 
         // calculate direction and velocity
-        Vector direction = player.getEyeLocation().getDirection().normalize().multiply(speed);
+        Vector direction = caster.getEyeLocation().getDirection().normalize().multiply(speed);
         swordStand.setVelocity(direction);
 
         // task to move sword and handle collision detection
@@ -1370,7 +1395,7 @@ public class SpellCastingManager implements Listener {
 
                 // check for nearby entities to detect a hit using held item's location
                 for (Entity entity : swordTipLocation.getWorld().getNearbyEntities(swordTipLocation, AIM_RADIUS, AIM_RADIUS, AIM_RADIUS)) {
-                    if (entity != player && entity != swordStand && entity instanceof LivingEntity) {
+                    if (entity != caster && entity != swordStand && entity instanceof LivingEntity) {
 
                         // line-of-sight check to ensure no wall is between sword and entity
                         RayTraceResult rayTraceResult = swordTipLocation.getWorld().rayTraceBlocks(
@@ -1385,9 +1410,15 @@ public class SpellCastingManager implements Listener {
                         }
 
                         // damage first entity hit and remove sword
-                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Void Orb"));
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Void Orb"));
+                        // on the same team, do not apply damage
+                        if (Team.isPlayerOnTeam(entity.getUniqueId()) &&
+                                Team.isPlayerOnTeam(caster.getUniqueId()) &&
+                                Team.getPlayerTeam(entity.getUniqueId()).equals(Team.getPlayerTeam(caster.getUniqueId()))) {
+                            return;
+                        }
                         double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
-                        ((LivingEntity) entity).damage(finalDamage, player);
+                        ((LivingEntity) entity).damage(finalDamage, caster);
                         swordStand.remove();
                         activeSwords.remove(playerId);
                         cancel();
@@ -1410,33 +1441,33 @@ public class SpellCastingManager implements Listener {
 
 
 
-    void launchManaBolt(Player player) {
-        player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getEyeLocation(), 10, 0.1, 0.1, 0.1, 0.05, null, true);
+    void launchManaBolt(Player caster) {
+        caster.getWorld().spawnParticle(Particle.SPELL_WITCH, caster.getEyeLocation(), 10, 0.1, 0.1, 0.1, 0.05, null, true);
 
         // sound effect
-        player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_SHOOT, 0.5f, 1.0f);
+        caster.playSound(caster.getLocation(), Sound.ENTITY_ENDER_DRAGON_SHOOT, 0.5f, 1.0f);
 
-        Location eyeLocation = player.getEyeLocation();
-        final double speed = getManaBoltSpeed(player.getUniqueId());
-        final double damage = getManaBoltDamage(player.getUniqueId());
-        Vector direction = player.getLocation().getDirection().normalize().multiply(speed);
+        Location eyeLocation = caster.getEyeLocation();
+        final double speed = getManaBoltSpeed(caster.getUniqueId());
+        final double damage = getManaBoltDamage(caster.getUniqueId());
+        Vector direction = caster.getLocation().getDirection().normalize().multiply(speed);
 
         // armor stand as the projectile
-        ArmorStand manaBolt = player.getWorld().spawn(eyeLocation.add(direction), ArmorStand.class);
+        ArmorStand manaBolt = caster.getWorld().spawn(eyeLocation.add(direction), ArmorStand.class);
         manaBolt.setInvisible(true);
         manaBolt.setGravity(false);
         manaBolt.setMarker(true);
 
         // store mana bolt in the activeBolts map
-        activeBolts.put(player.getUniqueId(), manaBolt);
+        activeBolts.put(caster.getUniqueId(), manaBolt);
 
         // handle collision detection
         new BukkitRunnable() {
 
             @Override
             public void run() {
-                if (!manaBolt.isValid() || !activeBolts.containsKey(player.getUniqueId())) {
-                    activeBolts.remove(player.getUniqueId());
+                if (!manaBolt.isValid() || !activeBolts.containsKey(caster.getUniqueId())) {
+                    activeBolts.remove(caster.getUniqueId());
                     cancel();
                     return;
                 }
@@ -1450,7 +1481,7 @@ public class SpellCastingManager implements Listener {
                 // check if mana bolt hits a solid block
                 if (isSolidBlock(currentLocation)) {
                     manaBolt.remove();
-                    activeBolts.remove(player.getUniqueId());
+                    activeBolts.remove(caster.getUniqueId());
                     cancel();
                     return;
                 }
@@ -1460,7 +1491,7 @@ public class SpellCastingManager implements Listener {
 
                 // ccheck for nearby entities to detect a hit
                 for (Entity entity : manaBolt.getNearbyEntities(MANA_AIM_RADIUS, MANA_AIM_RADIUS, MANA_AIM_RADIUS)) {
-                    if (entity instanceof LivingEntity && !entity.equals(player)) {
+                    if (entity instanceof LivingEntity && !entity.equals(caster)) {
                         // line-of-sight check to ensure no wall is between mana bolt and the entity
                         RayTraceResult rayTraceResult = manaBolt.getWorld().rayTraceBlocks(
                                 manaBolt.getLocation(),
@@ -1476,16 +1507,22 @@ public class SpellCastingManager implements Listener {
 
                         // damage the first entity hit and remove the mana bolt
 //                        ((LivingEntity) entity).damage(MANA_BOLT_DAMAGE, player);
-                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Dragon Spit"));
+                        WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Dragon Spit"));
+                        // on the same team, do not apply damage
+                        if (Team.isPlayerOnTeam(entity.getUniqueId()) &&
+                                Team.isPlayerOnTeam(caster.getUniqueId()) &&
+                                Team.getPlayerTeam(entity.getUniqueId()).equals(Team.getPlayerTeam(caster.getUniqueId()))) {
+                            return;
+                        }
                         double finalDamage = calculateDamageWithArmor((LivingEntity) entity, damage);
-                        ((LivingEntity) entity).damage(finalDamage, player);
+                        ((LivingEntity) entity).damage(finalDamage, caster);
 
                         // particle effect and sound
-                        player.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 20, 0.2, 0.2, 0.2, 0.1, null, true);
-                        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, -2.0f);
+                        caster.getWorld().spawnParticle(Particle.DRAGON_BREATH, manaBolt.getLocation(), 20, 0.2, 0.2, 0.2, 0.1, null, true);
+                        caster.playSound(caster.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, -2.0f);
 
                         manaBolt.remove();
-                        activeBolts.remove(player.getUniqueId());
+                        activeBolts.remove(caster.getUniqueId());
                         cancel();
                         return;
                     }
@@ -1497,7 +1534,7 @@ public class SpellCastingManager implements Listener {
         Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
             if (manaBolt.isValid()) {
                 manaBolt.remove();
-                activeBolts.remove(player.getUniqueId());
+                activeBolts.remove(caster.getUniqueId());
             }
         }, MANA_BOLT_LIFETIME);
     }

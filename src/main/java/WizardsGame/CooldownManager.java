@@ -1,5 +1,8 @@
 package WizardsGame;
 
+import org.bukkit.Bukkit;
+import org.bukkit.util.io.BukkitObjectInputStream;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -10,27 +13,30 @@ public class CooldownManager {
 
     // store cooldown durations for each spell
     private static final Map<String, Long> cooldownDurations = new HashMap<>();
+    // store cooldown disabled or not
+    private final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
 
     // initialize spell cooldown durations
     public CooldownManager() {
-        cooldownDurations.put("Fiery Wand", 2 * 1000L);
-        cooldownDurations.put("Shrouded Step", 1 * 1000L);
-        cooldownDurations.put("Mjölnir", 7 * 1000L);
-        cooldownDurations.put("Gust", 1 * 1000L);
-        cooldownDurations.put("Big Man Slam", 1 * 1000L);
-        cooldownDurations.put("The Great Escape", 1 * 1000L);
-        cooldownDurations.put("Winged Shield", 1 * 1000L);
+        cooldownDurations.put("Fiery Wand", 5 * 1000L);
+        cooldownDurations.put("Shrouded Step", 5 * 1000L);
+        cooldownDurations.put("Mjölnir", 6 * 1000L);
+        cooldownDurations.put("Gust", 3 * 1000L);
+        cooldownDurations.put("Big Man Slam", 8 * 1000L);
+        cooldownDurations.put("The Great Escape", 15 * 1000L);
+        cooldownDurations.put("Winged Shield", 15 * 1000L);
         cooldownDurations.put("Voidwalker", 30 * 1000L);
-        cooldownDurations.put("Starfall Barrage", 20 * 1000L);
-        cooldownDurations.put("Heal Cloud", 1 * 1000L);
-        cooldownDurations.put("Void Orb", 1 * 1000L);
-        cooldownDurations.put("Dragon Spit", 1 * 1000L);
-        cooldownDurations.put("Cod Shooter", 1 * 1000L);
-        cooldownDurations.put("Recall", 10 * 1000L);
+        cooldownDurations.put("Starfall Barrage", 15 * 1000L);
+        cooldownDurations.put("Heal Cloud", 5 * 1000L);
+        cooldownDurations.put("Void Orb", 5 * 1000L);
+        cooldownDurations.put("Dragon Spit", 3 * 1000L);
+        cooldownDurations.put("Cod Shooter", 3 * 1000L);
+        cooldownDurations.put("Recall", 20 * 1000L);
     }
 
     // set cooldowns for a spell
     public void setCooldown(UUID playerId, String spellName) {
+        if (hasCooldownsDisabled(playerId)) return;
         playerCooldowns
                 .computeIfAbsent(playerId, k -> new HashMap<>())
                 .put(spellName, System.currentTimeMillis());
@@ -38,6 +44,7 @@ public class CooldownManager {
 
     // check if a spell is on cooldown
     public boolean isOnCooldown(UUID playerId, String spellName) {
+        if (hasCooldownsDisabled(playerId)) return false;
         if (!playerCooldowns.containsKey(playerId)) {
             return false;
         }
@@ -72,13 +79,11 @@ public class CooldownManager {
     }
 
     // toggle cooldowns for player
-    private final Map<UUID, Boolean> cooldownsDisabledMap = new HashMap<>();
-
     public void toggleCooldowns(UUID playerId) {
         boolean currentStatus = cooldownsDisabledMap.getOrDefault(playerId, false);
         cooldownsDisabledMap.put(playerId, !currentStatus);
-
         if (hasCooldownsDisabled(playerId)) {
+//            Bukkit.broadcastMessage("no cooldowns!");
             clearCooldowns(playerId);
         }
     }

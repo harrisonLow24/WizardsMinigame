@@ -29,17 +29,48 @@ commands:
     permission: op
     permission-message: You do not have permission!
     usage: /checkmana
-  add:
-    description: unlock all spells for the player
-    permission: op
-    permission-message: You do not have permission!
-    usage: /unlockspells
-  togglefriendlyfire:
-    description: toggle friendly fire for a team
-    aliases: toggleff
-    permission: op
-    permission-message: You do not have permission!
-    usage: /togglefriendlyfire <team>
+  wizteam:
+    description: Manage teams within the game.
+    usage: /wizteam <create|delete|join|leave|add|remove>
+    permission: wizardsplugin.team
+    permission-message: You don't have permission to use this command.
+    aliases: [t]
+
+#  wizteam create:
+#    description: Create a new team.
+#    usage: /wizteam create <Team name>
+#    permission: wizardsplugin.team.create
+#    permission-message: You don't have permission to create a team.
+#
+#  wizteam delete:
+#    description: Delete an existing team.
+#    usage: /wizteam delete <Team name>
+#    permission: wizardsplugin.team.delete
+#    permission-message: You don't have permission to delete a team.
+#
+#  wizteam join:
+#    description: Join a specified team.
+#    usage: /wizteam join <Team name>
+#    permission: wizardsplugin.team.join
+#    permission-message: You don't have permission to join this team.
+#
+#  wizteam leave:
+#    description: Leave your current team.
+#    usage: /wizteam leave
+#    permission: wizardsplugin.team.leave
+#    permission-message: You don't have permission to leave your team.
+#
+#  wizteam add:
+#    description: Add a player to a team.
+#    usage: /wizteam add <Player name> <Team name>
+#    permission: wizardsplugin.team.add
+#    permission-message: You don't have permission to add a player to a team.
+#
+#  wizteam remove:
+#    description: Remove a player from a team.
+#    usage: /wizteam remove <Player name> <Team name>
+#    permission: wizardsplugin.team.remove
+#    permission-message: You don't have permission to remove a player from a team.
 
 
 

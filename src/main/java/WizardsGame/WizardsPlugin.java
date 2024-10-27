@@ -11,10 +11,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -36,6 +33,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     TeleportationManager Teleport = new TeleportationManager();
     SquidFlight Squid = new SquidFlight();
     ManaManager Mana = new ManaManager();
+    TeamManager Team = new TeamManager();
     CharmSpell Charm = new CharmSpell();
 
     @Override
@@ -47,6 +45,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         startCooldownBarUpdateTask();
         startManaBarUpdateTask();
         startManaRegenTask();
+        this.getCommand("wizteam").setTabCompleter(new WizTeamTabCompleter(Team));
         getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
         new BukkitRunnable() {
             @Override
@@ -61,6 +60,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     public void onDisable() {
         getLogger().info("WizardsPlugin has been disabled!");
         Mana.clearManaBars();
+        Team.clearTeams();
     }
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -133,9 +133,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         event.setDeathMessage(null);
     }
-    private boolean isSpell(ItemStack item) {
-        return SpellListener.isSpellItem(item);
-    }
+
     private List<ItemStack> getPlayerSpells(Player player) {
         List<ItemStack> spells = new ArrayList<>();
         for (ItemStack item : player.getInventory().getContents()) {
@@ -145,6 +143,29 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
         return spells;
     }
+    @EventHandler
+    public void onPlayerItemChange(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        updateActionBar(player);
+    }
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent event) {
+        // set player name to yellow without <>
+        String playerName = ChatColor.YELLOW + event.getPlayer().getName();
+
+        // message format : [TeamPrefix] PlayerName: Message
+        // If you want to add team information, fetch it from TeamManager
+        String teamPrefix = Team.getTeamPrefix(event.getPlayer().getUniqueId());
+
+        String messageFormat;
+        if(Team.isPlayerOnTeam(event.getPlayer().getUniqueId())){
+            messageFormat = teamPrefix + " " + playerName + ChatColor.RESET + " %2$s";
+        }else{
+            messageFormat = playerName + ChatColor.RESET + " %2$s";
+        }
+        event.setFormat(messageFormat);
+    }
+
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
 
@@ -246,17 +267,16 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         lastDamager.remove(event.getEntity().getUniqueId());
     }
 
+    private boolean isSpell(ItemStack item) {
+        return SpellListener.isSpellItem(item);
+    }
     private boolean isSpellProjectile(Player player) {
         return Cast.activeSwords.containsValue(player.getUniqueId()) || Cast.activeBolts.containsKey(player.getUniqueId());
         // activeBolts.put(player.getUniqueId(), manaBolt);
     }
 
 
-    @EventHandler
-    public void onPlayerItemChange(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
-        updateActionBar(player);
-    }
+
 
     void registerEvents() {
         getServer().getPluginManager().registerEvents(this, this);
@@ -272,8 +292,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("togglecooldowns")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("checkmana")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("unlockspells")).setExecutor(new WizardCommands(this));
-        Objects.requireNonNull(getCommand("add")).setExecutor(new WizardCommands(this));
-        Objects.requireNonNull(getCommand("togglefriendlyfire")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("wizteam")).setExecutor(new WizardCommands(this));
     }
 
     static final Map<Material, String> SPELL_NAMES = new HashMap<>();
