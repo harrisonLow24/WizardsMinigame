@@ -72,8 +72,13 @@ public class SpellCastingManager implements Listener {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Big_Man_Slam);
         return GP_BASE_RADIUS + ((level - 1) * 0.5); // speed increases by <num> per level
     }
+    double getGPVelocity(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Big_Man_Slam);
+        return GP_BASE_DAMAGE_VELOCITY + ((level - 1) * 0.1); // speed increases by <num> per level
+    }
     double GP_BASE_RADIUS = 5.0;
     double GP_BASE_DAMAGE = 2.0;
+    double GP_BASE_DAMAGE_VELOCITY = 1.0;
 
     // map teleport / voidwalker spell
     private static final int TELEPORT_DURATION = 5; // duration player stays in the air (in seconds)
@@ -605,9 +610,8 @@ public class SpellCastingManager implements Listener {
                     dealDamageToEntities(player, player.getWorld(), landingLocation);
 
                     // entity launch
-                    double launchRadius = 5.0;
-                    double launchVelocity = 1.2;
-                    launchEntitiesExcludingCaster(player, initialLocation, launchRadius, launchVelocity);
+                    final double velocity = getGPVelocity(player.getUniqueId());
+                    launchEntitiesExcludingCaster(player, initialLocation, velocity);
 
 
                 } else {
@@ -637,9 +641,9 @@ public class SpellCastingManager implements Listener {
             }
         }
     }
-    private void launchEntitiesExcludingCaster(Player caster, Location location, double launchRadius, double launchVelocity) {
-        World world = location.getWorld();
-        for (Entity entity : location.getWorld().getNearbyEntities(location, launchRadius, launchRadius, launchRadius)) {
+    private void launchEntitiesExcludingCaster(Player caster, Location location, double launchVelocity) {
+        final double radius = getGPRadius(caster.getUniqueId());
+        for (Entity entity : location.getWorld().getNearbyEntities(location, radius, radius, radius)) {
             if (entity instanceof LivingEntity && !entity.equals(caster)) {
                 LivingEntity livingEntity = (LivingEntity) entity;
 

@@ -6,14 +6,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
 public class CooldownManager {
 
-
-//    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public CooldownManager() {
 
