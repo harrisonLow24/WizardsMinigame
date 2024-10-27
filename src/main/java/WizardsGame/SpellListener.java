@@ -117,8 +117,10 @@ public class SpellListener implements Listener {
                     }
                 }
             }if (!event.getClickedInventory().equals(player.getOpenInventory().getTopInventory())){
-                event.setCancelled(true);
-                player.sendMessage(ChatColor.RED +"" + ChatColor.BOLD + "You cannot move this spell!");
+                if (isSpellItem(clickedItem)) {
+                    event.setCancelled(true);
+                    player.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + "You cannot move this spell!");
+                }
             }
         }
     }
