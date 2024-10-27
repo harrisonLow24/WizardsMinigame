@@ -28,7 +28,7 @@ public class SpellMenu {
     public SpellMenu(WizardsPlugin spellManager) {
         this.spellManager = spellManager;
     }
-    private String formatSpellName(String spellName) {
+    String formatSpellName(String spellName) {
         String formattedName = spellName.replace("_", " ").toLowerCase();
         String[] words = formattedName.split(" ");
         StringBuilder formatted = new StringBuilder();
@@ -85,6 +85,9 @@ public class SpellMenu {
         int miscIndex = 0;
 
         for (WizardsPlugin.SpellType spellType : WizardsPlugin.SpellType.values()) {
+            if (spellType == WizardsPlugin.SpellType.Basic_Wand) {
+                continue;
+            }
             int spellLevel = spellManager.getSpellLevel(playerId, spellType);
             ItemStack spellItem = new ItemStack(spellType.getMaterial());
             ItemMeta meta = spellItem.getItemMeta();

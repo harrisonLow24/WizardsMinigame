@@ -2,10 +2,13 @@ package WizardsGame;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.util.BlockVector;
+import org.bukkit.util.Vector;
 
 import java.util.UUID;
 
@@ -14,6 +17,7 @@ public class WizardCommands implements CommandExecutor {
     private final WizardsPlugin plugin;
     CooldownManager Cooldown = new CooldownManager();
     TeamManager Team = new TeamManager();
+    WizardsMinigame Mini = new WizardsMinigame(WizardsPlugin.getInstance());
     public WizardCommands(WizardsPlugin plugin) {
         this.plugin = plugin;
     }
@@ -79,9 +83,6 @@ public class WizardCommands implements CommandExecutor {
                 return false;
             }
         }
-
-
-
         if (command.getName().equalsIgnoreCase("wizteam")) {
             if (args.length < 1) {
                 return false; // no subcommand provided
@@ -180,6 +181,63 @@ public class WizardCommands implements CommandExecutor {
                     return true;
             }
         }
+
+
+        if (command.getName().equalsIgnoreCase("fill1")) {
+            if (sender instanceof Player player) {
+                Vector loc1 = player.getLocation().toVector(); // store player's current location
+                plugin.Mini.location1Map.put(player.getUniqueId(), loc1);
+                player.sendMessage(ChatColor.GREEN + "Location 1 saved!");
+                return true;
+            }
+        }
+
+        if (command.getName().equalsIgnoreCase("fill2")) {
+            if (sender instanceof Player player) {
+                Vector loc2 = player.getLocation().toVector(); // store player's current location
+                plugin.Mini.location2Map.put(player.getUniqueId(), loc2);
+                player.sendMessage(ChatColor.GREEN + "Location 2 saved!");
+                return true;
+            }
+        }
+
+        if (command.getName().equalsIgnoreCase("fillchests")) {
+            if (sender instanceof Player player) {
+                UUID playerId = player.getUniqueId();
+                Vector loc1 = plugin.Mini.location1Map.get(playerId);
+                Vector loc2 = plugin.Mini.location2Map.get(playerId);
+
+                if (loc1 == null || loc2 == null) {
+                    player.sendMessage(ChatColor.RED + "You need to set both locations first!");
+                    return true;
+                }
+
+                // determine coordinates for filling chests
+                int minX = Math.min(loc1.getBlockX(), loc2.getBlockX());
+                int maxX = Math.max(loc1.getBlockX(), loc2.getBlockX());
+                int minY = Math.min(loc1.getBlockY(), loc2.getBlockY());
+                int maxY = Math.max(loc1.getBlockY(), loc2.getBlockY());
+                int minZ = Math.min(loc1.getBlockZ(), loc2.getBlockZ());
+                int maxZ = Math.max(loc1.getBlockZ(), loc2.getBlockZ());
+                int count = 0;
+                // iterate through all blocks in the defined region
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        for (int z = minZ; z <= maxZ; z++) {
+                            // check if block is a chest
+                            if (player.getWorld().getBlockAt(x, y, z).getType() == Material.CHEST) {
+                                plugin.Mini.fillChest(player.getWorld().getBlockAt(x, y, z));
+                                count++;
+                            }
+                        }
+                    }
+                }
+                player.sendMessage(ChatColor.GREEN + "" + count + " Chests filled!");
+                return true;
+            }
+        }
+
+
         return false;
     }
 }

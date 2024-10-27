@@ -34,6 +34,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     SquidFlight Squid = new SquidFlight();
     ManaManager Mana = new ManaManager();
     TeamManager Team = new TeamManager();
+    WizardsMinigame Mini = new WizardsMinigame(this);
     CharmSpell Charm = new CharmSpell();
 
     @Override
@@ -308,6 +309,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("checkmana")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("unlockspells")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("wizteam")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("fillChests")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("fill1")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("fill2")).setExecutor(new WizardCommands(this));
+
     }
 
     static final Map<Material, String> SPELL_NAMES = new HashMap<>();
@@ -499,6 +504,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
 
     public enum SpellType {
+        Basic_Wand(Material.STICK),
         Fiery_Wand(Material.BLAZE_ROD),
         Shrouded_Step(Material.IRON_SWORD),
         Mjölnir(Material.IRON_PICKAXE),

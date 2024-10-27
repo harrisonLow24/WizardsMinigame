@@ -89,16 +89,31 @@ public class SpellListener implements Listener {
 
                 if (selectedSpell != null) {
                     event.setCancelled(true); // prevent taking item from the chest
-                    spellManager.addSpellToPlayer(playerId, selectedSpell); // increase spell level
-                    clickedItem.setAmount(0); // remove item from the chest
-                    if(WizardsPlugin.getSpellLevel(playerId, selectedSpell) == 1 ){
+                    if (selectedSpell == WizardsPlugin.SpellType.Basic_Wand) {
+                        ItemStack basicWandItem = new ItemStack(Material.STICK, 1);
+                        ItemMeta meta = basicWandItem.getItemMeta();
+                        if (meta != null) {
+                            meta.setDisplayName(ChatColor.ITALIC + "Basic Wand");
+                            meta.setCustomModelData((int) System.currentTimeMillis());
+                            basicWandItem.setItemMeta(meta);
+                        }
+                        player.getInventory().addItem(basicWandItem); // add the basic wand to player's inventory
+                        clickedItem.setAmount(0); // remove item from the chest
                         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 2.0f, 3f);
-                        player.sendMessage(ChatColor.LIGHT_PURPLE  + "" + ChatColor.BOLD + selectedSpell.name() + "> " + ChatColor.GREEN
-                                + " Spell Acquired" );
-                    }else {
-                        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 2.0f, 3f);
-                        player.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + selectedSpell.name() + "> " + ChatColor.GREEN
-                                + " Level +1 -> " + ChatColor.GREEN + "" + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, selectedSpell));
+                        player.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + selectedSpell.name() + "> " + ChatColor.GREEN + " Basic Wand Acquired");
+
+                    }else{
+                        spellManager.addSpellToPlayer(playerId, selectedSpell); // increase spell level
+                        clickedItem.setAmount(0); // remove item from the chest
+                        if(WizardsPlugin.getSpellLevel(playerId, selectedSpell) == 1 ){
+                            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 2.0f, 3f);
+                            player.sendMessage(ChatColor.LIGHT_PURPLE  + "" + ChatColor.BOLD + selectedSpell.name() + "> " + ChatColor.GREEN
+                                    + " Spell Acquired" );
+                        }else {
+                            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 2.0f, 3f);
+                            player.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + selectedSpell.name() + "> " + ChatColor.GREEN
+                                    + " Level +1 -> " + ChatColor.GREEN + "" + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, selectedSpell));
+                        }
                     }
                 }
             }if (!event.getClickedInventory().equals(player.getOpenInventory().getTopInventory())){
@@ -106,7 +121,6 @@ public class SpellListener implements Listener {
                 player.sendMessage(ChatColor.RED +"" + ChatColor.BOLD + "You cannot move this spell!");
             }
         }
-
     }
 
     @EventHandler
@@ -119,15 +133,28 @@ public class SpellListener implements Listener {
         WizardsPlugin.SpellType spellType = spellMenu.getSpellByMaterial(item.getType());
 
         if (spellType != null) {
-            spellManager.addSpellToPlayer(playerId, spellType);
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 2.0f, 3f);
+            if (spellType == WizardsPlugin.SpellType.Basic_Wand) {
+                ItemStack basicWandItem = new ItemStack(Material.STICK);
+                ItemMeta meta = basicWandItem.getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + "Basic Wand");
+                    meta.setCustomModelData((int) System.currentTimeMillis());
+                    basicWandItem.setItemMeta(meta);
+                }
+                player.getInventory().addItem(basicWandItem); // add basic wand to the player's inventory
+                player.sendMessage(ChatColor.GREEN + " Basic Wand Acquired");
 
-            if(WizardsPlugin.getSpellLevel(playerId, spellType) == 1 ){
-                player.sendMessage(ChatColor.LIGHT_PURPLE  + "" + ChatColor.BOLD + spellName + "> " + ChatColor.GREEN
-                        + " Spell Acquired" );
             }else {
-                player.sendMessage(ChatColor.LIGHT_PURPLE + "" + spellName + "> " + ChatColor.GREEN
-                        + " Level +1 -> " + ChatColor.GREEN + "" + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, spellType));
+                spellManager.addSpellToPlayer(playerId, spellType);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 2.0f, 3f);
+
+                if(WizardsPlugin.getSpellLevel(playerId, spellType) == 1 ){
+                    player.sendMessage(ChatColor.LIGHT_PURPLE  + "" + ChatColor.BOLD + spellName + "> " + ChatColor.GREEN
+                            + " Spell Acquired" );
+                }else {
+                    player.sendMessage(ChatColor.LIGHT_PURPLE + "" + spellName + "> " + ChatColor.GREEN
+                            + " Level +1 -> " + ChatColor.GREEN + "" + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, spellType));
+                }
             }
             itemEntity.remove();
             event.setCancelled(true);
