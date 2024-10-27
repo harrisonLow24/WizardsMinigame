@@ -19,9 +19,13 @@ import org.bukkit.util.Vector;
 
 import java.util.*;
 
+import static WizardsGame.TeamManager.teamColors;
+import static WizardsGame.TeamManager.teams;
+
 public class WizardsMinigame {
     private final WizardsPlugin plugin;
     SpellMenu Menu = new SpellMenu(WizardsPlugin.getInstance());
+    TeamManager Team = new TeamManager();
 
     public WizardsMinigame(WizardsPlugin plugin) {
         this.plugin = plugin;
@@ -82,27 +86,72 @@ public class WizardsMinigame {
         }
     }
 
-    private void checkGameEnd() {
-        UUID winningTeam = getWinningTeam();
-        if (winningTeam != null) {
-            endMinigame(winningTeam);
+    public boolean hasGameEnded() {
+        int aliveTeams = 0;
+
+        for (String teamName : teams.keySet()) {
+            Set<UUID> members = teams.get(teamName);
+            boolean hasAlivePlayer = false;
+
+            // check if any player in the team is alive
+            for (UUID memberId : members) {
+                if (WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
+                    hasAlivePlayer = true;
+                    break; // at least one player is alive
+                }
+            }
+
+            // increment count if this team has alive players
+            if (hasAlivePlayer) {
+                aliveTeams++;
+            }
+
+            // more than one team still has alive players, game continues
+            if (aliveTeams > 1) {
+                return false;
+            }
         }
+        endMinigame();
+        return aliveTeams <= 1; // game ends if zero or one team is alive
     }
 
     //temp
-    private UUID getWinningTeam() {
-        return null;
-    }
+    public String getWinningTeam() {
+        if (teams.size() > 1) { // check if there are multiple teams
+            for (String teamName : teams.keySet()) {
+                Set<UUID> members = teams.get(teamName);
 
-    private void endMinigame(UUID winningTeam) {
-        for (UUID playerId : playersInMinigame) {
-            Player player = Bukkit.getPlayer(playerId);
-            if (player != null && player.isOnline()) {
-                player.sendMessage(ChatColor.GOLD + "The game has ended! Winning team: " + winningTeam.toString());
-                // playerAliveStatus set to true
+                // team mode
+                for (UUID memberId : members) {
+                    if (WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
+                        return teamName; // return team name if at least one member is alive
+                    }
+                }
+            }
+        } else { // free-for-all  mode
+            for (UUID playerId : playersInMinigame) {
+                if (WizardsPlugin.playerAliveStatus.getOrDefault(playerId, true)) {
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player != null) {
+                        return player.getName(); // return the player’s name if they are the last alive
+                    }
+                }
             }
         }
-        playersInMinigame.clear(); // clear all players from minigame
+        return null; // no winning entity if all players/teams are eliminated
+    }
+
+    public void endMinigame() {
+        String winningTeam = getWinningTeam();
+        if (winningTeam != null) {
+            ChatColor teamColor = teamColors.getOrDefault(winningTeam, ChatColor.GOLD);
+            String winningMessage = teamColor + "Team " + winningTeam + " has won the Wizards Minigame!";
+            // announce winning team to all players
+            Bukkit.broadcastMessage(winningMessage);
+        } else {
+            Bukkit.broadcastMessage(ChatColor.GRAY + "The Wizards Minigame ended in a draw!");
+        }
+        resetGame(); // clear all players from minigame
     }
 
     void stopMinigame() {
@@ -115,6 +164,14 @@ public class WizardsMinigame {
         playersInMinigame.clear(); // clear all players from minigame
     }
 
+    private void resetGame() {
+        Team.clearTeams(); // clear all teams and reset scoreboard
+
+        // reset player alive status
+        for (UUID playerId : WizardsPlugin.playerAliveStatus.keySet()) {
+            WizardsPlugin.playerAliveStatus.put(playerId, true); // mark all players as alive
+        }
+    }
 
 
 

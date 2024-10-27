@@ -135,6 +135,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         event.setDeathMessage(null);
+        Mini.hasGameEnded();
     }
 
     private List<ItemStack> getPlayerSpells(Player player) {
