@@ -1,4 +1,5 @@
 # Wizards Plugin
+Tested on Minecraft 1.20.4
 
 WIP
 
