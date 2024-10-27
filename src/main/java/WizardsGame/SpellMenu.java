@@ -198,6 +198,8 @@ public class SpellMenu {
                 cooldown = "§eCooldown: " + Cooldown.lightningCooldownDuration / 1000 + "s";
                 desc = "§7Summons a lightning strike.";
                 damage = Cast.getLightningDamage(playerId);
+                radius = Cast.getLightningRadius(playerId);
+                hasBoth = 1;
             }
             case The_Great_Escape -> {
                 mana = "§eMana: " + WizardsPlugin.MINECART_COST;

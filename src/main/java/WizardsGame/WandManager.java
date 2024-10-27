@@ -154,6 +154,7 @@ public class WandManager {
                 manaCost = (int) WizardsPlugin.LIGHTNING_COST;
                 cooldown = Cooldown.lightningCooldownDuration;
                 damage = Cast.getLightningDamage(playerId);
+                radius = Cast.getLightningRadius(playerId);
                 break;
             case MINECART:
                 spellName = "§a§lThe Great Escape";

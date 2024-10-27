@@ -56,7 +56,12 @@ public class SpellCastingManager implements Listener {
         int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Mjölnir);
         return LIGHTNING_BASE_DAMAGE + ((level - 1) * 1); // damage increases by <num>/2 hearts per level
     }
+    double getLightningRadius(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Mjölnir);
+        return LIGHTNING_BASE_RADIUS + ((level - 1) * 0.5);
+    }
     double LIGHTNING_BASE_DAMAGE = 2.0;
+    double LIGHTNING_BASE_RADIUS = 2.0;
 
     // GP spell
     double getGPDamage(UUID playerId) {
@@ -181,10 +186,7 @@ public class SpellCastingManager implements Listener {
         return FISH_BASE_KB + ((level - 1) * 0.1);
     }
     double FISH_BASE_COUNT = 20.0;
-    double FISH_BASE_KB = 1.0;
-
-
-
+    double FISH_BASE_KB = 1;
 
 
 
@@ -282,7 +284,7 @@ public class SpellCastingManager implements Listener {
             }
 
             // check if there's an entity in line of sight
-            for (Entity entity : world.getNearbyEntities(block.getLocation(), 1.0, 1.0, 1.0)) {
+            for (Entity entity : world.getNearbyEntities(block.getLocation(), 2.0, 2.0, 2.0)) {
                 if (entity instanceof LivingEntity && entity != caster) {
                     targetEntity = (LivingEntity) entity; // found an entity
                     break; // stop checking
@@ -319,21 +321,21 @@ public class SpellCastingManager implements Listener {
             }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 1L); // start immediately and repeat every tick
 
             // schedule task to strike lightning after a delay
-            LivingEntity finalTargetEntity = targetEntity;
-            LivingEntity finalTargetEntity1 = targetEntity;
             Bukkit.getScheduler().runTaskLater(WizardsPlugin.getInstance(), () -> {
-                if (finalTargetEntity != null) {
-                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Mjölnir"));
-                    double finalDamage = calculateDamageWithArmor(finalTargetEntity1, damage);
+                world.strikeLightningEffect(strikeLocation); // strike lightning effect at determined location
+                igniteSurroundingBlocks(world, strikeLocation);
+                final double radius = getLightningRadius(caster.getUniqueId());
+                for (Entity entity : world.getNearbyEntities(strikeLocation, radius, radius, radius)) {
+                if (entity instanceof LivingEntity finalTargetEntity && !entity.equals(caster)) {
+                    WizardsPlugin.lastDamager.put(finalTargetEntity.getUniqueId(), new WizardsPlugin.SpellInfo(caster.getUniqueId(), "Mjölnir"));
+                    double finalDamage = calculateDamageWithArmor(finalTargetEntity, damage);
                     finalTargetEntity.damage(finalDamage, caster);
 //                    finalTargetEntity.damage(lightningDamage, caster); // damage entity directly
 
-                    registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
+//                    registerPlayerKill(caster, finalTargetEntity); // register damage attribution to caster
 //                    WizardsPlugin.lastDamager.put(finalTargetEntity1.getUniqueId(), caster.getUniqueId());
                 }
-                world.strikeLightningEffect(strikeLocation); // strike lightning effect at determined location
-                igniteSurroundingBlocks(world, strikeLocation);
-
+}
             }, 30L); // 1.5 sec delay (20 ticks per second)
         }
     }
@@ -980,7 +982,6 @@ public class SpellCastingManager implements Listener {
                 }
                 if (count % 2 == 0) {
                     targetLocation.getWorld().playSound(targetLocation, Sound.BLOCK_NOTE_BLOCK_BELL, 2.0f, 1f);
-
                 }
                 if (count % 2 != 0) {
                     targetLocation.getWorld().playSound(targetLocation, Sound.BLOCK_NOTE_BLOCK_BELL, 2.0f, 0.5f);
@@ -1255,6 +1256,7 @@ public class SpellCastingManager implements Listener {
 
                 // check if player is within the vertical range (up to 2 blocks above)
                 if (player.getLocation().getY() >= center.getY() - 2 && player.getLocation().getY() <= center.getY() + 2) {
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1f);
                     double newHealth = Math.min(player.getHealth() + healAmount, player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
                     player.setHealth(newHealth); // heal player without exceeding max health
 //                    player.sendMessage("§l§eYou are being healed!");
@@ -1543,6 +1545,10 @@ public class SpellCastingManager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
+                if (fish.isDead()) {
+                    cancel();
+                    return;
+                }
                 // check for nearby entities
                 for (Entity entity : world.getNearbyEntities(fish.getLocation(), 1.0, 1.0, 1.0)) {
                     if (entity instanceof LivingEntity && !entity.equals(player) && !(entity instanceof Fish)) {
@@ -1550,17 +1556,17 @@ public class SpellCastingManager implements Listener {
                         Vector knockbackDirection = entity.getLocation().toVector().subtract(fish.getLocation().toVector()).normalize();
 
                         // dynamic knockback
-                        double distance = fish.getLocation().distance(entity.getLocation());
-                        double knockback = getFishKnockback(player.getUniqueId());
+//                        double distance = fish.getLocation().distance(entity.getLocation());
+                        double knockback = getFishKnockback(player.getUniqueId()) * 0.5;
 
                         // knockback strength proportional to the distance
-                        if (distance < 3) {
-                            knockback += (3 - distance); // knockback increased for close entities
-                        }
-                        knockback += (Math.random() * 0.5 - 0.25);
+//                        if (distance < 3) {
+//                            knockback += (3 - distance); // knockback increased for close entities
+//                        }
+                        knockback += (Math.random() * 0.5 - 0.1); // -0.1 - 0.1
                         // height of knockback
                         WizardsPlugin.lastDamager.put(entity.getUniqueId(), new WizardsPlugin.SpellInfo(player.getUniqueId(), "Cod Shooter"));
-                        ((LivingEntity) entity).setVelocity(knockbackDirection.multiply(knockback).setY(0.5));
+                        ((LivingEntity) entity).setVelocity(knockbackDirection.multiply(knockback).setY(0.25));
                     }
                 }
             }
