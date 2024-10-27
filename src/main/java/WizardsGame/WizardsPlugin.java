@@ -45,6 +45,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         startCooldownBarUpdateTask();
         startManaBarUpdateTask();
         startManaRegenTask();
+        startSidebarUpdateTask();
         this.getCommand("wizteam").setTabCompleter(new WizTeamTabCompleter(Team));
         getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
         new BukkitRunnable() {
@@ -111,6 +112,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     private static final int NUMBER_OF_DROPS = 5;
     private static final double RADIUS = 1.0;
     static final Map<UUID, SpellInfo> lastDamager = new HashMap<>();
+    static Map<UUID, Boolean> playerAliveStatus = new HashMap<>();
 
     static class SpellInfo {
         private final UUID casterId;
@@ -173,16 +175,29 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         
         // check if the entity was killed by a spell
         SpellInfo damagerInfo = lastDamager.get(event.getEntity().getUniqueId());
+        String deadTeamPrefix = "";
+        String casterTeamPrefix = "";
         if (damagerInfo != null) {
             UUID damagerId = damagerInfo.getCasterId();
             String spellName = damagerInfo.getSpellName();
-            Player player = Bukkit.getPlayer(damagerId);
-            if (player != null) {
+            Player caster = Bukkit.getPlayer(damagerId);
+            if (caster != null) {
                 // sound effect for the caster
-                player.playSound(player.getLocation(), Sound.ENTITY_BLAZE_DEATH, 1.0f, 1.0f);
+                if(event.getEntity() instanceof Player){
+                    Player deadPlayer = (Player) event.getEntity();
+                    deadTeamPrefix = TeamManager.getTeamPrefix(deadPlayer.getUniqueId());
+                    deadTeamPrefix = deadTeamPrefix + " ";
+                    playerAliveStatus.put(deadPlayer.getUniqueId(), false);
+                }
+                casterTeamPrefix = TeamManager.getTeamPrefix(caster.getUniqueId());
+                casterTeamPrefix = casterTeamPrefix + " ";
+                if (casterTeamPrefix.equals(" ")){
+                    casterTeamPrefix = "";
+                }
+                caster.playSound(caster.getLocation(), Sound.ENTITY_BLAZE_DEATH, 1.0f, 1.0f);
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(ChatColor.AQUA +"Death> " + ChatColor.YELLOW + event.getEntity().getName() +
-                            ChatColor.GRAY + " killed by " + ChatColor.YELLOW + player.getName() +
+                    onlinePlayer.sendMessage(ChatColor.AQUA +"Death> " + deadTeamPrefix + ChatColor.YELLOW + event.getEntity().getName() +
+                            ChatColor.GRAY + " killed by " + casterTeamPrefix + ChatColor.YELLOW + caster.getName() +
                             ChatColor.GRAY + " with " + ChatColor.GREEN + ChatColor.ITALIC + spellName + ChatColor.GRAY + "!");
                 }
             }
@@ -424,6 +439,14 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 Mana.playerMana.put(playerId, newMana);
             }
         }
+    }
+    private void startSidebarUpdateTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Team.updateSidebar();
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 5);
     }
 
     public static WizardsPlugin getInstance() {

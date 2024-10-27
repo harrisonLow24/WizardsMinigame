@@ -3,17 +3,17 @@ package WizardsGame;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
-import org.bukkit.scoreboard.Team;
+import org.bukkit.scoreboard.*;
 
 import java.util.*;
 
 public class TeamManager {
-    private final Map<String, Set<UUID>> teams = new HashMap<>(); // store teams and their members
-    private final Map<String, ChatColor> teamColors = new HashMap<>(); // store team colors
+    private static final Map<String, Set<UUID>> teams = new HashMap<>(); // store teams and their members
+    private static final Map<String, ChatColor> teamColors = new HashMap<>(); // store team colors
     private final Random random = new Random(); // random number
     private final Scoreboard scoreboard; // scoreboard for team prefixes
+    private final Scoreboard sidebarScoreboard; // scoreboard for sidebar
+    private final Objective sidebarObjective; // objective for sidebar
 
     public TeamManager() {
         // predefined colors that can be used for teams
@@ -26,6 +26,9 @@ public class TeamManager {
         // set up the scoreboard
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         scoreboard = manager.getMainScoreboard();
+        sidebarScoreboard = manager.getNewScoreboard();
+        sidebarObjective = sidebarScoreboard.registerNewObjective("alivePlayers", "dummy", ChatColor.AQUA + "" + ChatColor.BOLD + "Hareesun's Wizards");
+        sidebarObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
     }
 
     private ChatColor getRandomColor() {
@@ -69,6 +72,7 @@ public class TeamManager {
 
         // set player's display name, tab list name, and add to scoreboard team
         setPlayerTeamPrefix(player, teamName);
+        player.setScoreboard(sidebarScoreboard);
 
         return true;
     }
@@ -85,6 +89,7 @@ public class TeamManager {
                 scoreboardTeam.removeEntry(player.getName());
             }
             resetPlayerName(player);
+            resetPlayerScoreboard(player);
             return true;
         }
         return false;
@@ -100,6 +105,8 @@ public class TeamManager {
 
         // set player's display name, tab list name, and add to scoreboard team
         setPlayerTeamPrefix(player, teamName);
+
+        player.setScoreboard(sidebarScoreboard);
 
         return true;
     }
@@ -118,6 +125,7 @@ public class TeamManager {
             scoreboardTeam.removeEntry(player.getName());
         }
         resetPlayerName(player);
+        resetPlayerScoreboard(player);
 
         return true;
     }
@@ -143,7 +151,7 @@ public class TeamManager {
         player.setScoreboard(scoreboard);
     }
 
-    public String getTeamPrefix(UUID playerId) {
+    public static String getTeamPrefix(UUID playerId) {
         String teamName = getPlayerTeam(playerId);
         if (teamName != null) {
             ChatColor color = teamColors.get(teamName);
@@ -170,7 +178,7 @@ public class TeamManager {
     }
 
     // get the team of a player
-    public String getPlayerTeam(UUID playerId) {
+    public static String getPlayerTeam(UUID playerId) {
         for (Map.Entry<String, Set<UUID>> entry : teams.entrySet()) {
             if (entry.getValue().contains(playerId)) {
                 return entry.getKey(); // return team name
@@ -196,6 +204,7 @@ public class TeamManager {
                         // reset player's display name to remove the prefix
                         player.setDisplayName(player.getName());
                         player.setPlayerListName(player.getName());
+                        resetPlayerScoreboard(player);
                     }
                 }
                 scoreboardTeam.unregister(); // remove team from scoreboard
@@ -206,5 +215,72 @@ public class TeamManager {
         }
         teams.clear(); // remove all teams and members
         teamColors.clear();
+    }
+    void updateSidebar() {
+        for (String entry : sidebarScoreboard.getEntries()) {
+            sidebarScoreboard.resetScores(entry);
+        }
+        // display title with a line underneath
+        String title = ChatColor.GOLD + "" + ChatColor.BOLD + "Wizards";
+        sidebarObjective.getScore(title).setScore(15); // title
+
+        // add a line under the title
+        String line = ChatColor.GRAY + "--------------------"; // line under the title
+        sidebarObjective.getScore(line).setScore(14);
+
+        String placeholderText = ChatColor.YELLOW + "" + ChatColor.BOLD + "Teams left";
+        sidebarObjective.getScore(placeholderText).setScore(13);
+
+        int teamsLeft = 0;
+        for (Set<UUID> members : teams.values()) {
+            for (UUID memberId : members) {
+                Player player = Bukkit.getPlayer(memberId);
+                if (player != null && player.isOnline() && !player.isDead()) {
+                    teamsLeft++;
+                    break; // break after finding one alive player in the team
+                }
+            }
+        }
+
+        // number of teams left
+//        int teamsLeft = teams.size();
+        String teamsLeftText = ChatColor.WHITE + "" + teamsLeft;
+        sidebarObjective.getScore(teamsLeftText).setScore(12);
+
+        String emptyLine1 = "";
+        sidebarObjective.getScore(emptyLine1).setScore(11);
+
+        String line5 = ChatColor.YELLOW + "" + ChatColor.BOLD + "Teams";
+        sidebarObjective.getScore(line5).setScore(10);
+
+//        String emptyLine2 = " ";
+//        sidebarObjective.getScore(emptyLine2).setScore(9);
+
+
+        // teams
+        int score = 8;
+        for (Map.Entry<String, Set<UUID>> entry : teams.entrySet()) {
+            String teamName = entry.getKey();
+            Set<UUID> members = entry.getValue();
+            int aliveCount = 0;
+
+            // count alive players in the team
+            for (UUID memberId : members) {
+                Player player = Bukkit.getPlayer(memberId);
+                if (player != null && player.isOnline() && WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
+                    aliveCount++;
+                }
+            }
+            if (aliveCount > 0) {
+                // format the team display line
+                String displayName = teamColors.get(teamName) + teamName + ": " + ChatColor.WHITE + aliveCount;
+                sidebarObjective.getScore(displayName).setScore(score);
+                score--; // decrement score for the next team
+            }
+        }
+    }
+
+    private void resetPlayerScoreboard(Player player) {
+        player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
     }
 }
