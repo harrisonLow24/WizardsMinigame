@@ -53,10 +53,10 @@ public class SquidFlight implements Listener {
 
     private boolean canFly(UUID playerId) {
         long currentTime = System.currentTimeMillis();
-        long lastFlightTime = Cooldown.getOrDefault(playerId, 0L);
+        long lastFlightTime = Cooldown.getRemainingCooldown(playerId, "Winged Shield");
 
-        if (currentTime - lastFlightTime >= Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId)) {
-            Cooldown.put(playerId, currentTime);
+        if (currentTime - lastFlightTime >= Cooldown.getRemainingCooldown(playerId, "Winged Shield")) {
+            Cooldown.setCooldown(playerId, "Winged Shield");;
             return true;
         }
 

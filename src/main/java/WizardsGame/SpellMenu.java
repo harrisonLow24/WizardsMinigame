@@ -169,7 +169,7 @@ public class SpellMenu {
         double fishCount = 0;
         int hasBoth = 0;
         String mana = "";
-        String cooldown = "";
+        double cooldown = 0;
         String desc = "";
 //        if (spellLevel > 0) {
 //            details.add("§aLevel: " + spellLevel);
@@ -181,89 +181,104 @@ public class SpellMenu {
             details.add("§cNot owned!");
             return details;
         }
+        String spellName;
         switch (spellType) {
             case Fiery_Wand -> {
+                spellName = "Fiery Wand";
                 mana = "§eMana: " + WizardsPlugin.FIREBALL_COST;
-                cooldown = "§eCooldown: " + Cooldown.fireballCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Launches a fireball at your enemies.";
                 damage = Cast.getFireballDamage(playerId);
             }
             case Shrouded_Step -> {
+                spellName = "Shrouded Step";
                 mana = "§eMana: " + WizardsPlugin.TELEPORT_COST;
-                cooldown = "§eCooldown: " + Cooldown.teleportCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Teleport a short distance.";
             }
             case Mjölnir -> {
+                spellName = "Mjölnir";
                 mana = "§eMana: " + WizardsPlugin.LIGHTNING_COST;
-                cooldown = "§eCooldown: " + Cooldown.lightningCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Summons a lightning strike.";
                 damage = Cast.getLightningDamage(playerId);
                 radius = Cast.getLightningRadius(playerId);
                 hasBoth = 1;
             }
             case The_Great_Escape -> {
+                spellName = "The Great Escape";
                 mana = "§eMana: " + WizardsPlugin.MINECART_COST;
-                cooldown = "§eCooldown: " + Cooldown.minecartCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Send you a short distance in a minecart.";
             }
             case Gust -> {
+                spellName = "Gust";
                 mana = "§eMana: " + WizardsPlugin.GUST_COST;
-                cooldown = "§eCooldown: " + Cooldown.gustCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Pushes enemies away.";
             }
             case Winged_Shield -> {
+                spellName = "Winged Shield";
                 mana = "§eMana: " + WizardsPlugin.FLYING_MANA_COST_PER_TICK;
-                cooldown = "§eCooldown: " + Cooldown.squidFlyingCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Enables flight for a short duration.";
             }
             case Big_Man_Slam -> {
+                spellName = "Big Man Slam";
                 mana = "§eMana: " + WizardsPlugin.GP_COST;
-                cooldown = "§eCooldown: " + Cooldown.GPCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Crushes enemies with a slam.";
                 damage = Cast.getGPDamage(playerId);
                 radius = Cast.getGPRadius(playerId);
                 hasBoth = 1;
             }
             case VoidWalker -> {
+                spellName = "Voidwalker";
                 mana = "§eMana: " + WizardsPlugin.VOIDWALKER_COST;
-                cooldown = "§eCooldown: " + Cooldown.MapTeleportCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Teleports you using an alternate dimension.";
             }
             case Starfall_Barrage -> {
+                spellName = "Starfall Barrage";
                 mana = "§eMana: " + WizardsPlugin.METEOR_COST;
-                cooldown = "§eCooldown: " + Cooldown.MeteorCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Calls down a barrage of meteors.";
                 damage = Cast.getMeteorDamage(playerId);
                 radius = Cast.getMeteorRadius(playerId);
                 hasBoth = 1;
             }
             case Heal_Cloud -> {
+                spellName = "Heal Cloud";
                 mana = "§eMana: " + WizardsPlugin.HEALCLOUD_COST;
-                cooldown = "§eCooldown: " + Cooldown.HealCloudCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Heals you and nearby allies over time.";
                 heal = Cast.getHealAmount(playerId);
                 radius = Cast.HEAL_BASE_RADIUS;
             }
             case Recall -> {
+                spellName = "Recall";
                 mana = "§eMana: " + WizardsPlugin.Recall_Cost;
-                cooldown = "§eCooldown: " + Cooldown.RecallCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Teleport backwards 5 seconds.";
             }
             case Void_Orb -> {
+                spellName = "Void Orb";
                 mana = "§eMana: " + WizardsPlugin.VoidOrb_Cost;
-                cooldown = "§eCooldown: " + Cooldown.VoidOrbCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Sends a ball of void energy at your enemies.";
                 damage = Cast.getVoidOrbDamage(playerId);
             }
             case Dragon_Spit -> {
+                spellName = "Dragon Spit";
                 mana = "§eMana: " + WizardsPlugin.MANABOLT_COST;
-                cooldown = "§eCooldown: " + Cooldown.manaBoltCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Sends a ball of spit at your enemies.";
                 damage = Cast.getManaBoltDamage(playerId);
             }
             case Cod_Shooter -> {
+                spellName = "Cod Shooter";
                 mana = "§eMana: " + WizardsPlugin.COD_COST;
-                cooldown = "§eCooldown: " + Cooldown.CodCooldownDuration / 1000 + "s";
+                cooldown = Cooldown.getCooldownDuration(spellName);
                 desc = "§7Knock your enemies back with the power of fish.";
                 knockback = Cast.getFishKnockback(playerId);
                 fishCount = Cast.getFishCount(playerId);
@@ -272,7 +287,7 @@ public class SpellMenu {
         }
         if (a == 0) {
             details.add(mana);
-            details.add(cooldown);
+            details.add("§eCooldown: " + cooldown / 1000 + "s");
         }if (radius > 1 && damage > 0){
             details.add("§cDamage: " + damage / 2 + " §c❤ |" + " §cRadius: " + radius);
         }if (damage > 0 && hasBoth == 0) {

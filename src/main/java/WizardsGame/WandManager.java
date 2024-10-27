@@ -127,7 +127,7 @@ public class WandManager {
         }
     }
     private static String getSpellInfo(Material material, UUID playerId, int hasDmg) {
-        String spellName = "";
+        String spellName;
         int manaCost = 0;
         long cooldown = 0;
         double damage = 0;
@@ -139,83 +139,71 @@ public class WandManager {
 
         switch (material) {
             case BLAZE_ROD:
-                spellName = "§c§lFiery Wand";
+                spellName = "Fiery Wand";
                 manaCost = (int) WizardsPlugin.FIREBALL_COST;
-                cooldown = Cooldown.fireballCooldownDuration;
                 damage = Cast.getFireballDamage(playerId);
                 break;
             case IRON_SWORD:
-                spellName = "§9§lShrouded Step";
+                spellName = "Shrouded Step";
                 manaCost = (int) WizardsPlugin.TELEPORT_COST;
-                cooldown = Cooldown.teleportCooldownDuration;
                 break;
             case IRON_PICKAXE:
-                spellName = "§b§lMjölnir";
+                spellName = "Mjölnir";
                 manaCost = (int) WizardsPlugin.LIGHTNING_COST;
-                cooldown = Cooldown.lightningCooldownDuration;
                 damage = Cast.getLightningDamage(playerId);
                 radius = Cast.getLightningRadius(playerId);
                 break;
             case MINECART:
-                spellName = "§a§lThe Great Escape";
+                spellName = "The Great Escape";
                 manaCost = (int) WizardsPlugin.MINECART_COST;
-                cooldown = Cooldown.minecartCooldownDuration;
                 break;
             case FEATHER:
-                spellName = "§lGust Feather";
+                spellName = "Gust";
                 manaCost = (int) WizardsPlugin.GUST_COST;
-                cooldown = Cooldown.gustCooldownDuration;
                 break;
             case SHIELD:
-                spellName = "§6§lWinged Shield";
+                spellName = "Winged Shield";
                 manaCost = (int) WizardsPlugin.FLYING_MANA_COST_PER_TICK;
-                cooldown = Cooldown.squidFlyingCooldownDuration;
                 break;
             case IRON_INGOT:
-                spellName = "§8§lBig Man Slam";
+                spellName = "Big Man Slam";
                 manaCost = (int) WizardsPlugin.GP_COST;
-                cooldown = Cooldown.GPCooldownDuration;
                 damage = Cast.getGPDamage(playerId);
                 radius = Cast.getGPRadius(playerId);
                 break;
             case RECOVERY_COMPASS:
-                spellName = "§5§lVoidwalker";
+                spellName = "Voidwalker";
                 manaCost = (int) WizardsPlugin.VOIDWALKER_COST;
-                cooldown = Cooldown.MapTeleportCooldownDuration;
                 break;
             case HONEYCOMB:
-                spellName = "§4§lStarfall Barrage";
+                spellName = "Starfall Barrage";
                 manaCost = (int) WizardsPlugin.METEOR_COST;
-                cooldown = Cooldown.MeteorCooldownDuration;
                 damage = Cast.getMeteorDamage(playerId);
                 radius = Cast.getMeteorRadius(playerId);
                 break;
             case TIPPED_ARROW:
-                spellName = "§d§lHeal Cloud";
+                spellName = "Heal Cloud";
                 manaCost = (int) WizardsPlugin.HEALCLOUD_COST;
-                cooldown = Cooldown.HealCloudCooldownDuration;
                 heal = Cast.getHealAmount(playerId);
                 radius = Cast.HEAL_BASE_RADIUS;
                 break;
             case MUSIC_DISC_5:
-                spellName = "§a§lRecall";
+                spellName = "Recall";
                 manaCost = (int) WizardsPlugin.Recall_Cost;
-                cooldown = Cooldown.RecallCooldownDuration;
                 break;
             case HEART_OF_THE_SEA:
-                spellName = "§e§lVoid Orb";
+                spellName = "Void Orb";
                 manaCost = (int) WizardsPlugin.VoidOrb_Cost;
-                cooldown = Cooldown.VoidOrbCooldownDuration;
                 damage = Cast.getVoidOrbDamage(playerId);
                 break;
             case AMETHYST_SHARD:
+                spellName = "Dragon Spit";
                 manaCost = (int) WizardsPlugin.MANABOLT_COST;
-                cooldown = Cooldown.manaBoltCooldownDuration;
                 damage = Cast.getManaBoltDamage(playerId);
                 break;
             case NAUTILUS_SHELL:
+                spellName = "Cod Shooter";
                 manaCost = (int) WizardsPlugin.COD_COST;
-                cooldown = Cooldown.CodCooldownDuration;
                 knockback = Cast.getFishKnockback(playerId);
                 fishCount = Cast.getFishCount(playerId);
                 break;
@@ -224,6 +212,7 @@ public class WandManager {
                 basic = 1;
                 break;
         }
+        cooldown = Cooldown.getCooldownDuration(spellName);
         if (basic == 1){
             return ("Basic Wand");
         }

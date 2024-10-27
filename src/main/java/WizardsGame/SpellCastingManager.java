@@ -757,11 +757,11 @@ public class SpellCastingManager implements Listener {
             @Override
             public void run() {
                 // check if the player is still at the teleport location
-                Player player = Bukkit.getPlayer(location.getWorld().getNearbyEntities(location, 1, 1, 1)
+                Player player = Bukkit.getPlayer(Objects.requireNonNull(location.getWorld().getNearbyEntities(location, 1, 1, 1)
                         .stream()
                         .filter(entity -> entity instanceof Player)
                         .findFirst()
-                        .orElse(null).getUniqueId()
+                        .orElse(null)).getUniqueId()
                 );
 
                 if (player != null && player.getLocation().distance(location) < 1) {

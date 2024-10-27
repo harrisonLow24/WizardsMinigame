@@ -307,27 +307,36 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         return null;
     }
     private void updateActionBar(Player player) {
+        UUID playerId = player.getUniqueId();
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         String spellName = getSpellInfo(itemInHand); // get spell name based on the item type
         long cooldownDuration = getCooldownDuration(itemInHand); // get the cooldown duration for that spell
-        long remainingCooldown = getRemainingCooldown(player.getUniqueId(), itemInHand); // get the remaining cooldown
+        long remainingCooldown = Cooldown.getRemainingCooldown(playerId, spellName); // get the remaining cooldown
+        if (itemInHand == null || itemInHand.getType() == Material.AIR) {
+            return;
+        }
+        if (cooldownDuration <= 0) {
+            return;
+        }
         WizardsPlugin.SpellType spellType = SpellMenu.getSpellByMaterial(itemInHand.getType());
-        int spellLevel = WizardsPlugin.getSpellLevel(player.getUniqueId(), spellType);
+        int spellLevel = WizardsPlugin.getSpellLevel(playerId, spellType);
 
         StringBuilder actionBarMessage = new StringBuilder();
 
         if (spellName != null) {
             // color based on cooldown state
             ChatColor spellColor = remainingCooldown > 0 ? ChatColor.RED : ChatColor.GREEN;
-            actionBarMessage.append(spellColor).append(ChatColor.BOLD + spellName).append(ChatColor.RESET).append(" ");
-            actionBarMessage.append(ChatColor.BLUE).append(ChatColor.BOLD + "| Lv ").append(spellLevel).append(" ");
-
+            actionBarMessage.append(spellColor).append(ChatColor.BOLD).append(spellName).append(ChatColor.RESET).append(" ");
+            actionBarMessage.append(ChatColor.BLUE).append(ChatColor.BOLD).append("| Lv ").append(spellLevel).append(" ");
 
             if (remainingCooldown > 0) {
-                int totalBlocks = 24; // total blocks in the bar
-                int filledBlocks = (int) Math.floor((cooldownDuration - remainingCooldown) / (double) cooldownDuration * totalBlocks);
+                int totalBlocks = 24;
+                double duration = (double) cooldownDuration / 1000;
+                int filledBlocks = (int) Math.floor((duration - remainingCooldown) / duration * totalBlocks);
+//                Bukkit.broadcastMessage(String.valueOf(duration));
+//                Bukkit.broadcastMessage(String.valueOf(remainingCooldown));
                 int emptyBlocks = totalBlocks - filledBlocks;
-                int remainingSeconds = (int) Math.ceil(remainingCooldown / 1000.0);
+                int remainingSeconds = (int) Math.ceil(remainingCooldown);
 
                 actionBarMessage.append(ChatColor.GREEN).append("█".repeat(Math.max(0, filledBlocks))); // solid section
                 actionBarMessage.append(ChatColor.RED).append("█".repeat(Math.max(0, emptyBlocks))); // empty seciton
@@ -339,93 +348,16 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
 
     private long getRemainingCooldown(UUID playerId, ItemStack itemInHand) {
-        if (itemInHand.getType() == Material.BLAZE_ROD) {
-            return Cooldown.fireballCooldownDuration - (System.currentTimeMillis() - Cooldown.fireballCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.IRON_PICKAXE) {
-            return Cooldown.lightningCooldownDuration - (System.currentTimeMillis() - Cooldown.lightningCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.IRON_SWORD) {
-            return Cooldown.teleportCooldownDuration - (System.currentTimeMillis() - Cooldown.teleportCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.FEATHER) {
-            return Cooldown.gustCooldownDuration - (System.currentTimeMillis() - Cooldown.gustCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.MINECART) {
-            return Cooldown.minecartCooldownDuration - (System.currentTimeMillis() - Cooldown.minecartCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.IRON_INGOT) {
-            return Cooldown.GPCooldownDuration - (System.currentTimeMillis() - Cooldown.GPCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.HONEYCOMB) {
-            return Cooldown.MeteorCooldownDuration - (System.currentTimeMillis() - Cooldown.MeteorCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.TIPPED_ARROW) {
-            return Cooldown.HealCloudCooldownDuration - (System.currentTimeMillis() - Cooldown.HealCloudCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.RECOVERY_COMPASS) {
-            return Cooldown.MapTeleportCooldownDuration - (System.currentTimeMillis() - Cooldown.MapTeleportCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.MUSIC_DISC_5) {
-            return Cooldown.RecallCooldownDuration - (System.currentTimeMillis() - Cooldown.RecallCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.HEART_OF_THE_SEA) {
-            return Cooldown.VoidOrbCooldownDuration - (System.currentTimeMillis() - Cooldown.VoidOrbCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.AMETHYST_SHARD) {
-            return Cooldown.manaBoltCooldownDuration - (System.currentTimeMillis() - Cooldown.manaBoltCooldowns.getOrDefault(playerId, 0L));
-        }
-        else if (itemInHand.getType() == Material.NAUTILUS_SHELL) {
-            return Cooldown.CodCooldownDuration - (System.currentTimeMillis() - Cooldown.codCooldowns.getOrDefault(playerId, 0L));
-        }
-        return 0;
+        String spellName = getSpellInfo(itemInHand);
+        return Cooldown.getRemainingCooldown(playerId, spellName);
     }
 
+    // get cooldown duration for spells
     private long getCooldownDuration(ItemStack itemInHand) {
-        // Return the cooldown duration based on the item type
-        if (itemInHand.getType() == Material.BLAZE_ROD) {
-            return Cooldown.fireballCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.IRON_SWORD) {
-            return Cooldown.teleportCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.IRON_PICKAXE) {
-            return Cooldown.lightningCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.MINECART) {
-            return Cooldown.minecartCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.FEATHER) {
-            return Cooldown.gustCooldownDuration;
-        }
-
-        if (itemInHand.getType() == Material.IRON_INGOT) {
-            return Cooldown.GPCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.RECOVERY_COMPASS) {
-            return Cooldown.MapTeleportCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.HONEYCOMB) {
-            return Cooldown.MeteorCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.TIPPED_ARROW) {
-            return Cooldown.HealCloudCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.MUSIC_DISC_5) {
-            return Cooldown.RecallCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.HEART_OF_THE_SEA) {
-            return Cooldown.VoidOrbCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.AMETHYST_SHARD) {
-            return Cooldown.manaBoltCooldownDuration;
-        }
-        if (itemInHand.getType() == Material.NAUTILUS_SHELL) {
-            return Cooldown.CodCooldownDuration;
-        }
-
-        return 0;
+        String spellName = getSpellInfo(itemInHand);
+        return Cooldown.getCooldownDuration(spellName);
     }
+
 
 
     void startCooldownBarUpdateTask() {
@@ -609,85 +541,87 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case AMETHYST_SHARD -> handleManaBoltCast(player, playerId);
             case NAUTILUS_SHELL -> handleCodShooterCast(player, playerId);
 
-            case BEETROOT -> handleCharmCast(player, playerId);
-
 
         }
     }
     void handleFireballCast(Player player, UUID playerId) {
+        String spellName = "Fiery Wand"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnFireballCooldown(playerId) && Mana.hasEnoughMana(playerId, FIREBALL_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, FIREBALL_COST)) {
             Cast.castFireball(player);
-            Cooldown.setFireballCooldown(playerId);
+            Cooldown.setCooldown(playerId, spellName);
             Mana.deductMana(playerId, FIREBALL_COST);
-        } else if (Cooldown.isOnFireballCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingFireballCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
 
     void handleTeleportCast(Player player, UUID playerId) {
+        String spellName = "Shrouded Step"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
             Teleport.castTeleportSpell(playerId, 0);
-            Cooldown.setTeleportCooldown(playerId);
+            Cooldown.setCooldown(playerId, spellName);
             Mana.deductMana(playerId, TELEPORT_COST);
-        } else if (Cooldown.isOnTeleportCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingRecallCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
 
     void handleLightningCast(Player player, UUID playerId) {
+        String spellName = "Mjölnir"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnLightningCooldown(playerId) && Mana.hasEnoughMana(playerId, LIGHTNING_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, LIGHTNING_COST)) {
             Cast.castLightningSpell(player);
-            Cooldown.setLightningCooldown(playerId);
+            Cooldown.setCooldown(playerId, spellName);
             Mana.deductMana(playerId, LIGHTNING_COST);
             Cast.startLightningEffect(playerId);
-        } else if (Cooldown.isOnLightningCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingLightningCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName));
+        } else {
             handleManaMessage(player);
         }
     }
 
     void handleGustCast(Player player, UUID playerId) {
+        String spellName = "Gust"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnGustCooldown(playerId) && Mana.hasEnoughMana(playerId, GUST_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, GUST_COST)) {
             Cast.castGustSpell(playerId);
-            Cooldown.setGustCooldown(playerId);
+            Cooldown.setCooldown(playerId, spellName);
             Mana.deductMana(playerId, GUST_COST);
-        } else if (Cooldown.isOnGustCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingGustCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
 
     void handleFlyingSpellCast(Player player, UUID playerId) {
+        String spellName = "Winged Shield"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnSquidFlyingCooldown(playerId) && Mana.hasEnoughMana(playerId, FLYING_MANA_COST_PER_TICK)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, FLYING_MANA_COST_PER_TICK)) {
             Squid.startFlyingSpell(player);
             Mana.deductMana(playerId, FLYING_MANA_COST_PER_TICK);
-
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -699,109 +633,113 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                     Mana.deductMana(playerId, FLYING_MANA_COST_PER_TICK);
                 }
             }.runTaskTimer(WizardsPlugin.getInstance(), 0, 20);
-
             player.playSound(player.getLocation(), Sound.ENTITY_SQUID_SQUIRT, 1.0F, 1.0F);
-        } else if (Cooldown.isOnSquidFlyingCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingSquidFlyingCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
 
     void handleMinecartCast(Player player, UUID playerId) {
+        String spellName = "The Great Escape"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnMinecartCooldown(playerId) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
             Cast.launchMinecart(player);
-            Cooldown.setMinecartCooldown(playerId);
+            Cooldown.setCooldown(playerId, spellName);
             Mana.deductMana(playerId, MINECART_COST);
-        } else if (Cooldown.isOnMinecartCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingMinecartCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
 
     void handleBigManSlamCast(Player player, UUID playerId) {
+        String spellName = "Big Man Slam"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnGPCooldown(playerId) && Mana.hasEnoughMana(playerId, GP_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, GP_COST)) {
             Cast.castGroundPoundSpell(playerId);
-            Cooldown.setGPCooldown(playerId);
+            Cooldown.setCooldown(playerId, spellName);
             Mana.deductMana(playerId, GP_COST);
-        } else if (Cooldown.isOnGPCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingGPCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
     void handleMapTeleportCast(Player player, UUID playerId) {
+        String spellName = "Voidwalker"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnMapTeleportCooldown(playerId) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, VOIDWALKER_COST)) {
             Cast.teleportPlayerUp(player);
-            Cooldown.setMapTeleportCooldown(playerId);
+            Cooldown.setCooldown(playerId, spellName);
             Mana.deductMana(playerId, VOIDWALKER_COST);
-        } else if (Cooldown.isOnMapTeleportCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingMapTeleportCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
-
     }
 
     public void handleMeteorCast(Player player, UUID playerId) {
+        String spellName = "Starfall Barrage"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnMeteorCooldown(playerId) && Mana.hasEnoughMana(playerId, METEOR_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, METEOR_COST)) {
             Location targetLocation = Cast.getTargetLocation(player);
             if (targetLocation != null) {
                 Cast.castMeteorShower(player, targetLocation);
-                Cooldown.setMeteorCooldown(playerId);
+                Cooldown.setCooldown(playerId, spellName);
                 Mana.deductMana(playerId, METEOR_COST);
             }
-        } else if (Cooldown.isOnMeteorCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingMeteorCooldownSeconds(playerId));
-        }else{
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
 
     void handleHealCloudCast(Player player, UUID playerId) {
+        String spellName = "Heal Cloud"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnHealCloudCooldown(playerId) && Mana.hasEnoughMana(playerId, HEALCLOUD_COST)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, HEALCLOUD_COST)) {
             Location targetLocation = Cast.getTargetLocation(player);
             if (targetLocation != null) {
                 targetLocation.setY(targetLocation.getY() + 1);
                 Cast.spawnHealingCircle(player, targetLocation); // spawn the healing circle
-                Cooldown.setHealCloudCooldown(playerId); // set cooldown after casting
+                Cooldown.setCooldown(playerId, spellName); // set cooldown after casting
                 Mana.deductMana(playerId, HEALCLOUD_COST);
-            } else if (Cooldown.isOnHealCloudCooldown(playerId)) {
-                handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingHealCloudCooldownSeconds(playerId));
-            }else{
-                handleManaMessage(player);
             }
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
+            handleManaMessage(player);
         }
     }
 
     private void handleRecallCast(Player player, UUID playerId) {
+        String spellName = "Recall";
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
         // check if player can teleport
-        if (!Cooldown.isOnRecallCooldown(playerId) && Mana.hasEnoughMana(playerId, Recall_Cost)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, Recall_Cost)) {
             Queue<Location> locations = playerLocations.get(playerId);
             if (locations != null && locations.size() >= maxRecordedLocations) {
                 // get location from 5 seconds ago ( first recorded location in the queue )
@@ -816,8 +754,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             } else {
                 player.sendMessage("No location record found. Please wait a moment.");
             }
-        } else if (Cooldown.isOnRecallCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingRecallCooldownSeconds(playerId));
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
         } else {
             handleManaMessage(player);
         }
@@ -879,49 +817,52 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
 
     void handleVoidOrbCast(Player player, UUID playerId) {
+        String spellName = "Void Orb"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnVoidOrbCooldown(playerId) && Mana.hasEnoughMana(playerId, VoidOrb_Cost)) {
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, VoidOrb_Cost)) {
             Cast.VoidOrbCast(player, playerId);
-            Cooldown.setVoidOrbCooldown(playerId);
-            Mana.deductMana(playerId, VoidOrb_Cost); // deduct mana cost
-        } else if (Cooldown.isOnVoidOrbCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingVoidOrbCooldownSeconds(playerId));
-    }
-        }
-
-    private void handleManaBoltCast(Player player, UUID playerId) {
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnManaBoltCooldown(playerId) && Mana.hasEnoughMana(playerId, MANABOLT_COST)){
-            Mana.deductMana(playerId, MANABOLT_COST);
-            Cooldown.setManaBoltCooldown(playerId);
-            Cast.launchManaBolt(player);
-        }
-        else if (Cooldown.isOnManaBoltCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingManaBoltCooldownSeconds(playerId));
-        }else{
+            Cooldown.setCooldown(playerId, spellName);
+            Mana.deductMana(playerId, VoidOrb_Cost);
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
 
-    private void handleCodShooterCast(Player player, UUID playerId) {
+    void handleManaBoltCast(Player player, UUID playerId) {
+        String spellName = "Dragon Spit"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnCodCooldown(playerId) && Mana.hasEnoughMana(playerId, COD_COST)){
-            Mana.deductMana(playerId, COD_COST);
-            Cooldown.setCodCooldown(playerId);
-            Cast.shootFish(player);
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, MANABOLT_COST)) {
+            Cast.launchManaBolt(player);
+            Cooldown.setCooldown(playerId, spellName);
+            Mana.deductMana(playerId, MANABOLT_COST);
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
+            handleManaMessage(player);
         }
-        else if (Cooldown.isOnCodCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingCodCooldownSeconds(playerId));
-        }else{
+    }
+
+    void handleCodShooterCast(Player player, UUID playerId) {
+        String spellName = "Cod Shooter"; // cooldownManager
+        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
+            sendTeleportWarning(player);
+            return;
+        }
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, COD_COST)) {
+            Cast.shootFish(player);
+            Cooldown.setCooldown(playerId, spellName);
+            Mana.deductMana(playerId, COD_COST);
+        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
+            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
+        } else {
             handleManaMessage(player);
         }
     }
@@ -937,17 +878,17 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 //        }
 //    }
 
-    void handleCharmCast(Player player, UUID playerId) {
-        if (!Cooldown.isOnCharmCooldown(playerId) && Mana.hasEnoughMana(playerId, CHARM_COST)) {
-            Charm.castCharmSpell(playerId);
-            Cooldown.setCharmCooldown(playerId);
-            Mana.deductMana(playerId, CHARM_COST);
-        } else if (Cooldown.isOnCharmCooldown(playerId)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingCharmCooldownSeconds(playerId));
-        }else{
-            handleManaMessage(player);
-        }
-    }
+//    void handleCharmCast(Player player, UUID playerId) {
+//        if (!Cooldown.isOnCharmCooldown(playerId) && Mana.hasEnoughMana(playerId, CHARM_COST)) {
+//            Charm.castCharmSpell(playerId);
+//            Cooldown.setCharmCooldown(playerId);
+//            Mana.deductMana(playerId, CHARM_COST);
+//        } else if (Cooldown.isOnCharmCooldown(playerId)) {
+//            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingCharmCooldownSeconds(playerId));
+//        }else{
+//            handleManaMessage(player);
+//        }
+//    }
 
     private HashMap<Player, Long> lastTeleportMessage = new HashMap<>();
     private HashMap<Player, Long> lastCooldownMessage = new HashMap<>();
@@ -966,9 +907,11 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
     void handleCooldownMessage(Player player, String spellName, int remainingSeconds) {
         long currentTime = System.currentTimeMillis();
+        UUID playerId = player.getUniqueId();
+        long remainingCooldown = Cooldown.getRemainingCooldown(playerId, spellName);
         if (!lastCooldownMessage.containsKey(player) || (currentTime - lastCooldownMessage.get(player)) > MESSAGE_COOLDOWN) {
 
-            player.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + spellName + ChatColor.RED + " on cooldown. Please wait " + ChatColor.BOLD + remainingSeconds + ChatColor.RED + " seconds before casting again.");
+            player.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + spellName + ChatColor.RED + " on cooldown. Please wait " + ChatColor.BOLD + remainingCooldown + ChatColor.RED + " seconds before casting again.");
             lastCooldownMessage.put(player, currentTime);
         }
     }
