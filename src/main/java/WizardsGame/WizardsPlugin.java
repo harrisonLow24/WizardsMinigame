@@ -312,7 +312,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("fillChests")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("fill1")).setExecutor(new WizardCommands(this));
         Objects.requireNonNull(getCommand("fill2")).setExecutor(new WizardCommands(this));
-
+        Objects.requireNonNull(getCommand("wizards")).setExecutor(new WizardCommands(this));
+        Objects.requireNonNull(getCommand("setspawn")).setExecutor(new WizardCommands(this));
     }
 
     static final Map<Material, String> SPELL_NAMES = new HashMap<>();

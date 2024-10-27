@@ -83,6 +83,60 @@ public class WizardCommands implements CommandExecutor {
                 return false;
             }
         }
+
+        if (command.getName().equalsIgnoreCase("wizards")) {
+            if (args.length < 1) {
+                sender.sendMessage(ChatColor.RED + "Usage: /wizards join/leave/start/stop");
+                return true;
+            }
+
+            switch (args[0].toLowerCase()) {
+                case "join":
+                    if (sender instanceof Player player) {
+                        plugin.Mini.playersInMinigame.add(player.getUniqueId()); // add player to minigame
+                        sender.sendMessage(ChatColor.GREEN + "You have joined the Wizards minigame!");
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "Only players can join the minigame.");
+                    }
+                    return true;
+
+                case "leave":
+                    if (sender instanceof Player player) {
+                        plugin.Mini.playersInMinigame.remove(player.getUniqueId()); // remove player from minigame
+                        sender.sendMessage(ChatColor.GREEN + "You have left the Wizards minigame!");
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "Only players can leave the minigame.");
+                    }
+                    return true;
+
+                case "start":
+                    if (plugin.Mini.playersInMinigame.size() > 2) {
+                        sender.sendMessage(ChatColor.RED + "Not enough players to start the game!");
+                        return true;
+                    }
+                    plugin.Mini.startMinigame(); // start minigame
+                    return true;
+
+                case "stop":
+                    plugin.Mini.stopMinigame(); // stop minigame
+                    return true;
+
+                default:
+                    sender.sendMessage(ChatColor.RED + "Unknown command. Use /wizards join, /wizards leave, /wizards start, or /wizards stop.");
+                    return true;
+            }
+        }
+
+        if (command.getName().equalsIgnoreCase("setspawn")) {
+            if (sender instanceof Player player) {
+                plugin.Mini.spawnPoints.add(player.getLocation()); // add player's current location as a spawn point
+                sender.sendMessage(ChatColor.GREEN + "Spawn point set at your current location!");
+                return true;
+            } else {
+                sender.sendMessage(ChatColor.RED + "Only players can set spawn points.");
+            }
+        }
+
         if (command.getName().equalsIgnoreCase("wizteam")) {
             if (args.length < 1) {
                 return false; // no subcommand provided

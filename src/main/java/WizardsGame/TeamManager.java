@@ -8,7 +8,7 @@ import org.bukkit.scoreboard.*;
 import java.util.*;
 
 public class TeamManager {
-    private static final Map<String, Set<UUID>> teams = new HashMap<>(); // store teams and their members
+    static final Map<String, Set<UUID>> teams = new HashMap<>(); // store teams and their members
     private static final Map<String, ChatColor> teamColors = new HashMap<>(); // store team colors
     private final Random random = new Random(); // random number
     private final Scoreboard scoreboard; // scoreboard for team prefixes

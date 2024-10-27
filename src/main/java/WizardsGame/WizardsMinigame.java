@@ -2,6 +2,7 @@ package WizardsGame;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -12,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BlockVector;
 import org.bukkit.util.Vector;
 
@@ -20,14 +22,110 @@ import java.util.*;
 public class WizardsMinigame {
     private final WizardsPlugin plugin;
     SpellMenu Menu = new SpellMenu(WizardsPlugin.getInstance());
-    final Map<UUID, Vector> location1Map = new HashMap<>(); // store location 1
-    final Map<UUID, Vector> location2Map = new HashMap<>(); // store location 2
-    private final Random random = new Random();
 
     public WizardsMinigame(WizardsPlugin plugin) {
         this.plugin = plugin;
     }
+
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------------------MINIGAME--------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    final Set<Location> spawnPoints = new HashSet<>(); // store spawn points
+    final Set<UUID> playersInMinigame = new HashSet<>(); // store players in the minigame
+
+    private void sendTitle(Player player, String title, String subtitle) {
+        // show title
+        player.sendTitle(ChatColor.YELLOW + title, ChatColor.GREEN + subtitle, 10, 70, 20);
+    }
+    public void startMinigame() {
+        countdownStart();
+    }
+
+    private void countdownStart() {
+        new BukkitRunnable() {
+            int countdown = 3; // countdown length
+
+            @Override
+            public void run() {
+                if (countdown > 0) {
+                    for (UUID playerId : playersInMinigame) {
+                        Player player = Bukkit.getPlayer(playerId);
+                        if (player != null) {
+                            sendTitle(player, countdown + "", "The game starts now!");
+                        }
+                    }
+                    countdown--;
+                } else {
+                    // after countdown ends
+                    for (UUID playerId : playersInMinigame) {
+                        Player player = Bukkit.getPlayer(playerId);
+                        if (player != null) {
+                            sendTitle(player, "Game Started!", "Good luck!");
+                        }
+                        teleportToRandomSpawn(player);
+                    }
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0, 20);
+    }
+
+    private void teleportToRandomSpawn(Player player) {
+        if (!spawnPoints.isEmpty()) {
+            List<Location> spawnPointList = new ArrayList<>(spawnPoints);
+            Location randomSpawn = spawnPointList.get(new Random().nextInt(spawnPointList.size()));
+            player.teleport(randomSpawn); // teleport to a random spawn point
+            player.sendMessage(ChatColor.GREEN + "You've been teleported to a spawn point!");
+        }
+    }
+
+    private void checkGameEnd() {
+        UUID winningTeam = getWinningTeam();
+        if (winningTeam != null) {
+            endMinigame(winningTeam);
+        }
+    }
+
+    //temp
+    private UUID getWinningTeam() {
+        return null;
+    }
+
+    private void endMinigame(UUID winningTeam) {
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null && player.isOnline()) {
+                player.sendMessage(ChatColor.GOLD + "The game has ended! Winning team: " + winningTeam.toString());
+                // playerAliveStatus set to true
+            }
+        }
+        playersInMinigame.clear(); // clear all players from minigame
+    }
+
+    void stopMinigame() {
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null && player.isOnline()) {
+                player.sendMessage(ChatColor.RED + "The minigame has been stopped.");
+            }
+        }
+        playersInMinigame.clear(); // clear all players from minigame
+    }
+
+
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------CHESTS-----------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    final Map<UUID, Vector> location1Map = new HashMap<>(); // store location 1
+    final Map<UUID, Vector> location2Map = new HashMap<>(); // store location 2
     private final Map<WizardsPlugin.SpellType, Integer> spellRarityWeights = new HashMap<>();
+    private final Random random = new Random();
 
     private void initializeRarityWeights() {
         // higher number = more common
@@ -132,6 +230,4 @@ public class WizardsMinigame {
 
         inventory.setItem(randomSlot, item); // place the item in the random slot
     }
-
-
 }

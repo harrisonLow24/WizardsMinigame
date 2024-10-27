@@ -44,6 +44,12 @@ commands:
   fill2:
     description: Fills chests in a specified area with spells and armor.
     usage: /fillChests <x1> <y1> <z1> <x2> <y2> <z2>
+  wizards:
+    description: Fills chests in a specified area with spells and armor.
+    usage: /wizards join/leave/start/stop
+  setspawn:
+    description: Fills chests in a specified area with spells and armor.
+    usage: /setspawn
 
 
 
