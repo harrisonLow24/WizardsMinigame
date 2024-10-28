@@ -38,10 +38,10 @@ commands:
   fillChests:
     description: Fills chests in a specified area with spells and armor.
     usage: /fillChests <x1> <y1> <z1> <x2> <y2> <z2>
-  fill1:
+  map1:
     description: Fills chests in a specified area with spells and armor.
     usage: /fillChests <x1> <y1> <z1> <x2> <y2> <z2>
-  fill2:
+  map2:
     description: Fills chests in a specified area with spells and armor.
     usage: /fillChests <x1> <y1> <z1> <x2> <y2> <z2>
   wizards:
@@ -50,6 +50,13 @@ commands:
   setspawn:
     description: Fills chests in a specified area with spells and armor.
     usage: /setspawn
+  mapsave:
+    description: Fills chests in a specified area with spells and armor.
+    usage: /setspawn
+  mapregen:
+    description: Fills chests in a specified area with spells and armor.
+    usage: /setspawn
+
 
 
 

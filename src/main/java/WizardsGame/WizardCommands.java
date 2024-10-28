@@ -2,6 +2,7 @@ package WizardsGame;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -237,7 +238,7 @@ public class WizardCommands implements CommandExecutor {
         }
 
 
-        if (command.getName().equalsIgnoreCase("fill1")) {
+        if (command.getName().equalsIgnoreCase("map1")) {
             if (sender instanceof Player player) {
                 Vector loc1 = player.getLocation().toVector(); // store player's current location
                 plugin.Mini.location1Map.put(player.getUniqueId(), loc1);
@@ -246,7 +247,7 @@ public class WizardCommands implements CommandExecutor {
             }
         }
 
-        if (command.getName().equalsIgnoreCase("fill2")) {
+        if (command.getName().equalsIgnoreCase("map2")) {
             if (sender instanceof Player player) {
                 Vector loc2 = player.getLocation().toVector(); // store player's current location
                 plugin.Mini.location2Map.put(player.getUniqueId(), loc2);
@@ -254,6 +255,37 @@ public class WizardCommands implements CommandExecutor {
                 return true;
             }
         }
+        if (command.getName().equalsIgnoreCase("mapsave")) {
+            if (sender instanceof Player player) {
+                Vector loc1 = plugin.Mini.location1Map.get(player.getUniqueId());
+                Vector loc2 = plugin.Mini.location2Map.get(player.getUniqueId());
+
+                if (loc1 == null || loc2 == null) {
+                    player.sendMessage(ChatColor.RED + "You must save both locations first!");
+                    return true;
+                }
+                plugin.Mini.saveBlocks(loc1, loc2, player);
+                player.sendMessage(ChatColor.GREEN + "Blocks saved!");
+                return true;
+            }
+        }
+
+        if (command.getName().equalsIgnoreCase("mapregen")) {
+            if (sender instanceof Player player) {
+                Vector loc1 = plugin.Mini.location1Map.get(player.getUniqueId());
+                Vector loc2 = plugin.Mini.location2Map.get(player.getUniqueId());
+
+                if (loc1 == null || loc2 == null) {
+                    player.sendMessage(ChatColor.RED + "You must save both locations first!");
+                    return true;
+                }
+
+                plugin.Mini.regenerateBlocks(loc1, loc2, player);
+                player.sendMessage(ChatColor.GREEN + "Blocks regenerated!");
+                return true;
+            }
+        }
+
 
         if (command.getName().equalsIgnoreCase("fillchests")) {
             if (sender instanceof Player player) {
@@ -290,8 +322,6 @@ public class WizardCommands implements CommandExecutor {
                 return true;
             }
         }
-
-
         return false;
     }
 }

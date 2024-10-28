@@ -58,7 +58,7 @@ public class WizardsMinigame {
                     for (UUID playerId : playersInMinigame) {
                         Player player = Bukkit.getPlayer(playerId);
                         if (player != null) {
-                            sendTitle(player, countdown + "", "The game starts now!");
+                            sendTitle(player, countdown + "", "The game is starting soon!");
                         }
                     }
                     countdown--;
@@ -148,6 +148,12 @@ public class WizardsMinigame {
             String winningMessage = teamColor + "Team " + winningTeam + " has won the Wizards Minigame!";
             // announce winning team to all players
             Bukkit.broadcastMessage(winningMessage);
+            for (UUID playerId : playersInMinigame) {
+                Player player = Bukkit.getPlayer(playerId);
+                if (player != null) {
+                    sendTitle(player, winningTeam, ChatColor.GOLD + "" + ChatColor.BOLD +"Congratulations! You are the chosen one!");
+                }
+            }
         } else {
             Bukkit.broadcastMessage(ChatColor.GRAY + "The Wizards Minigame ended in a draw!");
         }
@@ -173,6 +179,50 @@ public class WizardsMinigame {
         }
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // -------------------------------------------------MAP-------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+    private final Map<UUID, Map<BlockVector, Material>> savedBlocksMap = new HashMap<>();
+    void saveBlocks(Vector loc1, Vector loc2, Player player) {
+        UUID playerId = player.getUniqueId();
+        Map<BlockVector, Material> blockMap = new HashMap<>();
+
+        // bounds
+        int minX = Math.min(loc1.getBlockX(), loc2.getBlockX());
+        int maxX = Math.max(loc1.getBlockX(), loc2.getBlockX());
+        int minY = Math.min(loc1.getBlockY(), loc2.getBlockY());
+        int maxY = Math.max(loc1.getBlockY(), loc2.getBlockY());
+        int minZ = Math.min(loc1.getBlockZ(), loc2.getBlockZ());
+        int maxZ = Math.max(loc1.getBlockZ(), loc2.getBlockZ());
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    Block block = player.getWorld().getBlockAt(x, y, z);
+                    blockMap.put(new BlockVector(x, y, z), block.getType()); // save block type
+                }
+            }
+        }
+        savedBlocksMap.put(playerId, blockMap); // store saved blocks
+    }
+
+    void regenerateBlocks(Vector loc1, Vector loc2, Player player) {
+        UUID playerId = player.getUniqueId();
+        Map<BlockVector, Material> blockMap = savedBlocksMap.get(playerId);
+
+        if (blockMap == null) {
+            player.sendMessage(ChatColor.RED + "No blocks have been saved!");
+            return;
+        }
+
+        for (Map.Entry<BlockVector, Material> entry : blockMap.entrySet()) {
+            BlockVector vector = entry.getKey();
+            Material material = entry.getValue();
+            Block block = player.getWorld().getBlockAt(vector.getBlockX(), vector.getBlockY(), vector.getBlockZ());
+            block.setType(material); // replace block with saved type
+        }
+    }
 
 
     // -----------------------------------------------------------------------------------------------------------------
