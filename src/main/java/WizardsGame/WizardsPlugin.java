@@ -48,6 +48,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         startManaRegenTask();
         startSidebarUpdateTask();
         this.getCommand("wizteam").setTabCompleter(new WizTeamTabCompleter(Team));
+        this.getCommand("wizards").setTabCompleter(new WizTeamTabCompleter(Team));
         getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
         new BukkitRunnable() {
             @Override
@@ -173,7 +174,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
 
-//        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
+        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
         
         // check if the entity was killed by a spell
         SpellInfo damagerInfo = lastDamager.get(event.getEntity().getUniqueId());

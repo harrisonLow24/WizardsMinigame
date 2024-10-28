@@ -36,6 +36,12 @@ public class WizTeamTabCompleter implements TabCompleter {
                 }
             }
         }
+        if (command.getName().equalsIgnoreCase("wizards")) {
+            if (args.length == 1) {
+                // subcommands for first argument
+                return Arrays.asList("join", "leave", "start", "stop");
+            }
+        }
         return null;
     }
 }
