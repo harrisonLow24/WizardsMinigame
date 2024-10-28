@@ -24,10 +24,12 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
 import org.bukkit.util.Vector;
 
+import static WizardsGame.WizardsPlugin.SpellCastFunction.fireballFunction;
+
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
     private static WizardsPlugin instance;
-    SpellCastingManager Cast = new SpellCastingManager();
+    static SpellCastingManager Cast = new SpellCastingManager();
     SpellMenu Menu = new SpellMenu(this);
     CooldownManager Cooldown = new CooldownManager();
     TeleportationManager Teleport = new TeleportationManager();
@@ -174,7 +176,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
 
-        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
+//        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
         
         // check if the entity was killed by a spell
         SpellInfo damagerInfo = lastDamager.get(event.getEntity().getUniqueId());
@@ -390,12 +392,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(actionBarMessage.toString()));
     }
 
-
-    private long getRemainingCooldown(UUID playerId, ItemStack itemInHand) {
-        String spellName = getSpellInfo(itemInHand);
-        return Cooldown.getRemainingCooldown(playerId, spellName);
-    }
-
     // get cooldown duration for spells
     private long getCooldownDuration(ItemStack itemInHand) {
         String spellName = getSpellInfo(itemInHand);
@@ -500,7 +496,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     static final double CHARM_COST = 15.0;
 
     // recall spell ----------------------------------------------------------------------------------------------------
-    private final int maxRecordedLocations = 5; // number of locations to record ( ho many seconds to teleport back )
+    private final int maxRecordedLocations = 5; // number of locations to record ( how many seconds to teleport back )
     private final Map<UUID, Queue<Location>> playerLocations = new HashMap<>();
     private final int recordInterval = 20; // time in ticks (1 second)
     // -----------------------------------------------------------------------------------------------------------------
@@ -593,79 +589,42 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case HEART_OF_THE_SEA -> handleVoidOrbCast(player, playerId);
             case AMETHYST_SHARD -> handleManaBoltCast(player, playerId);
             case NAUTILUS_SHELL -> handleCodShooterCast(player, playerId);
-
-
         }
     }
-    void handleFireballCast(Player player, UUID playerId) {
-        String spellName = "Fiery Wand"; // cooldownManager
+    private void handleSpellCast(Player player, UUID playerId, String spellName, double cost, SpellCastFunction castFunction) {
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
             sendTeleportWarning(player);
             return;
         }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, FIREBALL_COST)) {
-            Cast.castFireball(player);
+        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, cost)) {
+            castFunction.cast(player, playerId); // Call the casting function
             Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, FIREBALL_COST);
+            Mana.deductMana(playerId, cost);
         } else if (Cooldown.isOnCooldown(playerId, spellName)) {
             handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
         } else {
             handleManaMessage(player);
         }
+    }
+
+    interface SpellCastFunction {
+        void cast(Player player, UUID playerId);
+        SpellCastFunction fireballFunction = (player, location) -> Cast.castFireball(player);
+
+    }
+    void handleFireballCast(Player player, UUID playerId) {
+        handleSpellCast(player, playerId, "Fiery Wand", FIREBALL_COST, fireballFunction);
     }
 
     void handleTeleportCast(Player player, UUID playerId) {
-        String spellName = "Shrouded Step"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, TELEPORT_COST)) {
-            Teleport.castTeleportSpell(playerId, 0);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, TELEPORT_COST);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        handleSpellCast(player, playerId, "Shrouded Step", TELEPORT_COST, (p, id) -> Teleport.castTeleportSpell(id, 0));
     }
-
     void handleLightningCast(Player player, UUID playerId) {
-        String spellName = "Mjölnir"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, LIGHTNING_COST)) {
-            Cast.castLightningSpell(player);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, LIGHTNING_COST);
-            Cast.startLightningEffect(playerId);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName));
-        } else {
-            handleManaMessage(player);
-        }
+        handleSpellCast(player, playerId, "Mjölnir", LIGHTNING_COST, (p, id) -> {Cast.castLightningSpell(player); Cast.startLightningEffect(playerId);});
     }
-
     void handleGustCast(Player player, UUID playerId) {
-        String spellName = "Gust"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, GUST_COST)) {
-            Cast.castGustSpell(playerId);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, GUST_COST);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        handleSpellCast(player, playerId, "Gust", GUST_COST, (p, id) -> Cast.castGustSpell(playerId));
     }
-
     void handleFlyingSpellCast(Player player, UUID playerId) {
         String spellName = "Winged Shield"; // cooldownManager
         if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
@@ -693,106 +652,34 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             handleManaMessage(player);
         }
     }
-
     void handleMinecartCast(Player player, UUID playerId) {
-        String spellName = "The Great Escape"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, MINECART_COST)) {
-            Cast.launchMinecart(player);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, MINECART_COST);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        handleSpellCast(player, playerId, "The Great Escape", MINECART_COST, (p, id) -> SpellCastingManager.launchMinecart(player));
     }
-
     void handleBigManSlamCast(Player player, UUID playerId) {
-        String spellName = "Big Man Slam"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, GP_COST)) {
-            Cast.castGroundPoundSpell(playerId);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, GP_COST);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        handleSpellCast(player, playerId, "Big Man Slam", GP_COST, (p, id) -> Cast.castGroundPoundSpell(playerId));
     }
     void handleMapTeleportCast(Player player, UUID playerId) {
-        String spellName = "Voidwalker"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, VOIDWALKER_COST)) {
-            Cast.teleportPlayerUp(player);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, VOIDWALKER_COST);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        handleSpellCast(player, playerId, "Voidwalker", VOIDWALKER_COST, (p, id) -> Cast.teleportPlayerUp(player));
     }
-
-    public void handleMeteorCast(Player player, UUID playerId) {
-        String spellName = "Starfall Barrage"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, METEOR_COST)) {
+    void handleMeteorCast(Player player, UUID playerId) {
+        handleSpellCast(player, playerId, "Starfall Barrage", METEOR_COST, (p, id) -> {
             Location targetLocation = Cast.getTargetLocation(player);
             if (targetLocation != null) {
                 Cast.castMeteorShower(player, targetLocation);
-                Cooldown.setCooldown(playerId, spellName);
-                Mana.deductMana(playerId, METEOR_COST);
             }
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        });
     }
-
     void handleHealCloudCast(Player player, UUID playerId) {
-        String spellName = "Heal Cloud"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, HEALCLOUD_COST)) {
+        handleSpellCast(player, playerId, "Heal Cloud", HEALCLOUD_COST, (p, id) -> {
             Location targetLocation = Cast.getTargetLocation(player);
             if (targetLocation != null) {
                 targetLocation.setY(targetLocation.getY() + 1);
-                Cast.spawnHealingCircle(player, targetLocation); // spawn the healing circle
-                Cooldown.setCooldown(playerId, spellName); // set cooldown after casting
-                Mana.deductMana(playerId, HEALCLOUD_COST);
+                Cast.spawnHealingCircle(player, targetLocation);
             }
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        });
     }
-
-    private void handleRecallCast(Player player, UUID playerId) {
-        String spellName = "Recall";
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        // check if player can teleport
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, Recall_Cost)) {
+    void handleRecallCast(Player player, UUID playerId) {
+        handleSpellCast(player, playerId, "Recall", Recall_Cost, (p, id) -> {
             Queue<Location> locations = playerLocations.get(playerId);
             if (locations != null && locations.size() >= maxRecordedLocations) {
                 // get location from 5 seconds ago ( first recorded location in the queue )
@@ -804,15 +691,19 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                     applyDarknessEffect(player);
                     player.sendMessage("You have been teleported to your previous location.");
                 }
-            } else {
-                player.sendMessage("No location record found. Please wait a moment.");
             }
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, getSpellInfo(player.getItemInHand()), Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
+        });
     }
+    void handleVoidOrbCast(Player player, UUID playerId) {
+        handleSpellCast(player, playerId, "Void Orb", VoidOrb_Cost, (p, id) -> Cast.VoidOrbCast(player, playerId));
+    }
+    void handleManaBoltCast(Player player, UUID playerId) {
+        handleSpellCast(player, playerId, "Dragon Spit", MANABOLT_COST, (p, id) -> Cast.launchManaBolt(player));
+    }
+    void handleCodShooterCast(Player player, UUID playerId) {
+        handleSpellCast(player, playerId, "Cod Shooter", COD_COST, (p, id) -> Cast.shootFish(player));
+    }
+
     // show teleport effect at the original and new locations
     private void showTeleportEffect(Location from, Location to) {
         // show effect at original location
@@ -868,58 +759,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, recordInterval); // run every second
     }
-
-    void handleVoidOrbCast(Player player, UUID playerId) {
-        String spellName = "Void Orb"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, VoidOrb_Cost)) {
-            Cast.VoidOrbCast(player, playerId);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, VoidOrb_Cost);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
-    }
-
-    void handleManaBoltCast(Player player, UUID playerId) {
-        String spellName = "Dragon Spit"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, MANABOLT_COST)) {
-            Cast.launchManaBolt(player);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, MANABOLT_COST);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
-    }
-
-    void handleCodShooterCast(Player player, UUID playerId) {
-        String spellName = "Cod Shooter"; // cooldownManager
-        if (Cast.playerTeleportationState.getOrDefault(playerId, false)) {
-            sendTeleportWarning(player);
-            return;
-        }
-        if (!Cooldown.isOnCooldown(playerId, spellName) && Mana.hasEnoughMana(playerId, COD_COST)) {
-            Cast.shootFish(player);
-            Cooldown.setCooldown(playerId, spellName);
-            Mana.deductMana(playerId, COD_COST);
-        } else if (Cooldown.isOnCooldown(playerId, spellName)) {
-            handleCooldownMessage(player, spellName, Cooldown.getRemainingCooldown(playerId, spellName) / 1000);
-        } else {
-            handleManaMessage(player);
-        }
-    }
-
 
 //    void handleCloneCast(Player player, UUID playerId) {
 //        if (!Cooldown.isOnCloneCooldown(playerId) && Mana.hasEnoughMana(playerId, CLONE_COST)) {
