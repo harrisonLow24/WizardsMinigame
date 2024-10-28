@@ -6,25 +6,25 @@ description: Wizards Minigame
 author: hareesun
 commands:
   toggleinfinitemana:
-    description: toggle infinite mana
+    description: Toggle infinite mana
     aliases: mana
     permission: op
     permission-message: You do not have permission!
     usage: /togglemana
   togglecooldowns:
-    description: toggle cooldowns
+    description: Toggle cooldowns
     aliases: cooldowns
     permission: op
     permission-message: You do not have permission!
     usage: /togglecooldowns
   checkmana:
-    description: check mana
+    description: Check mana
     aliases: chmana
     permission: op
     permission-message: You do not have permission!
     usage: /checkmana
   unlockspells:
-    description: check mana
+    description: Raise level of all spells by 1
     aliases: chmana
     permission: op
     permission-message: You do not have permission!
@@ -37,24 +37,24 @@ commands:
     aliases: [t]
   fillChests:
     description: Fills chests in a specified area with spells and armor.
-    usage: /fillChests <x1> <y1> <z1> <x2> <y2> <z2>
+    usage: /fillChests
   map1:
-    description: Fills chests in a specified area with spells and armor.
-    usage: /fillChests <x1> <y1> <z1> <x2> <y2> <z2>
+    description: Saves map1 location.
+    usage: /map1
   map2:
-    description: Fills chests in a specified area with spells and armor.
-    usage: /fillChests <x1> <y1> <z1> <x2> <y2> <z2>
+    description: Saves map2 location.
+    usage: /map2
   wizards:
-    description: Fills chests in a specified area with spells and armor.
+    description: Manage minigame.
     usage: /wizards join/leave/start/stop
   setspawn:
-    description: Fills chests in a specified area with spells and armor.
+    description: Sets spawnpoints for Wizards minigame.
     usage: /setspawn
   mapsave:
-    description: Fills chests in a specified area with spells and armor.
+    description: Saves all blocks in the area designated by /map1 and /map2.
     usage: /setspawn
   mapregen:
-    description: Fills chests in a specified area with spells and armor.
+    description: Regenerates all blocks within the area designated by /map1 and /map2.
     usage: /setspawn
 
 
