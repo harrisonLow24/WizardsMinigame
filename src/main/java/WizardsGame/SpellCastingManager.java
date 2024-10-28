@@ -266,7 +266,6 @@ public class SpellCastingManager implements Listener {
                 }
             }
         }, WizardsPlugin.getInstance());
-        return;
     }
 
 
