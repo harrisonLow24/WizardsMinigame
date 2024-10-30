@@ -258,7 +258,7 @@ public class SpellCastingManager implements Listener {
                 if (event.getEntity().equals(fireball)) {
                     // explosion effect at landing location if fireball misses
                     Location hitLocation = fireball.getLocation();
-                    hitLocation.getWorld().createExplosion(hitLocation, 0, false, false); // Visual explosion, no damage
+                    hitLocation.getWorld().createExplosion(hitLocation, 1, true, true); // Visual explosion, no damage
                     // sound at missed location
                     hitLocation.getWorld().playSound(hitLocation, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
 

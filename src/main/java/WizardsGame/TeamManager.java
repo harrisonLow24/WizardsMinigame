@@ -12,8 +12,8 @@ public class TeamManager {
     static final Map<String, ChatColor> teamColors = new HashMap<>(); // store team colors
     private final Random random = new Random(); // random number
     private final Scoreboard scoreboard; // scoreboard for team prefixes
-    private final Scoreboard sidebarScoreboard; // scoreboard for sidebar
-    private final Objective sidebarObjective; // objective for sidebar
+    final Scoreboard sidebarScoreboard; // scoreboard for sidebar
+    final Objective sidebarObjective; // objective for sidebar
 
     public TeamManager() {
         // predefined colors that can be used for teams
@@ -73,7 +73,6 @@ public class TeamManager {
         // set player's display name, tab list name, and add to scoreboard team
         setPlayerTeamPrefix(player, teamName);
         player.setScoreboard(sidebarScoreboard);
-
         return true;
     }
 
@@ -217,70 +216,81 @@ public class TeamManager {
         teamColors.clear();
     }
     void updateSidebar() {
+        sidebarObjective.getScore(" ").setScore(15);
+        boolean isSoloGame = (teams.isEmpty());
         for (String entry : sidebarScoreboard.getEntries()) {
             sidebarScoreboard.resetScores(entry);
         }
         // display title with a line underneath
         String title = ChatColor.GOLD + "" + ChatColor.BOLD + "Wizards";
-        sidebarObjective.getScore(title).setScore(15); // title
+        sidebarObjective.getScore(title).setScore(14); // title
 
         // add a line under the title
         String line = ChatColor.GRAY + "--------------------"; // line under the title
-        sidebarObjective.getScore(line).setScore(14);
+        sidebarObjective.getScore(line).setScore(13);
 
-        String placeholderText = ChatColor.YELLOW + "" + ChatColor.BOLD + "Teams left";
-        sidebarObjective.getScore(placeholderText).setScore(13);
+        String placeholderText = ChatColor.YELLOW + "" + ChatColor.BOLD + (isSoloGame ? "Wizards alive" : "Teams left");
+        sidebarObjective.getScore(placeholderText).setScore(12);
 
-        int teamsLeft = 0;
-        for (Set<UUID> members : teams.values()) {
-            for (UUID memberId : members) {
-                Player player = Bukkit.getPlayer(memberId);
-                if (player != null && player.isOnline() && !player.isDead()) {
-                    teamsLeft++;
-                    break; // break after finding one alive player in the team
+        if (!isSoloGame) {
+            int teamsLeft = 0;
+            for (Set<UUID> members : teams.values()) {
+                for (UUID memberId : members) {
+                    Player player = Bukkit.getPlayer(memberId);
+                    if (player != null && player.isOnline() && !player.isDead()) {
+                        teamsLeft++;
+                        break; // break after finding one alive player in the team
+                    }
                 }
             }
+            String teamsLeftText = ChatColor.WHITE + "" + teamsLeft;
+            sidebarObjective.getScore(teamsLeftText).setScore(11);
+        } else {
+            int wizardsAlive = 0;
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                Player playerID = Bukkit.getPlayer(player.getUniqueId());
+                if (playerID != null && !playerID.isDead()) {
+                    wizardsAlive++;
+                }
+            }
+            String wizardsAliveText = ChatColor.WHITE + "" + wizardsAlive;
+            sidebarObjective.getScore(wizardsAliveText).setScore(11);
         }
+        String line11 =  ("");
+        sidebarObjective.getScore(line11).setScore(10);
+        int score = 9;
+        if (!isSoloGame) {
+            for (Map.Entry<String, Set<UUID>> entry : teams.entrySet()) {
+                String teamName = entry.getKey();
+                Set<UUID> members = entry.getValue();
+                int aliveCount = 0;
 
-        // number of teams left
-//        int teamsLeft = teams.size();
-        String teamsLeftText = ChatColor.WHITE + "" + teamsLeft;
-        sidebarObjective.getScore(teamsLeftText).setScore(12);
-
-        String emptyLine1 = "";
-        sidebarObjective.getScore(emptyLine1).setScore(11);
-
-        String line5 = ChatColor.YELLOW + "" + ChatColor.BOLD + "Teams";
-        sidebarObjective.getScore(line5).setScore(10);
-
-//        String emptyLine2 = " ";
-//        sidebarObjective.getScore(emptyLine2).setScore(9);
-
-
-        // teams
-        int score = 8;
-        for (Map.Entry<String, Set<UUID>> entry : teams.entrySet()) {
-            String teamName = entry.getKey();
-            Set<UUID> members = entry.getValue();
-            int aliveCount = 0;
-
-            // count alive players in the team
-            for (UUID memberId : members) {
-                Player player = Bukkit.getPlayer(memberId);
-                if (player != null && player.isOnline() && WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
-                    aliveCount++;
+                // count alive players in teams
+                for (UUID memberId : members) {
+                    Player player = Bukkit.getPlayer(memberId);
+                    if (player != null && player.isOnline() && WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
+                        aliveCount++;
+                    }
+                }
+                if (aliveCount > 0) {
+                    String displayName = teamColors.get(teamName) + teamName + ": " + ChatColor.WHITE + aliveCount;
+                    sidebarObjective.getScore(displayName).setScore(score);
+                    score--; // decrement score for the next team
                 }
             }
-            if (aliveCount > 0) {
-                // format the team display line
-                String displayName = teamColors.get(teamName) + teamName + ": " + ChatColor.WHITE + aliveCount;
-                sidebarObjective.getScore(displayName).setScore(score);
-                score--; // decrement score for the next team
+        } else {
+            // solo mode: display all players
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.isDead()) {
+                    String displayName = ChatColor.GREEN + player.getName(); // or any other color
+                    sidebarObjective.getScore(displayName).setScore(score);
+                    score--; // decrement score for the next player
+                }
             }
         }
     }
 
-    private void resetPlayerScoreboard(Player player) {
+    void resetPlayerScoreboard(Player player) {
         player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
     }
 }

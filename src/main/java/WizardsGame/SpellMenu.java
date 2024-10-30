@@ -43,11 +43,16 @@ public class SpellMenu {
         Inventory menu = Bukkit.createInventory(null, 54, "Select a Spell");
 
         // slots for each section
-        int[] combatSlots = {18, 19, 20, 27, 28, 29, 38, 39, 40};
-        int[] movementSlots = {24, 25, 26, 33, 34, 35, 42, 43, 44};
-        int[] miscSlots = {22, 31, 40};
+        int[] combatSlots = {18, 19, 20, 27, 28, 29}; // 38, 39, 40
+        int[] movementSlots = {24, 25, 26, 33, 34, 35}; // 42, 43, 44
+        int[] miscSlots = {22, 31};
 
-        int[] dividerSlots = {3, 12, 21, 30, 39, 48, 5, 14, 23, 32, 41, 50};
+//        int[] dividerSlots = {3, 12, 21, 30, 39, 48, 5, 14, 23, 32, 41, 50};
+
+        int[] dividerSlots = new int[54];
+        for (int i = 0; i < 54; i++) {
+            dividerSlots[i] = i;
+        }
 
         // fill divider slots
         ItemStack divider = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);

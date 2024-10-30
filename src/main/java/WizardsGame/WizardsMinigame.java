@@ -68,6 +68,9 @@ public class WizardsMinigame {
                         Player player = Bukkit.getPlayer(playerId);
                         if (player != null) {
                             sendTitle(player, "Game Started!", "Good luck!");
+                            // set the player's scoreboard
+                            player.setScoreboard(Team.sidebarScoreboard);
+                            Team.updateSidebar();
                         }
                         teleportToRandomSpawn(player);
                     }
@@ -86,76 +89,107 @@ public class WizardsMinigame {
         }
     }
 
-    public boolean hasGameEnded() {
+    public void hasGameEnded() {
         int aliveTeams = 0;
-
-        for (String teamName : teams.keySet()) {
-            Set<UUID> members = teams.get(teamName);
-            boolean hasAlivePlayer = false;
-
-            // check if any player in the team is alive
-            for (UUID memberId : members) {
-                if (WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
-                    hasAlivePlayer = true;
-                    break; // at least one player is alive
-                }
-            }
-
-            // increment count if this team has alive players
-            if (hasAlivePlayer) {
-                aliveTeams++;
-            }
-
-            // more than one team still has alive players, game continues
-            if (aliveTeams > 1) {
-                return false;
-            }
-        }
-        endMinigame();
-        return aliveTeams <= 1; // game ends if zero or one team is alive
-    }
-
-    //temp
-    public String getWinningTeam() {
-        if (teams.size() > 1) { // check if there are multiple teams
+        boolean soloGame = (teams.isEmpty());
+        if (!soloGame) {
             for (String teamName : teams.keySet()) {
                 Set<UUID> members = teams.get(teamName);
+                boolean hasAlivePlayer = false;
 
-                // team mode
+                // check if any player in the team is alive
                 for (UUID memberId : members) {
                     if (WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
-                        return teamName; // return team name if at least one member is alive
+                        hasAlivePlayer = true;
+                        break; // at least one player is alive
                     }
                 }
+
+                // increment count if this team has alive players
+                if (hasAlivePlayer) {
+                    aliveTeams++;
+                }
             }
-        } else { // free-for-all  mode
-            for (UUID playerId : playersInMinigame) {
+//                // more than one team still has alive players, game continues
+//                if (aliveTeams > 1) {
+//                    return false;
+//                }
+            if (aliveTeams == 1) {
+                String winningTeamName = "";
+                for (String teamName : teams.keySet()) {
+                    Set<UUID> members = teams.get(teamName);
+                    for (UUID memberId : members) {
+                        if (WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
+                            winningTeamName = teamName; // set winning team name
+                            break;
+                        }
+                    }
+                    if (!winningTeamName.isEmpty()) {
+                        break; // found winning team
+                    }
+                }
+                announceWinningTeam(winningTeamName); // announce winning team
+                endGame();
+            }
+        } else { // solo game
+            int alivePlayers = 0; // Count of alive players
+            for (UUID playerId : WizardsPlugin.playerAliveStatus.keySet()) {
                 if (WizardsPlugin.playerAliveStatus.getOrDefault(playerId, true)) {
+                    alivePlayers++; // count alive players
+                }
+            }
+            if (alivePlayers == 1) {
+                UUID winningPlayerId = null;
+                for (UUID playerId : WizardsPlugin.playerAliveStatus.keySet()) {
+                    if (WizardsPlugin.playerAliveStatus.getOrDefault(playerId, true)) {
+                        winningPlayerId = playerId; // set winning player ID
+                        break;
+                    }
+                }
+                announceWinningPlayer(Bukkit.getPlayer(winningPlayerId)); // announce winning player
+                endGame(); // end the game
+            }
+            if (alivePlayers == 0) {
+                Bukkit.broadcastMessage(ChatColor.GOLD + "It's a tie!");
+                for (UUID playerId : playersInMinigame) {
                     Player player = Bukkit.getPlayer(playerId);
                     if (player != null) {
-                        return player.getName(); // return the player’s name if they are the last alive
+                        sendTitle(player, "Tie!", ChatColor.GOLD + "" + ChatColor.BOLD +"Congratulations! No one is the chosen ones!");
                     }
                 }
+                endGame(); // end the game
             }
         }
-        return null; // no winning entity if all players/teams are eliminated
     }
 
-    public void endMinigame() {
-        String winningTeam = getWinningTeam();
-        if (winningTeam != null) {
-            ChatColor teamColor = teamColors.getOrDefault(winningTeam, ChatColor.GOLD);
-            String winningMessage = teamColor + "Team " + winningTeam + " has won the Wizards Minigame!";
-            // announce winning team to all players
-            Bukkit.broadcastMessage(winningMessage);
-            for (UUID playerId : playersInMinigame) {
-                Player player = Bukkit.getPlayer(playerId);
-                if (player != null) {
-                    sendTitle(player, winningTeam, ChatColor.GOLD + "" + ChatColor.BOLD +"Congratulations! You are the chosen one!");
-                }
+    private void announceWinningTeam(String winningTeamName) {
+        Bukkit.broadcastMessage(ChatColor.GOLD + "Team " + winningTeamName + " has won the game!");
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                sendTitle(player, winningTeamName, ChatColor.GOLD + "" + ChatColor.BOLD +"Congratulations! Your team are the chosen ones!");
             }
-        } else {
-            Bukkit.broadcastMessage(ChatColor.GRAY + "The Wizards Minigame ended in a draw!");
+        }
+    }
+    private void announceWinningPlayer(Player winningPlayer) {
+        String playerName = winningPlayer.getName();
+        Bukkit.broadcastMessage(ChatColor.GOLD + playerName + " has won the game!");
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                sendTitle(player, playerName, ChatColor.GOLD + "" + ChatColor.BOLD +"Congratulations! You are the chosen one!");
+            }
+        }
+        // can add extra rewards etc.
+    }
+
+    public void endGame() {
+        Bukkit.broadcastMessage(ChatColor.GREEN + "Game over!");
+        Team.clearTeams();
+        teams.clear();
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            Team.resetPlayerScoreboard(player);
         }
         resetGame(); // clear all players from minigame
     }
@@ -237,18 +271,18 @@ public class WizardsMinigame {
     private void initializeRarityWeights() {
         // higher number = more common
         spellRarityWeights.put(WizardsPlugin.SpellType.Basic_Wand, 100); // common
-        spellRarityWeights.put(WizardsPlugin.SpellType.Fiery_Wand, 30);   // uncommon
+        spellRarityWeights.put(WizardsPlugin.SpellType.Fiery_Wand, 50);   // uncommon
         spellRarityWeights.put(WizardsPlugin.SpellType.Shrouded_Step, 15); // rare
-        spellRarityWeights.put(WizardsPlugin.SpellType.Mjölnir, 25);
-        spellRarityWeights.put(WizardsPlugin.SpellType.Gust, 30);
-        spellRarityWeights.put(WizardsPlugin.SpellType.The_Great_Escape, 15);
-        spellRarityWeights.put(WizardsPlugin.SpellType.Big_Man_Slam, 30);
-        spellRarityWeights.put(WizardsPlugin.SpellType.Winged_Shield, 50);
-        spellRarityWeights.put(WizardsPlugin.SpellType.VoidWalker, 5); // legendary
+        spellRarityWeights.put(WizardsPlugin.SpellType.Mjölnir, 50);
+        spellRarityWeights.put(WizardsPlugin.SpellType.Gust, 50);
+        spellRarityWeights.put(WizardsPlugin.SpellType.The_Great_Escape, 10);
+        spellRarityWeights.put(WizardsPlugin.SpellType.Big_Man_Slam, 50);
+        spellRarityWeights.put(WizardsPlugin.SpellType.Winged_Shield, 0);
+        spellRarityWeights.put(WizardsPlugin.SpellType.VoidWalker, 10); // legendary
         spellRarityWeights.put(WizardsPlugin.SpellType.Starfall_Barrage, 25);
         spellRarityWeights.put(WizardsPlugin.SpellType.Heal_Cloud, 50);
-        spellRarityWeights.put(WizardsPlugin.SpellType.Recall, 5);
-        spellRarityWeights.put(WizardsPlugin.SpellType.Void_Orb, 15);
+        spellRarityWeights.put(WizardsPlugin.SpellType.Recall, 10);
+        spellRarityWeights.put(WizardsPlugin.SpellType.Void_Orb, 50);
         spellRarityWeights.put(WizardsPlugin.SpellType.Dragon_Spit, 50);
         spellRarityWeights.put(WizardsPlugin.SpellType.Cod_Shooter, 25);
     }
