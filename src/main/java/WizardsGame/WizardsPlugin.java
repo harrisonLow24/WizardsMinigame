@@ -24,24 +24,36 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
 import org.bukkit.util.Vector;
 
-import static WizardsGame.WizardsPlugin.SpellCastFunction.fireballFunction;
+
 
 
 public class WizardsPlugin extends JavaPlugin implements Listener {
     private static WizardsPlugin instance;
-    static SpellCastingManager Cast = new SpellCastingManager();
-    SpellMenu Menu = new SpellMenu(this);
-    CooldownManager Cooldown = new CooldownManager();
-    TeleportationManager Teleport = new TeleportationManager();
-    SquidFlight Squid = new SquidFlight();
-    ManaManager Mana = new ManaManager();
-    TeamManager Team = new TeamManager();
-    WizardsMinigame Mini = new WizardsMinigame(this);
-    CharmSpell Charm = new CharmSpell();
+    static SpellCastingManager Cast ;
+    SpellMenu Menu;
+    CooldownManager Cooldown;
+    TeleportationManager Teleport;
+    SquidFlight Squid;
+    ManaManager Mana;
+    TeamManager Team;
+    WizardsMinigame Mini;
+    CharmSpell Charm;
 
     @Override
     public void onEnable() {
         instance = this;
+        getLogger().info("WizardsPlugin has been enabled!");
+
+        // Initialize all managers here
+        Team = new TeamManager(); // Make sure TeamManager's constructor does not require parameters that may not be initialized yet.
+        Cast = new SpellCastingManager(); // Ensure it does not reference any uninitialized fields.
+        Menu = new SpellMenu(this);
+        Cooldown = new CooldownManager();
+        Teleport = new TeleportationManager();
+        Squid = new SquidFlight();
+        Mana = new ManaManager();
+        Mini = new WizardsMinigame(this);
+        Charm = new CharmSpell();
         getLogger().info("WizardsPlugin has been enabled!");
         registerEvents();
         registerCommands();
@@ -613,7 +625,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
 
     }
     void handleFireballCast(Player player, UUID playerId) {
-        handleSpellCast(player, playerId, "Fiery Wand", FIREBALL_COST, fireballFunction);
+        handleSpellCast(player, playerId, "Fiery Wand", FIREBALL_COST, SpellCastFunction.fireballFunction);
     }
 
     void handleTeleportCast(Player player, UUID playerId) {

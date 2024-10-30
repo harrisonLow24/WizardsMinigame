@@ -1,6 +1,6 @@
 name: WizardsPlugin
 api-version: 1.20
-version: 0.20
+version: 1.01
 main: WizardsGame.WizardsPlugin
 description: Wizards Minigame
 author: hareesun

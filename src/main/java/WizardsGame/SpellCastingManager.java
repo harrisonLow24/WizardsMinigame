@@ -211,7 +211,7 @@ public class SpellCastingManager implements Listener {
     }
 
     // fireball cast
-    public void castFireball(Player caster) {
+    public WizardsPlugin.SpellCastFunction castFireball(Player caster) {
         Fireball fireball = caster.launchProjectile(Fireball.class);
         fireball.setYield(0); // explosion power to 0
         fireball.setIsIncendiary(false); // avoid setting fire
@@ -266,6 +266,7 @@ public class SpellCastingManager implements Listener {
                 }
             }
         }, WizardsPlugin.getInstance());
+        return null;
     }
 
 

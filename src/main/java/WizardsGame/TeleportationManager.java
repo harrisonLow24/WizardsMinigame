@@ -72,7 +72,7 @@ public class TeleportationManager implements Listener {
         }
 
         double teleportDistance = 10.0; // teleport distance in blocks
-        Vector direction = player.getLocation().getDirection().multiply(teleportDistance);
+        Vector direction = player.getLocation().getDirection().normalize().multiply(teleportDistance);
         Location destination = player.getLocation().add(direction);
         Location safeLocation = findSafeLocation(player.getLocation(), destination);
         playTeleportSound(safeLocation);
@@ -83,7 +83,6 @@ public class TeleportationManager implements Listener {
         }
 
         player.teleport(safeLocation);
-//        player.sendMessage(ChatColor.BLUE.toString() + ChatColor.BOLD + "You cast the Teleportation spell!");
         isTeleporting = false; // reset teleporting status
     }
 
@@ -98,19 +97,19 @@ public class TeleportationManager implements Listener {
     }
 
     private Location findSafeLocation(Location startLocation, Location destination) {
-        // nearest air block around destination
-        for (int y = 0; y <= 2; y++) {
-            for (int x = -1; x <= 1; x++) {
-                for (int z = -1; z <= 1; z++) {
-                    Location checkLocation = destination.clone().add(x, y, z);
-                    if (checkLocation.getBlock().getType().isAir()) {
-                        return checkLocation;
-                    }
-                }
+        Vector direction = destination.toVector().subtract(startLocation.toVector()).normalize();
+
+        // check for collision
+        double distanceToCheck = destination.distance(startLocation);
+        for (double i = 0; i <= distanceToCheck; i += 0.5) {
+            Location checkLocation = startLocation.clone().add(direction.clone().multiply(i));
+            if (!checkLocation.getBlock().getType().isAir() && checkLocation.getBlock().getType().isSolid()) {
+                // stop before the wall, return the last air block
+                return checkLocation.subtract(direction.clone().multiply(0.5));
             }
         }
-
-        return startLocation; // if no safe location is found, return original starting location
+        // if no wall is hit, return original destination
+        return destination;
     }
 
     public void castTeleportSpell(UUID playerId, double castTimeSeconds) {
@@ -150,6 +149,20 @@ public class TeleportationManager implements Listener {
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 20L); // run every second
 
+    }
+    private boolean isTeleportValid(Location from, Location to) {
+        // check if the path from intersects with any solid blocks
+        Vector direction = to.toVector().subtract(from.toVector()).normalize();
+        double distance = from.distance(to);
+        double step = 0.1; // small steps to check for collisions
+
+        for (double i = 0; i < distance; i += step) {
+            Location checkLocation = from.clone().add(direction.clone().multiply(i));
+            if (!checkLocation.getBlock().getType().isAir() && !checkLocation.getBlock().getType().isTransparent()) {
+                return false; // collision with a solid block
+            }
+        }
+        return true; // no collisions
     }
 
     private void spawnDarkParticles(Location location) {

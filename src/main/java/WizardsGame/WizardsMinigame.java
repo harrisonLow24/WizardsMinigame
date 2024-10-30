@@ -72,7 +72,7 @@ public class WizardsMinigame {
                             player.setScoreboard(Team.sidebarScoreboard);
                             Team.updateSidebar();
                         }
-                        teleportToRandomSpawn(player);
+                        teleportToRandomSpawn();
                     }
                     cancel();
                 }
@@ -80,13 +80,50 @@ public class WizardsMinigame {
         }.runTaskTimer(plugin, 0, 20);
     }
 
-    private void teleportToRandomSpawn(Player player) {
-        if (!spawnPoints.isEmpty()) {
-            List<Location> spawnPointList = new ArrayList<>(spawnPoints);
-            Location randomSpawn = spawnPointList.get(new Random().nextInt(spawnPointList.size()));
-            player.teleport(randomSpawn); // teleport to a random spawn point
-            player.sendMessage(ChatColor.GREEN + "You've been teleported to a spawn point!");
+    private void teleportToRandomSpawn() {
+        Map<String, List<UUID>> teamsMap = new HashMap<>();
+
+        // group players by team
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                String playerTeam = getPlayerTeam(playerId); // get player's team name
+                teamsMap.computeIfAbsent(playerTeam, k -> new ArrayList<>()).add(playerId);
+            }
         }
+
+        // shuffle spawn points
+        List<Location> spawnPointList = new ArrayList<>(spawnPoints);
+        Collections.shuffle(spawnPointList);
+
+        // assign spawn points to teams
+        int index = 0;
+        for (List<UUID> teamPlayers : teamsMap.values()) {
+            if (index < spawnPointList.size()) {
+                Location spawnLocation = spawnPointList.get(index);
+                // teleport all players in the team to the same spawn point
+                for (UUID playerId : teamPlayers) {
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player != null) {
+                        player.teleport(spawnLocation);
+                        player.sendMessage(ChatColor.GREEN + "You've been teleported to a spawn point!");
+                    }
+                }
+                index++; // move to the next spawn point for the next team
+            } else {
+                // Handle the case where there are more teams than spawn points
+                Bukkit.broadcastMessage(ChatColor.RED + "Not enough spawn points for all teams!");
+                break; // stop assigning spawn points if none are left
+            }
+        }
+    }
+    private String getPlayerTeam(UUID playerId) {
+        for (Map.Entry<String, Set<UUID>> entry : teams.entrySet()) {
+            if (entry.getValue().contains(playerId)) {
+                return entry.getKey(); // return team name if the player is part of the team
+            }
+        }
+        return ""; // return an empty string if the player is not part of any team
     }
 
     public void hasGameEnded() {
