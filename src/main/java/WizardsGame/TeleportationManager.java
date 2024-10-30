@@ -150,20 +150,6 @@ public class TeleportationManager implements Listener {
         }.runTaskTimer(WizardsPlugin.getInstance(), 0L, 20L); // run every second
 
     }
-    private boolean isTeleportValid(Location from, Location to) {
-        // check if the path from intersects with any solid blocks
-        Vector direction = to.toVector().subtract(from.toVector()).normalize();
-        double distance = from.distance(to);
-        double step = 0.1; // small steps to check for collisions
-
-        for (double i = 0; i < distance; i += step) {
-            Location checkLocation = from.clone().add(direction.clone().multiply(i));
-            if (!checkLocation.getBlock().getType().isAir() && !checkLocation.getBlock().getType().isTransparent()) {
-                return false; // collision with a solid block
-            }
-        }
-        return true; // no collisions
-    }
 
     private void spawnDarkParticles(Location location) {
         location.getWorld().spawnParticle(Particle.SMOKE_NORMAL, location, 50, 0.5, 0.5, 0.5, 0.1);

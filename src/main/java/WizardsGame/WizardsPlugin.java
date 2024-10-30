@@ -64,6 +64,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         this.getCommand("wizteam").setTabCompleter(new WizTeamTabCompleter(Team));
         this.getCommand("wizards").setTabCompleter(new WizTeamTabCompleter(Team));
         getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
+        getServer().getPluginManager().registerEvents(new WizardsMinigame(getInstance()), this);
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -723,7 +724,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         createSphereEffect(to, Particle.SONIC_BOOM, 0.01, 10); // sphere effect going outwards
 
         // play sound effect at original location
-        from.getWorld().playSound(from, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        from.getWorld().playSound(from, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
     }
 
     private void applyDarknessEffect(Player player) {
