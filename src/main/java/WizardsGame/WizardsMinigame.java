@@ -5,11 +5,15 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -19,10 +23,9 @@ import org.bukkit.util.Vector;
 
 import java.util.*;
 
-import static WizardsGame.TeamManager.teamColors;
 import static WizardsGame.TeamManager.teams;
 
-public class WizardsMinigame {
+public class WizardsMinigame implements Listener{
     private final WizardsPlugin plugin;
     SpellMenu Menu = new SpellMenu(WizardsPlugin.getInstance());
     TeamManager Team = new TeamManager();
@@ -39,12 +42,20 @@ public class WizardsMinigame {
 
     final Set<Location> spawnPoints = new HashSet<>(); // store spawn points
     final Set<UUID> playersInMinigame = new HashSet<>(); // store players in the minigame
+    private boolean isMinigameActive = false; // track if the minigame is active
 
+    @EventHandler
+    public void onBlockDrop(BlockDropItemEvent event) {
+        if (isMinigameActive) { // check if the minigame is active
+            event.setCancelled(true); // cancel the block drop event
+        }
+    }
     private void sendTitle(Player player, String title, String subtitle) {
         // show title
         player.sendTitle(ChatColor.YELLOW + title, ChatColor.GREEN + subtitle, 10, 70, 20);
     }
     public void startMinigame() {
+        isMinigameActive = true;
         countdownStart();
     }
 
@@ -72,7 +83,7 @@ public class WizardsMinigame {
                             player.setScoreboard(Team.sidebarScoreboard);
                             Team.updateSidebar();
                         }
-                        teleportToRandomSpawn(player);
+                        teleportToRandomSpawn();
                     }
                     cancel();
                 }
@@ -80,13 +91,50 @@ public class WizardsMinigame {
         }.runTaskTimer(plugin, 0, 20);
     }
 
-    private void teleportToRandomSpawn(Player player) {
-        if (!spawnPoints.isEmpty()) {
-            List<Location> spawnPointList = new ArrayList<>(spawnPoints);
-            Location randomSpawn = spawnPointList.get(new Random().nextInt(spawnPointList.size()));
-            player.teleport(randomSpawn); // teleport to a random spawn point
-            player.sendMessage(ChatColor.GREEN + "You've been teleported to a spawn point!");
+    private void teleportToRandomSpawn() {
+        Map<String, List<UUID>> teamsMap = new HashMap<>();
+
+        // group players by team
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                String playerTeam = getPlayerTeam(playerId); // get player's team name
+                teamsMap.computeIfAbsent(playerTeam, k -> new ArrayList<>()).add(playerId);
+            }
         }
+
+        // shuffle spawn points
+        List<Location> spawnPointList = new ArrayList<>(spawnPoints);
+        Collections.shuffle(spawnPointList);
+
+        // assign spawn points to teams
+        int index = 0;
+        for (List<UUID> teamPlayers : teamsMap.values()) {
+            if (index < spawnPointList.size()) {
+                Location spawnLocation = spawnPointList.get(index);
+                // teleport all players in the team to the same spawn point
+                for (UUID playerId : teamPlayers) {
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player != null) {
+                        player.teleport(spawnLocation);
+                        player.sendMessage(ChatColor.GREEN + "You've been teleported to a spawn point!");
+                    }
+                }
+                index++; // move to the next spawn point for the next team
+            } else {
+                // Handle the case where there are more teams than spawn points
+                Bukkit.broadcastMessage(ChatColor.RED + "Not enough spawn points for all teams!");
+                break; // stop assigning spawn points if none are left
+            }
+        }
+    }
+    private String getPlayerTeam(UUID playerId) {
+        for (Map.Entry<String, Set<UUID>> entry : teams.entrySet()) {
+            if (entry.getValue().contains(playerId)) {
+                return entry.getKey(); // return team name if the player is part of the team
+            }
+        }
+        return ""; // return an empty string if the player is not part of any team
     }
 
     public void hasGameEnded() {
@@ -185,6 +233,7 @@ public class WizardsMinigame {
 
     public void endGame() {
         Bukkit.broadcastMessage(ChatColor.GREEN + "Game over!");
+        isMinigameActive = false;
         Team.clearTeams();
         teams.clear();
         for (UUID playerId : playersInMinigame) {
@@ -217,10 +266,10 @@ public class WizardsMinigame {
     // -------------------------------------------------MAP-------------------------------------------------------------
     // -----------------------------------------------------------------------------------------------------------------
 
-    private final Map<UUID, Map<BlockVector, Material>> savedBlocksMap = new HashMap<>();
+    private final Map<UUID, Map<BlockVector, BlockState>> savedBlocksMap = new HashMap<>();
     void saveBlocks(Vector loc1, Vector loc2, Player player) {
         UUID playerId = player.getUniqueId();
-        Map<BlockVector, Material> blockMap = new HashMap<>();
+        Map<BlockVector, BlockState> blockMap = new HashMap<>();
 
         // bounds
         int minX = Math.min(loc1.getBlockX(), loc2.getBlockX());
@@ -234,7 +283,7 @@ public class WizardsMinigame {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
                     Block block = player.getWorld().getBlockAt(x, y, z);
-                    blockMap.put(new BlockVector(x, y, z), block.getType()); // save block type
+                    blockMap.put(new BlockVector(x, y, z), block.getState()); // save block type
                 }
             }
         }
@@ -243,18 +292,21 @@ public class WizardsMinigame {
 
     void regenerateBlocks(Vector loc1, Vector loc2, Player player) {
         UUID playerId = player.getUniqueId();
-        Map<BlockVector, Material> blockMap = savedBlocksMap.get(playerId);
+        Map<BlockVector, BlockState> blockMap = savedBlocksMap.get(playerId);
 
         if (blockMap == null) {
             player.sendMessage(ChatColor.RED + "No blocks have been saved!");
             return;
         }
 
-        for (Map.Entry<BlockVector, Material> entry : blockMap.entrySet()) {
+        for (Map.Entry<BlockVector, BlockState> entry : blockMap.entrySet()) {
             BlockVector vector = entry.getKey();
-            Material material = entry.getValue();
+            BlockState savedState = entry.getValue();
             Block block = player.getWorld().getBlockAt(vector.getBlockX(), vector.getBlockY(), vector.getBlockZ());
-            block.setType(material); // replace block with saved type
+            block.setType(savedState.getType(), false);
+            BlockState newState = block.getState();
+            newState.setBlockData(savedState.getBlockData());
+            newState.update(true, false);
         }
     }
 

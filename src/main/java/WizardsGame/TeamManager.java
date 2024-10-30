@@ -10,7 +10,6 @@ import java.util.*;
 public class TeamManager {
     static final Map<String, Set<UUID>> teams = new HashMap<>(); // store teams and their members
     static final Map<String, ChatColor> teamColors = new HashMap<>(); // store team colors
-    private final Random random = new Random(); // random number
     private final Scoreboard scoreboard; // scoreboard for team prefixes
     final Scoreboard sidebarScoreboard; // scoreboard for sidebar
     final Objective sidebarObjective; // objective for sidebar
@@ -32,10 +31,22 @@ public class TeamManager {
     }
 
     private ChatColor getRandomColor() {
+        // check if teamColors map is empty
+        if (teamColors.isEmpty()) {
+            // generate a random color if no team colors are available
+            return generateRandomColor(); // generate a random ChatColor
+        }
+
+        Random random = new Random();
         ChatColor[] colors = teamColors.values().toArray(new ChatColor[0]);
-        return colors[random.nextInt(colors.length)]; // random color
+        return colors[random.nextInt(colors.length)]; // return a random color from available team colors
     }
 
+    private ChatColor generateRandomColor() {
+        // generate a random color
+        ChatColor[] possibleColors = ChatColor.values();
+        return possibleColors[new Random().nextInt(possibleColors.length)];
+    }
     // create a new team
     public boolean createTeam(String teamName) {
         if (teams.containsKey(teamName)) {
