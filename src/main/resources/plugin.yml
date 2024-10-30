@@ -31,31 +31,40 @@ commands:
     usage: /checkmana
   wizteam:
     description: Manage teams within the game.
-    usage: /wizteam <create|delete|join|leave|add|remove>
     permission: wizardsplugin.team
     permission-message: You don't have permission to use this command.
-    aliases: [t]
+    usage: /wizteam <create|delete|join|leave|add|remove>
   fillChests:
     description: Fills chests in a specified area with spells and armor.
     usage: /fillChests
   map1:
     description: Saves map1 location.
+    permission: op
+    permission-message: You do not have permission!
     usage: /map1
   map2:
     description: Saves map2 location.
+    permission: op
+    permission-message: You do not have permission!
     usage: /map2
   wizards:
     description: Manage minigame.
     usage: /wizards join/leave/start/stop
   setspawn:
     description: Sets spawnpoints for Wizards minigame.
+    permission: op
+    permission-message: You do not have permission!
     usage: /setspawn
   mapsave:
     description: Saves all blocks in the area designated by /map1 and /map2.
-    usage: /setspawn
+    permission: op
+    permission-message: You do not have permission!
+    usage: /mapsave
   mapregen:
     description: Regenerates all blocks within the area designated by /map1 and /map2.
-    usage: /setspawn
+    permission: op
+    permission-message: You do not have permission!
+    usage: /mapregen
 
 
 
