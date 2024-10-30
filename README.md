@@ -2,7 +2,6 @@
 Tested on Minecraft 1.20.4 Spigot
 
 Right-click a Stick to open the spell menu.
-/unlockspells to unlock all spells
 
 List of Spells:
 - Fireball
