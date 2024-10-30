@@ -55,6 +55,18 @@ public class WizardsMinigame implements Listener{
         player.sendTitle(ChatColor.YELLOW + title, ChatColor.GREEN + subtitle, 10, 70, 20);
     }
     public void startMinigame() {
+
+        for (Set<UUID> members : teams.values()) {
+            if (!members.isEmpty()) {
+                Team.isSoloGame = false; // if any team has members, it's not a solo game
+                break; // no need to check further
+            }
+        }
+        if (Team.isSoloGame) {
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "All teams are empty, starting a solo game!");
+        } else {
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Teams are set, starting a team game!");
+        }
         isMinigameActive = true;
         countdownStart();
     }

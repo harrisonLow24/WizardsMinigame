@@ -13,6 +13,7 @@ public class TeamManager {
     private final Scoreboard scoreboard; // scoreboard for team prefixes
     final Scoreboard sidebarScoreboard; // scoreboard for sidebar
     final Objective sidebarObjective; // objective for sidebar
+    boolean isSoloGame = (teams.isEmpty());
 
     public TeamManager() {
         // predefined colors that can be used for teams
@@ -228,7 +229,6 @@ public class TeamManager {
     }
     void updateSidebar() {
         sidebarObjective.getScore(" ").setScore(15);
-        boolean isSoloGame = (teams.isEmpty());
         for (String entry : sidebarScoreboard.getEntries()) {
             sidebarScoreboard.resetScores(entry);
         }
