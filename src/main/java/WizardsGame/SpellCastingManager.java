@@ -724,8 +724,12 @@ public class SpellCastingManager implements Listener {
         for (int i = -PLATFORM_SIZE / 2; i <= PLATFORM_SIZE / 2; i++) {
             for (int j = -PLATFORM_SIZE / 2; j <= PLATFORM_SIZE / 2; j++) {
                 Block block = player.getWorld().getBlockAt(x + i, y, z + j);
-                block.setType(Material.BARRIER); // set block to barrier
-                barrierBlocks.add(block); // store block in the list
+
+                // check if the block is air before setting it to barrier
+                if (block.getType() == Material.AIR) {
+                    block.setType(Material.BARRIER); // set block to barrier
+                    barrierBlocks.add(block); // store block in the list
+                }
             }
         }
         barrierBlocksMap.put(player.getUniqueId(), barrierBlocks); // store list in the map
@@ -895,7 +899,8 @@ public class SpellCastingManager implements Listener {
         Vector playerDirection = player.getLocation().getDirection();
 
         // check blocks below player's current position for teleportation
-        for (int y = playerY - 1; y >= 0; y--) {
+//        for (int y = playerY - 1; y >= 0; y--) {
+        for (int y = Math.max(0, playerY - 62); y <= playerY; y++) {
             Block block = player.getWorld().getBlockAt(player.getLocation().getBlockX(), y, player.getLocation().getBlockZ());
 
             // check if block is not air and not barrier

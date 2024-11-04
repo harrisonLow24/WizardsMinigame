@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
@@ -125,6 +126,17 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             Player player = (Player) event.getDamager();
             if (!(event.getDamager() instanceof ArmorStand) || !isSpellProjectile(player)) {
 //                 handleSpellCast(player, playerId, wand);
+            }
+        }
+    }
+    private static final double FIXED_DAMAGE = 1.0;
+    @EventHandler
+    public void onPlayerPunch(EntityDamageByEntityEvent event) {
+        // check if both entities are players
+        if (event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
+            if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK) {
+                event.setDamage(FIXED_DAMAGE);
+//                attacker.sendMessage(ChatColor.GREEN + "You punched " + target.getName() + " for " + FIXED_DAMAGE + " damage!");
             }
         }
     }
