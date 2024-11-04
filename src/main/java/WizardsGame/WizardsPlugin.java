@@ -39,6 +39,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     WizardsMinigame Mini;
     CharmSpell Charm;
 
+    // debugging true: all entity deaths shown; all player locations monitored in console.
+    boolean debugging = false;
     @Override
     public void onEnable() {
         instance = this;
@@ -189,8 +191,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
 
-//        if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
-        
+        if (!debugging){
+            if (!(event.getEntity() instanceof Player)) return; // toggle only players or all entities
+        }
         // check if the entity was killed by a spell
         SpellInfo damagerInfo = lastDamager.get(event.getEntity().getUniqueId());
         String deadTeamPrefix = "";
@@ -767,8 +770,10 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
                 }
                 locations.offer(player.getLocation()); // add current location to the queue
 
-                //debug
-                Bukkit.getLogger().info("Recording location for " + player.getName() + ": " + player.getLocation());
+                // debug - output location for each player in  console
+                if (debugging){
+                    Bukkit.getLogger().info("Recording location for " + player.getName() + ": " + player.getLocation());
+                }
             }
         }.runTaskTimer(WizardsPlugin.getInstance(), 0, recordInterval); // run every second
     }
