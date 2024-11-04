@@ -91,6 +91,7 @@ public class WizardsMinigame implements Listener{
                         Player player = Bukkit.getPlayer(playerId);
                         if (player != null) {
                             sendTitle(player, "Game Started!", "Good luck!");
+                            WizardsPlugin.playerAliveStatus.put(playerId, true);
                             // set the player's scoreboard
                             player.setScoreboard(Team.sidebarScoreboard);
                             Team.updateSidebar();
@@ -102,16 +103,29 @@ public class WizardsMinigame implements Listener{
             }
         }.runTaskTimer(plugin, 0, 20);
     }
+    void clearSidebar() {
+        // reset all entries on the sidebar scoreboard
+        for (String entry : Team.sidebarScoreboard.getEntries()) {
+            Team.sidebarScoreboard.resetScores(entry);
+        }
 
+        // clear the sidebar title
+        Team.sidebarObjective.setDisplayName("");
+    }
     private void teleportToRandomSpawn() {
         Map<String, List<UUID>> teamsMap = new HashMap<>();
 
-        // group players by team
+        // group players by team or individually for solo games
         for (UUID playerId : playersInMinigame) {
             Player player = Bukkit.getPlayer(playerId);
             if (player != null) {
                 String playerTeam = getPlayerTeam(playerId); // get player's team name
-                teamsMap.computeIfAbsent(playerTeam, k -> new ArrayList<>()).add(playerId);
+                // treat each player as their own team in solo games
+                if (Team.isSoloGame) {
+                    teamsMap.put(playerId.toString(), Collections.singletonList(playerId));
+                } else {
+                    teamsMap.computeIfAbsent(playerTeam, k -> new ArrayList<>()).add(playerId);
+                }
             }
         }
 
@@ -252,6 +266,7 @@ public class WizardsMinigame implements Listener{
             Player player = Bukkit.getPlayer(playerId);
             Team.resetPlayerScoreboard(player);
         }
+        clearSidebar();
         resetGame(); // clear all players from minigame
     }
 

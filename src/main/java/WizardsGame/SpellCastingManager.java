@@ -842,7 +842,8 @@ public class SpellCastingManager implements Listener {
         player.setVelocity(new Vector(0, 0, 0)); // Reset velocity
 
         // increase speed
-        player.setWalkSpeed((float) (player.getWalkSpeed() * SPEED_BOOST));
+        player.setWalkSpeed((float) (player.getWalkSpeed() * SPEED_BOOST)); // may not work in tandem with essensials plugin
+//        player.setFlySpeed((float) (player.getWalkSpeed() * SPEED_BOOST));
 
         BossBar bossBar = Bukkit.createBossBar("Move quickly!", BarColor.BLUE, BarStyle.SEGMENTED_20);
         bossBar.addPlayer(player);

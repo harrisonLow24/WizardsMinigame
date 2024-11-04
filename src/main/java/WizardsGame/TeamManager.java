@@ -248,7 +248,7 @@ public class TeamManager {
             for (Set<UUID> members : teams.values()) {
                 for (UUID memberId : members) {
                     Player player = Bukkit.getPlayer(memberId);
-                    if (player != null && player.isOnline() && !player.isDead()) {
+                    if (WizardsPlugin.playerAliveStatus.getOrDefault(memberId, true)) {
                         teamsLeft++;
                         break; // break after finding one alive player in the team
                     }
@@ -258,9 +258,8 @@ public class TeamManager {
             sidebarObjective.getScore(teamsLeftText).setScore(11);
         } else {
             int wizardsAlive = 0;
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                Player playerID = Bukkit.getPlayer(player.getUniqueId());
-                if (playerID != null && !playerID.isDead()) {
+            for (UUID playerId : WizardsPlugin.playerAliveStatus.keySet()) {
+                if (WizardsPlugin.playerAliveStatus.getOrDefault(playerId, true)) {
                     wizardsAlive++;
                 }
             }
@@ -290,12 +289,15 @@ public class TeamManager {
                 }
             }
         } else {
-            // solo mode: display all players
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (!player.isDead()) {
-                    String displayName = ChatColor.GREEN + player.getName(); // or any other color
-                    sidebarObjective.getScore(displayName).setScore(score);
-                    score--; // decrement score for the next player
+            // solo mode: display all alive players
+            for (UUID playerId : WizardsPlugin.playerAliveStatus.keySet()) {
+                if (WizardsPlugin.playerAliveStatus.getOrDefault(playerId, true)) { // only display if player is alive
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player != null) {
+                        String displayName = ChatColor.GREEN + player.getName();
+                        sidebarObjective.getScore(displayName).setScore(score);
+                        score--; // decrement score for the next player
+                    }
                 }
             }
         }

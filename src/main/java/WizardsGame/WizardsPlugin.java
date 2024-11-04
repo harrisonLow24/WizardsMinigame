@@ -153,7 +153,17 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         event.setDeathMessage(null);
-        Mini.hasGameEnded();
+        Player player = event.getEntity();
+        UUID playerId = player.getUniqueId();
+
+        if (Mini.playersInMinigame.contains(playerId)) { // check if player is in minigame
+            WizardsPlugin.playerAliveStatus.put(playerId, false); // mark player as dead
+            Team.updateSidebar(); // update scoreboard
+            player.sendMessage(ChatColor.RED + "You are no longer in the game!");
+
+            // check if the game has ended after this player's death
+            Mini.hasGameEnded();
+        }
     }
 
     private List<ItemStack> getPlayerSpells(Player player) {
