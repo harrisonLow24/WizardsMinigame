@@ -294,11 +294,15 @@ public class WizardsMinigame implements Listener{
     // -----------------------------------------------------------------------------------------------------------------
 
     private final Map<UUID, Map<BlockVector, BlockState>> savedBlocksMap = new HashMap<>();
+    private static final int CHUNK_SIZE = 16; // define chunk size for saving and regenerating blocks
+
+    // save blocks in chunks
     void saveBlocks(Vector loc1, Vector loc2, Player player) {
         UUID playerId = player.getUniqueId();
         Map<BlockVector, BlockState> blockMap = new HashMap<>();
+        int blocksSaved = 0;
 
-        // bounds
+        // bounds for saving
         int minX = Math.min(loc1.getBlockX(), loc2.getBlockX());
         int maxX = Math.max(loc1.getBlockX(), loc2.getBlockX());
         int minY = Math.min(loc1.getBlockY(), loc2.getBlockY());
@@ -306,17 +310,31 @@ public class WizardsMinigame implements Listener{
         int minZ = Math.min(loc1.getBlockZ(), loc2.getBlockZ());
         int maxZ = Math.max(loc1.getBlockZ(), loc2.getBlockZ());
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    Block block = player.getWorld().getBlockAt(x, y, z);
-                    blockMap.put(new BlockVector(x, y, z), block.getState()); // save block type
+        // iterate through chunks ( 16x16x16 blocks )
+        for (int x = minX; x <= maxX; x += CHUNK_SIZE) {
+            for (int y = minY; y <= maxY; y += CHUNK_SIZE) {
+                for (int z = minZ; z <= maxZ; z += CHUNK_SIZE) {
+                    // process from (x, y, z) to (x + CHUNK_SIZE - 1, y + CHUNK_SIZE - 1, z + CHUNK_SIZE - 1)
+                    for (int dx = x; dx < Math.min(x + CHUNK_SIZE, maxX + 1); dx++) {
+                        for (int dy = y; dy < Math.min(y + CHUNK_SIZE, maxY + 1); dy++) {
+                            for (int dz = z; dz < Math.min(z + CHUNK_SIZE, maxZ + 1); dz++) {
+                                Block block = player.getWorld().getBlockAt(dx, dy, dz);
+                                if (block.getType() != Material.AIR) {
+                                    blockMap.put(new BlockVector(dx, dy, dz), block.getState());
+                                    blocksSaved++;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+
         savedBlocksMap.put(playerId, blockMap); // store saved blocks
+        player.sendMessage(ChatColor.GREEN + "Saved " + blocksSaved + " blocks!");
     }
 
+    // regenerate blocks in chunks
     void regenerateBlocks(Vector loc1, Vector loc2, Player player) {
         UUID playerId = player.getUniqueId();
         Map<BlockVector, BlockState> blockMap = savedBlocksMap.get(playerId);
@@ -326,15 +344,46 @@ public class WizardsMinigame implements Listener{
             return;
         }
 
-        for (Map.Entry<BlockVector, BlockState> entry : blockMap.entrySet()) {
-            BlockVector vector = entry.getKey();
-            BlockState savedState = entry.getValue();
-            Block block = player.getWorld().getBlockAt(vector.getBlockX(), vector.getBlockY(), vector.getBlockZ());
-            block.setType(savedState.getType(), false);
-            BlockState newState = block.getState();
-            newState.setBlockData(savedState.getBlockData());
-            newState.update(true, false);
+        int blocksRegenerated = 0;
+
+        // bounds for regeneration
+        int minX = Math.min(loc1.getBlockX(), loc2.getBlockX());
+        int maxX = Math.max(loc1.getBlockX(), loc2.getBlockX());
+        int minY = Math.min(loc1.getBlockY(), loc2.getBlockY());
+        int maxY = Math.max(loc1.getBlockY(), loc2.getBlockY());
+        int minZ = Math.min(loc1.getBlockZ(), loc2.getBlockZ());
+        int maxZ = Math.max(loc1.getBlockZ(), loc2.getBlockZ());
+
+        // iterate through chunks (16x16x16 blocks)
+        for (int x = minX; x <= maxX; x += CHUNK_SIZE) {
+            for (int y = minY; y <= maxY; y += CHUNK_SIZE) {
+                for (int z = minZ; z <= maxZ; z += CHUNK_SIZE) {
+                    // process from (x, y, z) to (x + CHUNK_SIZE - 1, y + CHUNK_SIZE - 1, z + CHUNK_SIZE - 1)
+                    for (int dx = x; dx < Math.min(x + CHUNK_SIZE, maxX + 1); dx++) {
+                        for (int dy = y; dy < Math.min(y + CHUNK_SIZE, maxY + 1); dy++) {
+                            for (int dz = z; dz < Math.min(z + CHUNK_SIZE, maxZ + 1); dz++) {
+                                Block block = player.getWorld().getBlockAt(dx, dy, dz);
+                                BlockVector vector = new BlockVector(dx, dy, dz);
+
+                                // check if block is saved and restore it, else set it to air
+                                if (blockMap.containsKey(vector)) {
+                                    BlockState savedState = blockMap.get(vector);
+                                    block.setType(savedState.getType(), false);
+                                    block.getState().setBlockData(savedState.getBlockData());
+                                    block.getState().update(true, false);
+                                    blocksRegenerated++;
+                                } else {
+                                    block.setType(Material.AIR, false); // set non-saved blocks to air
+                                    blocksRegenerated++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        player.sendMessage(ChatColor.GREEN + "Regenerated " + blocksRegenerated + " blocks!");
     }
 
 
