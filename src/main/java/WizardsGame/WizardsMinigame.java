@@ -365,16 +365,26 @@ public class WizardsMinigame implements Listener{
                                 Block block = player.getWorld().getBlockAt(dx, dy, dz);
                                 BlockVector vector = new BlockVector(dx, dy, dz);
 
-                                // check if block is saved and restore it, else set it to air
                                 if (blockMap.containsKey(vector)) {
                                     BlockState savedState = blockMap.get(vector);
+
+                                    // check if the current block already matches saved state
+                                    if (block.getType() == savedState.getType() &&
+                                            block.getBlockData().matches(savedState.getBlockData())) {
+                                        continue; // skip if block matches saved state
+                                    }
+
+                                    // restore saved block state
                                     block.setType(savedState.getType(), false);
                                     block.getState().setBlockData(savedState.getBlockData());
                                     block.getState().update(true, false);
                                     blocksRegenerated++;
                                 } else {
-                                    block.setType(Material.AIR, false); // set non-saved blocks to air
-                                    blocksRegenerated++;
+                                    // set to air if it isn't already air
+                                    if (block.getType() != Material.AIR) {
+                                        block.setType(Material.AIR, false);
+                                        blocksRegenerated++;
+                                    }
                                 }
                             }
                         }
