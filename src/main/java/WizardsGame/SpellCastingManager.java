@@ -1110,7 +1110,7 @@ public class SpellCastingManager implements Listener {
                     double distance = craterLocation.distance(impactLocation);
                     if (distance <= radius) {
                         Block block = craterLocation.getBlock();
-                        if (block.getType() != Material.BEDROCK && block.getType() != Material.WATER) {
+                        if (block.getType() != Material.BEDROCK && block.getType() != Material.WATER && block.getType() != Material.BARRIER && block.getType() != Material.BLACK_CONCRETE) {
                             block.setType(Material.AIR); // create crater by removing blocks
                         }
                     }

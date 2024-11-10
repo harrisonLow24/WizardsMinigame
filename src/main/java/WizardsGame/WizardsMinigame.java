@@ -344,9 +344,7 @@ public class WizardsMinigame implements Listener{
             return;
         }
 
-        int blocksRegenerated = 0;
-
-        // bounds for regeneration
+        // Define regeneration bounds
         int minX = Math.min(loc1.getBlockX(), loc2.getBlockX());
         int maxX = Math.max(loc1.getBlockX(), loc2.getBlockX());
         int minY = Math.min(loc1.getBlockY(), loc2.getBlockY());
@@ -354,46 +352,52 @@ public class WizardsMinigame implements Listener{
         int minZ = Math.min(loc1.getBlockZ(), loc2.getBlockZ());
         int maxZ = Math.max(loc1.getBlockZ(), loc2.getBlockZ());
 
-        // iterate through chunks (16x16x16 blocks)
-        for (int x = minX; x <= maxX; x += CHUNK_SIZE) {
-            for (int y = minY; y <= maxY; y += CHUNK_SIZE) {
-                for (int z = minZ; z <= maxZ; z += CHUNK_SIZE) {
-                    // process from (x, y, z) to (x + CHUNK_SIZE - 1, y + CHUNK_SIZE - 1, z + CHUNK_SIZE - 1)
-                    for (int dx = x; dx < Math.min(x + CHUNK_SIZE, maxX + 1); dx++) {
-                        for (int dy = y; dy < Math.min(y + CHUNK_SIZE, maxY + 1); dy++) {
-                            for (int dz = z; dz < Math.min(z + CHUNK_SIZE, maxZ + 1); dz++) {
-                                Block block = player.getWorld().getBlockAt(dx, dy, dz);
-                                BlockVector vector = new BlockVector(dx, dy, dz);
+        // bukkit runnable to process each layer
+        new BukkitRunnable() {
+            int y = minY; // start with lowest y layer
+            int blocksRegenerated = 0;
 
-                                if (blockMap.containsKey(vector)) {
-                                    BlockState savedState = blockMap.get(vector);
+            @Override
+            public void run() {
+                // process current layer at height y
+                for (int x = minX; x <= maxX; x++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        Block block = player.getWorld().getBlockAt(x, y, z);
+                        BlockVector vector = new BlockVector(x, y, z);
 
-                                    // check if the current block already matches saved state
-                                    if (block.getType() == savedState.getType() &&
-                                            block.getBlockData().matches(savedState.getBlockData())) {
-                                        continue; // skip if block matches saved state
-                                    }
+                        if (blockMap.containsKey(vector)) {
+                            BlockState savedState = blockMap.get(vector);
 
-                                    // restore saved block state
-                                    block.setType(savedState.getType(), false);
-                                    block.getState().setBlockData(savedState.getBlockData());
-                                    block.getState().update(true, false);
-                                    blocksRegenerated++;
-                                } else {
-                                    // set to air if it isn't already air
-                                    if (block.getType() != Material.AIR) {
-                                        block.setType(Material.AIR, false);
-                                        blocksRegenerated++;
-                                    }
-                                }
+                            // check if the current block already matches saved state
+                            if (block.getType() != savedState.getType() ||
+                                    !block.getBlockData().matches(savedState.getBlockData())) {
+
+                                // restore saved block state
+                                block.setType(savedState.getType(), false);
+                                block.getState().setBlockData(savedState.getBlockData());
+                                block.getState().update(true, false);
+                                blocksRegenerated++;
+                            }
+                        } else {
+                            // set to air if not in saved state and not already air
+                            if (block.getType() != Material.AIR) {
+                                block.setType(Material.AIR, false);
+                                blocksRegenerated++;
                             }
                         }
                     }
                 }
-            }
-        }
 
-        player.sendMessage(ChatColor.GREEN + "Regenerated " + blocksRegenerated + " blocks!");
+                // move to next layer
+                player.sendMessage(ChatColor.GREEN + "Layer " + y +"/" + maxY + " regenerated!");
+                y++;
+                // stop task when all layers are processed
+                if (y > maxY) {
+                    player.sendMessage(ChatColor.GREEN + "Regenerated " + blocksRegenerated + " blocks!");
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 2L); // run every x ticks ( 20 ticks in 1 sec - 2L = 10x per sec )
     }
 
 
