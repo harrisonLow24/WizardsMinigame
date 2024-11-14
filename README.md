@@ -1,5 +1,5 @@
-# Wizards Plugin WIP
-Tested on Minecraft 1.20.4 Spigot
+# Wizards Plugin
+Tested on Minecraft 1.20.4 & 1.21.1 Spigot
 
 Right-click a Stick to open the spell menu.
 
