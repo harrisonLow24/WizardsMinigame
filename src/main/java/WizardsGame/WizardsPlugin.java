@@ -47,9 +47,8 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         instance = this;
         getLogger().info("WizardsPlugin has been enabled!");
 
-        // Initialize all managers here
-        Team = new TeamManager(); // Make sure TeamManager's constructor does not require parameters that may not be initialized yet.
-        Cast = new SpellCastingManager(); // Ensure it does not reference any uninitialized fields.
+        Team = new TeamManager();
+        Cast = new SpellCastingManager();
         Menu = new SpellMenu(this);
         Cooldown = new CooldownManager();
         Teleport = new TeleportationManager();
