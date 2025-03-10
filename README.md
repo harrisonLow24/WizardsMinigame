@@ -39,3 +39,5 @@ Spell Menu:
 
 ![Spell Menu](images/1.png)
 
+Example UI:
+![Example UI](images/3.png)
