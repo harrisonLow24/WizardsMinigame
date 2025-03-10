@@ -33,3 +33,9 @@ Right-click a Stick to open the spell menu.
 * /Unlockspells (Level up all of your spells by 1 level)
 * /Mana (Toggles unlimited mana)
 * /Cooldowns (Toggles cooldowns on and off)
+
+## Screenshots
+Spell Menu:
+
+![Spell Menu](images/1.png)
+
