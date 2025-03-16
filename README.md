@@ -4,13 +4,13 @@ Tested on Minecraft 1.20.4 & 1.21.1 Spigot
 Right-click a Stick to open the spell menu.
 
 ## List of Spells
-* Fireball
+* Fiery Wand
 * Teleport
-* Lightning
+* Mjolnir
 * Gust
-* Minecart Launch
-* Ground Pound
-* Flight
+* The Great Escape
+* Big Man Slam
+* Winged Shield
 * Voidwalker
 * Starfall Barrage
 * Heal Cloud
