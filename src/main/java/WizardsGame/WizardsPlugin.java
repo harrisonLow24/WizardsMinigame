@@ -3,7 +3,6 @@ package WizardsGame;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
-import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,7 +13,6 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -38,6 +36,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     ManaManager Mana;
     TeamManager Team;
     WizardsMinigame Mini;
+    WizardCommands Comm;
     CharmSpell Charm;
 
     // debugging true: all entity deaths shown; all player locations monitored in console.
@@ -55,6 +54,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Squid = new SquidFlight();
         Mana = new ManaManager();
         Mini = new WizardsMinigame(this);
+        Comm = new WizardCommands(this);
         Charm = new CharmSpell();
         getLogger().info("WizardsPlugin has been enabled!");
         registerEvents();
@@ -65,7 +65,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         startSidebarUpdateTask();
         this.getCommand("wizteam").setTabCompleter(new WizTeamTabCompleter(Team));
         this.getCommand("wizards").setTabCompleter(new WizTeamTabCompleter(Team));
-        getServer().getPluginManager().registerEvents(new SpellCastingManager(), this);
+        getServer().getPluginManager().registerEvents(Comm, this);
+        getServer().getPluginManager().registerEvents(Mini, this);
+        getServer().getPluginManager().registerEvents(Cast, this);
         getServer().getPluginManager().registerEvents(new WizardsMinigame(getInstance()), this);
         new BukkitRunnable() {
             @Override
@@ -81,6 +83,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         getLogger().info("WizardsPlugin has been disabled!");
         Mana.clearManaBars();
         Team.clearTeams();
+        Mini.clearAllTombstones();
     }
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -177,15 +180,6 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    private List<ItemStack> getPlayerSpells(Player player) {
-        List<ItemStack> spells = new ArrayList<>();
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && isSpell(item)) {
-                spells.add(item.clone()); // clone the item
-            }
-        }
-        return spells;
-    }
     @EventHandler
     public void onPlayerItemChange(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
@@ -250,46 +244,47 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             }
         }
 
-        if (event.getEntity() instanceof Player) {
-            Player deadPlayer = (Player) event.getEntity();
-            List<ItemStack> playerSpells = getPlayerSpells(deadPlayer); // retrieve dead player's spells
-
-            // drop each spell
-            for (ItemStack spellItem : playerSpells) {
-                if (spellItem != null && spellItem.getType() != Material.AIR) {
-                    // customize display name of the item
-                    String spellName = WizardsPlugin.getSpellInfo(spellItem);
-                    ItemMeta meta = spellItem.getItemMeta();
-                    if (meta != null) {
-                        spellItem.setItemMeta(meta);
-                    }
-                    Location deathLocation = deadPlayer.getLocation();
-                    Item droppedItem = deathLocation.getWorld().dropItemNaturally(deathLocation, spellItem);
-
-                    // unpickable for a short time
-//                    droppedItem.setPickupDelay(Integer.MAX_VALUE);
-
-//                    droppedItem.setGlowing(true);
-
-                    // custom name to be always visible on the ground
-                    droppedItem.setCustomName(ChatColor.YELLOW + "" + ChatColor.BOLD + spellName);
-                    droppedItem.setCustomNameVisible(true);
-                }
-            }
-            for (ItemStack armorPiece : deadPlayer.getInventory().getArmorContents()) {
-                if (armorPiece != null && armorPiece.getType() != Material.AIR) {
-                    Location deathLocation = deadPlayer.getLocation();
-                    Item droppedItem = deathLocation.getWorld().dropItemNaturally(deathLocation, armorPiece);
-
-                    // name display
-                    String armorName = armorPiece.hasItemMeta() && armorPiece.getItemMeta().hasDisplayName()
-                            ? armorPiece.getItemMeta().getDisplayName()
-                            : armorPiece.getType().toString().replace('_', ' ');
-                    droppedItem.setCustomName(ChatColor.YELLOW + "" + ChatColor.BOLD + armorName);
+        //drop spells on the ground. removed for tombstones.
+//        if (event.getEntity() instanceof Player) {
+//            Player deadPlayer = (Player) event.getEntity();
+//            List<ItemStack> playerSpells = getPlayerSpells(deadPlayer); // retrieve dead player's spells
+//
+//            // drop each spell
+//            for (ItemStack spellItem : playerSpells) {
+//                if (spellItem != null && spellItem.getType() != Material.AIR) {
+//                    // customize display name of the item
+//                    String spellName = WizardsPlugin.getSpellInfo(spellItem);
+//                    ItemMeta meta = spellItem.getItemMeta();
+//                    if (meta != null) {
+//                        spellItem.setItemMeta(meta);
+//                    }
+//                    Location deathLocation = deadPlayer.getLocation();
+//                    Item droppedItem = deathLocation.getWorld().dropItemNaturally(deathLocation, spellItem);
+//
+//                    // unpickable for a short time
+////                    droppedItem.setPickupDelay(Integer.MAX_VALUE);
+//
+////                    droppedItem.setGlowing(true);
+//
+//                    // custom name to be always visible on the ground
+//                    droppedItem.setCustomName(ChatColor.YELLOW + "" + ChatColor.BOLD + spellName);
 //                    droppedItem.setCustomNameVisible(true);
-                }
-            }
-        }
+//                }
+//            }
+//            for (ItemStack armorPiece : deadPlayer.getInventory().getArmorContents()) {
+//                if (armorPiece != null && armorPiece.getType() != Material.AIR) {
+//                    Location deathLocation = deadPlayer.getLocation();
+//                    Item droppedItem = deathLocation.getWorld().dropItemNaturally(deathLocation, armorPiece);
+//
+//                    // name display
+//                    String armorName = armorPiece.hasItemMeta() && armorPiece.getItemMeta().hasDisplayName()
+//                            ? armorPiece.getItemMeta().getDisplayName()
+//                            : armorPiece.getType().toString().replace('_', ' ');
+//                    droppedItem.setCustomName(ChatColor.YELLOW + "" + ChatColor.BOLD + armorName);
+////                    droppedItem.setCustomNameVisible(true);
+//                }
+//            }
+//        }
 
 
         // death location of the entity
@@ -338,7 +333,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     void registerEvents() {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new TeleportationManager(), this);
-        getServer().getPluginManager().registerEvents(new SpellListener(this, Menu), this);
+        getServer().getPluginManager().registerEvents(new SpellListener(this, Menu,Comm), this);
 //        getServer().getPluginManager().registerEvents(new SquidFlight(), this);
     }
 
@@ -377,6 +372,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         SPELL_NAMES.put(Material.HEART_OF_THE_SEA, "Void Orb");
         SPELL_NAMES.put(Material.AMETHYST_SHARD, "Dragon Spit");
         SPELL_NAMES.put(Material.NAUTILUS_SHELL, "Cod Shooter");
+        SPELL_NAMES.put(Material.RABBIT_FOOT, "Leap");
 
     }
     static String getSpellInfo(ItemStack itemInHand) {
@@ -530,6 +526,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     static final double VoidOrb_Cost = 10.0;
     static final double MANABOLT_COST = 10.0;
     static final double COD_COST = 15.0;
+    static final double LEAP_COST = 15.0;
     static final double CHARM_COST = 15.0;
 
     // recall spell ----------------------------------------------------------------------------------------------------
@@ -556,7 +553,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
         Recall(Material.MUSIC_DISC_5),
         Void_Orb(Material.HEART_OF_THE_SEA),
         Dragon_Spit(Material.AMETHYST_SHARD),
-        Cod_Shooter(Material.NAUTILUS_SHELL);
+        Cod_Shooter(Material.NAUTILUS_SHELL),
+        Leap(Material.RABBIT_FOOT);
+
 
         private final Material material;
 
@@ -579,8 +578,12 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             spells.put(spellType, currentLevel + 1);
         }
     }
+    public static void resetSpellLevel(UUID playerId) {
+        playerSpells.put(playerId, new HashMap<>());
+    }
 
-    private void checkAndUpdateWand(Player player) {
+
+        private void checkAndUpdateWand(Player player) {
         ItemStack wand = player.getInventory().getItemInMainHand();
         if (WandManager.isWand(wand)) {
             wand = WandManager.createWand(wand.getType(), player); // create item with the correct properties
@@ -626,6 +629,7 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
             case HEART_OF_THE_SEA -> handleVoidOrbCast(player, playerId);
             case AMETHYST_SHARD -> handleManaBoltCast(player, playerId);
             case NAUTILUS_SHELL -> handleCodShooterCast(player, playerId);
+            case RABBIT_FOOT -> handleLeapCast(player, playerId);
         }
     }
     private void handleSpellCast(Player player, UUID playerId, String spellName, double cost, SpellCastFunction castFunction) {
@@ -739,6 +743,9 @@ public class WizardsPlugin extends JavaPlugin implements Listener {
     }
     void handleCodShooterCast(Player player, UUID playerId) {
         handleSpellCast(player, playerId, "Cod Shooter", COD_COST, (p, id) -> Cast.shootFish(player));
+    }
+    void handleLeapCast(Player player, UUID playerId) {
+        handleSpellCast(player, playerId, "Leap", LEAP_COST, (p, id) -> Cast.castLeapSpell(player));
     }
 
     // show teleport effect at the original and new locations

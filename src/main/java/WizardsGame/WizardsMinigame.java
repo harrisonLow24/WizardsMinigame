@@ -1,28 +1,33 @@
 package WizardsGame;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDropItemEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BlockVector;
+import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
 import java.util.*;
 
+import static WizardsGame.SpellListener.isSpellItem;
 import static WizardsGame.TeamManager.teams;
 
 public class WizardsMinigame implements Listener{
@@ -41,31 +46,42 @@ public class WizardsMinigame implements Listener{
     // -----------------------------------------------------------------------------------------------------------------
 
     final Set<Location> spawnPoints = new HashSet<>(); // store spawn points
-    final Set<UUID> playersInMinigame = new HashSet<>(); // store players in the minigame
-    private boolean isMinigameActive = false; // track if the minigame is active
-
+    static final Set<UUID> playersInMinigame = new HashSet<>(); // store players in the minigame
+    static boolean isMinigameActive = false; // track if the minigame is active
     @EventHandler
     public void onBlockDrop(BlockDropItemEvent event) {
         if (isMinigameActive) { // check if the minigame is active
             event.setCancelled(true); // cancel the block drop event
         }
     }
-    private void sendTitle(Player player, String title, String subtitle) {
+    static void sendTitle(Player player, String title, String subtitle) {
         // show title
         player.sendTitle(ChatColor.YELLOW + title, ChatColor.GREEN + subtitle, 10, 70, 20);
     }
     public void startMinigame() {
-
+        Team.isSoloGame = true;
         for (Set<UUID> members : teams.values()) {
             if (!members.isEmpty()) {
                 Team.isSoloGame = false; // if any team has members, it's not a solo game
                 break; // no need to check further
             }
         }
-        if (Team.isSoloGame) {
-            Bukkit.broadcastMessage(ChatColor.YELLOW + "All teams are empty, starting a solo game!");
-        } else {
-            Bukkit.broadcastMessage(ChatColor.YELLOW + "Teams are set, starting a team game!");
+        if (!Team.isSoloGame) {
+            // convert solo players to teams of one
+            for (UUID playerId : playersInMinigame) {
+                if (!TeamManager.isPlayerOnTeam(playerId)) {
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player != null) {
+                        String teamName = player.getName() + "'s Team";
+                        plugin.Team.createTeam(teamName, playerId);
+                        plugin.Team.joinTeam(player, teamName);
+                    }
+                }
+            }
+            Team.isSoloGame = false;
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Starting a team game! Solo players converted to teams.");
+        }else {
+            Bukkit.broadcastMessage(ChatColor.YELLOW + "Starting a solo game!");
         }
         isMinigameActive = true;
         countdownStart();
@@ -102,15 +118,23 @@ public class WizardsMinigame implements Listener{
                 }
             }
         }.runTaskTimer(plugin, 0, 20);
+        for (UUID playerId : playersInMinigame) {
+            Player player = Bukkit.getPlayer(playerId);
+            assert player != null;
+            player.getInventory().clear(); // main inventory
+            player.getInventory().setArmorContents(null); // armor slots
+            player.getInventory().setExtraContents(null); // offhand, etc.
+        }
+
     }
-    void clearSidebar() {
+    static void clearSidebar() {
         // reset all entries on the sidebar scoreboard
-        for (String entry : Team.sidebarScoreboard.getEntries()) {
-            Team.sidebarScoreboard.resetScores(entry);
+        for (String entry : TeamManager.sidebarScoreboard.getEntries()) {
+            TeamManager.sidebarScoreboard.resetScores(entry);
         }
 
         // clear the sidebar title
-        Team.sidebarObjective.setDisplayName("");
+        TeamManager.sidebarObjective.setDisplayName("");
     }
     private void teleportToRandomSpawn() {
         Map<String, List<UUID>> teamsMap = new HashMap<>();
@@ -119,12 +143,18 @@ public class WizardsMinigame implements Listener{
         for (UUID playerId : playersInMinigame) {
             Player player = Bukkit.getPlayer(playerId);
             if (player != null) {
-                String playerTeam = getPlayerTeam(playerId); // get player's team name
+//                String playerTeam = getPlayerTeam(playerId); // get player's team name
+                String teamName = TeamManager.getPlayerTeam(playerId);
+                if (teamName == null) {
+                    // no team and it's a team game, this shouldn't happen due to above
+                    teamName = player.getName(); // fallback to player name
+                }
+                teamsMap.computeIfAbsent(teamName, k -> new ArrayList<>()).add(playerId);
                 // treat each player as their own team in solo games
                 if (Team.isSoloGame) {
                     teamsMap.put(playerId.toString(), Collections.singletonList(playerId));
                 } else {
-                    teamsMap.computeIfAbsent(playerTeam, k -> new ArrayList<>()).add(playerId);
+//                    teamsMap.computeIfAbsent(playerTeam, k -> new ArrayList<>()).add(playerId);
                 }
             }
         }
@@ -148,7 +178,7 @@ public class WizardsMinigame implements Listener{
                 }
                 index++; // move to the next spawn point for the next team
             } else {
-                // Handle the case where there are more teams than spawn points
+                // handle the case where there are more teams than spawn points
                 Bukkit.broadcastMessage(ChatColor.RED + "Not enough spawn points for all teams!");
                 break; // stop assigning spawn points if none are left
             }
@@ -256,21 +286,41 @@ public class WizardsMinigame implements Listener{
         }
         // can add extra rewards etc.
     }
+    public void clearAllTombstones() {
+        // remove all armor stand tombstones
+        for (ArmorStand tombstone : playerTombstones.values()) {
+            if (tombstone != null && !tombstone.isDead()) {
+                tombstone.remove();
+            }
+        }
+        playerTombstones.clear();
+        deathInventories.clear();
+    }
+
 
     public void endGame() {
+        ItemStack book = new ItemStack(Material.BOOK);
         Bukkit.broadcastMessage(ChatColor.GREEN + "Game over!");
         isMinigameActive = false;
         Team.clearTeams();
         teams.clear();
+        playerTombstones.clear();
+        clearAllTombstones();
         for (UUID playerId : playersInMinigame) {
             Player player = Bukkit.getPlayer(playerId);
             Team.resetPlayerScoreboard(player);
+            WizardsPlugin.resetSpellLevel(playerId);
+            player.getInventory().setItem(8, book);
         }
         clearSidebar();
         resetGame(); // clear all players from minigame
     }
 
+    //manually stopping game
     void stopMinigame() {
+        isMinigameActive = false;
+        playerTombstones.clear();
+        clearAllTombstones();
         for (UUID playerId : playersInMinigame) {
             Player player = Bukkit.getPlayer(playerId);
             if (player != null && player.isOnline()) {
@@ -278,6 +328,7 @@ public class WizardsMinigame implements Listener{
             }
         }
         playersInMinigame.clear(); // clear all players from minigame
+        endGame();
     }
 
     private void resetGame() {
@@ -288,6 +339,244 @@ public class WizardsMinigame implements Listener{
             WizardsPlugin.playerAliveStatus.put(playerId, true); // mark all players as alive
         }
     }
+    private final Map<UUID, Inventory> deathInventories = new HashMap<>();
+    private Map<UUID, ArmorStand> playerTombstones = new HashMap<>();
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        UUID playerId = player.getUniqueId();
+
+        if (!playersInMinigame.contains(playerId)) return;
+
+        // store ALL items before they're cleared
+        Inventory deathInventory = Bukkit.createInventory(null, 54,
+                ChatColor.RED + player.getName() + "'s Tombstone");
+
+        // store inventory
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.getType() != Material.AIR) {
+                deathInventory.addItem(item.clone());
+            }
+        }
+
+        // store armor
+        for (ItemStack armor : player.getInventory().getArmorContents()) {
+            if (armor != null && armor.getType() != Material.AIR) {
+                deathInventory.addItem(armor.clone());
+            }
+        }
+
+        // store offhand item
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+        if (offhand != null && offhand.getType() != Material.AIR) {
+            deathInventory.addItem(offhand.clone());
+        }
+
+        // save the inventory before clearing
+        deathInventories.put(playerId, deathInventory);
+
+        // clear drops
+        event.getDrops().clear();
+        event.setKeepInventory(false); // ensure keep inv is overriden
+
+        // create tombstone
+        createTombstone(player);
+
+        // set player to spectator
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+            player.sendMessage(ChatColor.RED + "You died! Right-click your tombstone to retrieve items.");
+        }, 1L);
+
+        // check game end conditions
+        hasGameEnded();
+    }
+
+    private void createTombstone(Player player) {
+        Location deathLoc = player.getLocation().clone();
+        deathLoc.setYaw(0); // tombstone facing direction
+
+        // remove any existing tombstone for this player
+        // note to self: may remove in the case of a resurrection spell
+        if (playerTombstones.containsKey(player.getUniqueId())) {
+            playerTombstones.get(player.getUniqueId()).remove();
+        }
+
+        ArmorStand tombstone = deathLoc.getWorld().spawn(deathLoc, ArmorStand.class);
+        tombstone.setVisible(false);
+        tombstone.setGravity(false);
+        tombstone.setCustomNameVisible(true);
+        tombstone.setCustomName(ChatColor.RED + player.getName() + "'s Tombstone");
+
+        // set player head
+        ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) skull.getItemMeta();
+        meta.setOwningPlayer(player);
+        skull.setItemMeta(meta);
+
+        tombstone.getEquipment().setHelmet(skull);
+        tombstone.setHeadPose(new EulerAngle(Math.toRadians(20), 0, 0));
+
+        // tombstone properties
+        tombstone.setInvulnerable(true);
+        tombstone.setCollidable(false);
+        tombstone.setPersistent(true);
+
+        playerTombstones.put(player.getUniqueId(), tombstone);
+        // store the inventory with spell items
+        Inventory deathInventory = Bukkit.createInventory(null, 54,
+                ChatColor.RED + player.getName() + "'s Tombstone");
+
+        // store spells with their levels
+        for (WizardsPlugin.SpellType spellType : WizardsPlugin.SpellType.values()) {
+            int level = WizardsPlugin.getSpellLevel(player.getUniqueId(), spellType);
+            if (level > 0) {
+                ItemStack spellItem = new ItemStack(spellType.getMaterial());
+
+                // set display name and lore to show level
+                String spellName = WizardsPlugin.SPELL_NAMES.get(spellType.getMaterial());
+                meta.setDisplayName(ChatColor.YELLOW + spellName);
+                meta.setLore(Arrays.asList(
+                        ChatColor.GRAY + "Level: " + ChatColor.GREEN + level,
+                        ChatColor.GRAY + "Click to absorb this spell"
+                ));
+
+                spellItem.setItemMeta(meta);
+                deathInventory.addItem(spellItem);
+            }
+        }
+
+        // store other items normally
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.getType() != Material.AIR &&
+                    !isSpellItem(item)) {
+                deathInventory.addItem(item.clone());
+            }
+        }
+
+        deathInventories.put(player.getUniqueId(), deathInventory);
+    }
+
+    @EventHandler
+    public void onTombstoneClick(PlayerInteractAtEntityEvent event) {
+        if (!(event.getRightClicked() instanceof ArmorStand)) return;
+
+        ArmorStand stand = (ArmorStand) event.getRightClicked();
+        for (Map.Entry<UUID, ArmorStand> entry : playerTombstones.entrySet()) {
+            if (entry.getValue().equals(stand)) {
+                UUID deadPlayerId = entry.getKey();
+                if (deathInventories.containsKey(deadPlayerId)) {
+                    event.setCancelled(true);
+                    event.getPlayer().openInventory(deathInventories.get(deadPlayerId));
+
+                    // tombstone sound
+                    event.getPlayer().playSound(event.getPlayer().getLocation(),
+                            Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+                }
+                break;
+            }
+        }
+    }
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onTombstoneInventoryClick(InventoryClickEvent event) {
+        // check if this is a tombstone inventory
+        String title = event.getView().getTitle();
+        if (!title.contains("'s Tombstone")) return; // proceed if it's a tombstone inventory (contains "'s Tombstone")
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+//        event.setCancelled(true); // cancel the event
+
+        ItemStack clickedItem = event.getCurrentItem();
+
+        // cancel all events in tombstone inventory
+        event.setCancelled(true);
+
+        // handle null or air items
+        if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
+
+        try {
+            // get dead player's name from inventory title
+            String playerName = event.getView().getTitle()
+                    .replace("'s Tombstone", "")
+                    .replace(ChatColor.RED.toString(), "");
+
+            // find dead player's UUID
+            UUID deadPlayerId = null;
+            for (Map.Entry<UUID, ArmorStand> entry : playerTombstones.entrySet()) {
+                Player deadPlayer = Bukkit.getPlayer(entry.getKey());
+                if (deadPlayer != null && deadPlayer.getName().equals(playerName)) {
+                    deadPlayerId = entry.getKey();
+                    break;
+                }
+            }
+
+            if (deadPlayerId == null) return;
+
+            // basic wand (stick)
+            if (clickedItem.getType() == Material.STICK) {
+                ItemStack basicWand = new ItemStack(Material.STICK);
+                ItemMeta meta = basicWand.getItemMeta();
+                meta.setDisplayName(ChatColor.YELLOW + "Basic Wand");
+                basicWand.setItemMeta(meta);
+
+                player.getInventory().addItem(basicWand);
+                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+
+                // remove one stick
+                if (clickedItem.getAmount() > 1) {
+                    clickedItem.setAmount(clickedItem.getAmount() - 1);
+                    event.getInventory().setItem(event.getSlot(), clickedItem);
+                } else {
+                    event.getInventory().setItem(event.getSlot(), new ItemStack(Material.AIR));
+                }
+                return;
+            }
+
+            // handle spell items
+            WizardsPlugin.SpellType spellType = SpellMenu.getSpellByMaterial(clickedItem.getType());
+            if (spellType != null) {
+                // get dead player's spell level
+                int deadPlayerLevel = WizardsPlugin.getSpellLevel(deadPlayerId, spellType);
+
+                if (deadPlayerLevel > 0) {
+                    // increase player's spell level
+                    for (int i = 0; i < deadPlayerLevel; i++) {
+                        plugin.addSpellToPlayer(player.getUniqueId(), spellType);
+                    }
+
+                    // get spell name (use display name if available, otherwise default name)
+                    String spellName = clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasDisplayName()
+                            ? clickedItem.getItemMeta().getDisplayName()
+                            : WizardsPlugin.SPELL_NAMES.get(clickedItem.getType());
+
+                    // sound and message
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+                    int newLevel = WizardsPlugin.getSpellLevel(player.getUniqueId(), spellType);
+
+                    if (newLevel == deadPlayerLevel) {
+                        player.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + spellName + "> " +
+                                ChatColor.GREEN + "Spell Acquired (Level " + newLevel + ")");
+                    } else {
+                        player.sendMessage(ChatColor.LIGHT_PURPLE + "" + ChatColor.BOLD + spellName + "> " +
+                                ChatColor.GREEN + "Level +" + deadPlayerLevel + " -> " +
+                                ChatColor.GREEN + "" + ChatColor.BOLD + newLevel);
+                    }
+
+                    // remove item from the tombstone
+                    if (clickedItem.getAmount() > 1) {
+                        clickedItem.setAmount(clickedItem.getAmount() - 1);
+                        event.getInventory().setItem(event.getSlot(), clickedItem);
+                    } else {
+                        event.getInventory().setItem(event.getSlot(), new ItemStack(Material.AIR));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // logs
+            plugin.getLogger().warning("Error handling tombstone click: " + e.getMessage());
+        }
+    }
+
+
 
     // -----------------------------------------------------------------------------------------------------------------
     // -------------------------------------------------MAP-------------------------------------------------------------

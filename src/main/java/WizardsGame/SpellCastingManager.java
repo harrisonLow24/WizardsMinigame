@@ -193,6 +193,31 @@ public class SpellCastingManager implements Listener {
     double FISH_BASE_COUNT = 20.0;
     double FISH_BASE_KB = 1;
 
+    // leap
+    double getLeapHeight(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Leap);
+        return LEAP_BASE_HEIGHT + ((level - 1) * 0.1);
+    }
+
+//    double getLeapDamage(UUID playerId) {
+//        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Leap);
+//        return LEAP_BASE_DAMAGE + ((level - 1) * 1);
+//    }
+
+//    double getLeapRadius(UUID playerId) {
+//        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Leap);
+//        return LEAP_BASE_RADIUS + ((level - 1) * 0.5);
+//    }
+
+    double getLeapVelocity(UUID playerId) {
+        int level = WizardsPlugin.getSpellLevel(playerId, WizardsPlugin.SpellType.Leap);
+        return LEAP_BASE_VELOCITY + ((level - 1) * 0.1);
+    }
+    double LEAP_BASE_HEIGHT = 1.5;
+//    double LEAP_BASE_DAMAGE = 4.0;
+    double LEAP_BASE_VELOCITY = 2;
+    double LEAP_BASE_RADIUS = 3.0;
+
 
 
 
@@ -920,7 +945,7 @@ public class SpellCastingManager implements Listener {
                     @Override
                     public void run() {
                         // spawn particles at teleport location
-                        teleportLocation.getWorld().spawnParticle(Particle.END_ROD, teleportLocation, 5, 0.5, 0.5, 0.5, 0.1, null, true);
+//                        teleportLocation.getWorld().spawnParticle(Particle.END_ROD, teleportLocation, 5, 0.5, 0.5, 0.5, 0.1, null, true);
                     }
                 };
                 particleRunnable.runTaskTimer(WizardsPlugin.getInstance(), 0, 1); // every tick (20 times per second)
@@ -1626,5 +1651,73 @@ public class SpellCastingManager implements Listener {
                 fish.remove();
             }
         }.runTaskLater(WizardsPlugin.getInstance(), 200);
+    }
+    public void castLeapSpell(Player player) {
+        UUID playerId = player.getUniqueId();
+
+        // Calculate leap parameters based on spell level
+        double height = getLeapHeight(playerId);
+//        double damage = getLeapDamage(playerId);
+        double speedBoost = getLeapVelocity(playerId);
+        double radius = LEAP_BASE_RADIUS;
+
+        // player's exact look direction (including vertical)
+        Vector direction = player.getLocation().getDirection().normalize();
+
+        // velocity in look direction
+        Vector velocity = direction.multiply(speedBoost);
+//        Vector velocity = direction.multiply(speedBoost).setY(direction.getY() * height);
+
+        player.setVelocity(velocity);
+
+        // effects
+        player.getWorld().playSound(player.getLocation(),
+                Sound.ENTITY_RABBIT_JUMP, 1.0f,
+                direction.getY() > 0 ? 0.5f : 1.5f); // Higher pitch when going up
+
+        // particle effect based on direction
+        Particle particle = direction.getY() > 0 ? Particle.CLOUD : Particle.SMOKE_NORMAL;
+        player.getWorld().spawnParticle(particle, player.getLocation(), 30, 0.5, 0.5, 0.5, 0.1);
+
+        // landing effect
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (player.isOnGround()) {
+                    // landing effects
+                    Location landLoc = player.getLocation();
+                    player.getWorld().playSound(landLoc, Sound.ENTITY_RAVAGER_STEP, 1.0f, 1.0f);
+                    player.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, landLoc, 20, 0.5, 0, 0.5, 0.2);
+
+                    // damage nearby entities
+//                    for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
+//                        if (entity instanceof LivingEntity && !entity.equals(player)) {
+//                            LivingEntity livingEntity = (LivingEntity) entity;
+//                            WizardsPlugin.lastDamager.put(livingEntity.getUniqueId(),
+//                                    new WizardsPlugin.SpellInfo(playerId, "Leap"));
+//
+//                            // team damage check
+//                            if (Team.isPlayerOnTeam(entity.getUniqueId()) &&
+//                                    Team.isPlayerOnTeam(playerId) &&
+//                                    Team.getPlayerTeam(entity.getUniqueId()).equals(Team.getPlayerTeam(playerId))) {
+//                                continue;
+//                            }
+//
+//                            double finalDamage = calculateDamageWithArmor(livingEntity, damage);
+//                            livingEntity.damage(finalDamage, player);
+//
+//                            // knockback
+//                            Vector knockback = entity.getLocation().toVector()
+//                                    .subtract(player.getLocation().toVector())
+//                                    .normalize()
+//                                    .multiply(0.5)
+//                                    .setY(0.2);
+//                            livingEntity.setVelocity(knockback);
+//                        }
+//                    }
+                    this.cancel();
+                }
+            }
+        }.runTaskTimer(WizardsPlugin.getInstance(), 0, 1);
     }
 }

@@ -1,38 +1,46 @@
 # Wizards Plugin
-Tested on Minecraft 1.20.4 & 1.21.1 Spigot
+Tested on Minecraft 1.20.4, 1.21.1, and 1.21.4 Spigot
 
-Right-click a Stick to open the spell menu.
+Type /wizards to access the wizards menu    
 
 ## List of Spells
+Combat:
 * Fiery Wand
-* Teleport
 * Mjolnir
+* Big Man Slam
+* Starfall Barrage
+* Dragon Spit
+* Void Orb
+
+Movement:
+* Teleport
 * Gust
 * The Great Escape
-* Big Man Slam
 * Winged Shield
 * Voidwalker
-* Starfall Barrage
-* Heal Cloud
-* Void Orb
 * Recall
-* Dragon Spit
+* Leap
+
+Misc:
+* Heal Cloud
 * Cod Shooter
 
+
+
 ## Minigame
-* /Wizards start | stop | join | leave
-* /Setspawn to set spawns for minigame
-* /Map1 /Map2 /Mapsave to save map boundaries
-* /Mapregen to regenerate all blocks saved in /Mapsave
-* /Fillchests to fill all chests within the map bounds
+* /wizards start | stop | join | leave
+* /setspawn to set spawns for minigame
+* /map1 /map2 /mapsave to save map boundaries
+* /mapregen to regenerate all blocks saved in /mapsave
+* /fillchests to fill all chests within the map bounds
 
 ## Teams
-* /Wizteams create | delete | join | leave | add | remove
+* /wizteams create | delete | join | leave | add | remove
 
 ## Admin commands
-* /Unlockspells (Level up all of your spells by 1 level)
-* /Mana (Toggles unlimited mana)
-* /Cooldowns (Toggles cooldowns on and off)
+* /unlockspells (Level up all of your spells by 1 level)
+* /mana (Toggles unlimited mana)
+* /cooldowns (Toggles cooldowns on and off)
 
 ## Screenshots
 Spell Menu:

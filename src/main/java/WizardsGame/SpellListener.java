@@ -15,18 +15,21 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.awt.*;
 import java.util.UUID;
 
 public class SpellListener implements Listener {
     private final WizardsPlugin spellManager;
     private final SpellMenu spellMenu;
-    SpellMenu Menu = new SpellMenu(WizardsPlugin.getInstance());
+    private final WizardCommands wizardCommands;
 
-    public SpellListener(WizardsPlugin spellManager, SpellMenu spellMenu) {
+//    SpellMenu Menu = new SpellMenu(WizardsPlugin.getInstance());
+
+    public SpellListener(WizardsPlugin spellManager, SpellMenu spellMenu, WizardCommands wizardCommands) {
         this.spellManager = spellManager;
         this.spellMenu = spellMenu;
+        this.wizardCommands = wizardCommands;
     }
+    WizardCommands Comm;
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -38,6 +41,11 @@ public class SpellListener implements Listener {
                 (item.getType() == Material.STICK || isSpellItem(item))) {
             spellMenu.openSpellMenu(player); // open spell menu
             event.setCancelled(true);
+        }
+        if ((event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) &&
+                (item.getType() == Material.BOOK)) {
+            event.setCancelled(true); // cancel default behavior
+            wizardCommands.openMenu(player, WizardCommands.MenuType.MAIN); // open wizards menu
         }
     }
 
@@ -52,12 +60,17 @@ public class SpellListener implements Listener {
     }
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
+        String title = event.getView().getTitle();
+//        if (event.getView().getTitle().contains("'s Tombstone")) return;
         if (event.getClickedInventory() == null) return;
+        // skip if not our custom inventories
+        if (!title.equals("Select a Spell") && !title.equals("Chest") && !title.contains("'s Tombstone")) return;
+
         Player player = (Player) event.getWhoClicked();
         UUID playerId = player.getUniqueId();
         ItemStack clickedItem = event.getCurrentItem();
         Material itemType = clickedItem.getType();
-        WizardsPlugin.SpellType selectedSpell = Menu.getSpellByMaterial(itemType);
+        WizardsPlugin.SpellType selectedSpell = SpellMenu.getSpellByMaterial(itemType);
         if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
 //        if (event.isShiftClick()) {
 //            event.setCancelled(true);
@@ -84,7 +97,7 @@ public class SpellListener implements Listener {
             }
             event.setCancelled(true);
         }
-        if (event.getView().getTitle().equals("Chest") ) {
+        if (event.getView().getTitle().equals("Chest")) {
             if(event.getClickedInventory().equals(player.getOpenInventory().getTopInventory())){
 
                 if (selectedSpell != null) {
@@ -132,7 +145,7 @@ public class SpellListener implements Listener {
         Item itemEntity = event.getItem();
         ItemStack item = event.getItem().getItemStack();
         String spellName = WizardsPlugin.getSpellInfo(item);
-        WizardsPlugin.SpellType spellType = spellMenu.getSpellByMaterial(item.getType());
+        WizardsPlugin.SpellType spellType = SpellMenu.getSpellByMaterial(item.getType());
 
         if (spellType != null) {
             if (spellType == WizardsPlugin.SpellType.Basic_Wand) {
@@ -154,8 +167,8 @@ public class SpellListener implements Listener {
                     player.sendMessage(ChatColor.LIGHT_PURPLE  + "" + ChatColor.BOLD + spellName + "> " + ChatColor.GREEN
                             + " Spell Acquired" );
                 }else {
-                    player.sendMessage(ChatColor.LIGHT_PURPLE + "" + spellName + "> " + ChatColor.GREEN
-                            + " Level +1 -> " + ChatColor.GREEN + "" + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, spellType));
+                    player.sendMessage(ChatColor.LIGHT_PURPLE + spellName + "> " + ChatColor.GREEN
+                            + " Level +1 -> " + ChatColor.GREEN + ChatColor.BOLD + WizardsPlugin.getSpellLevel(playerId, spellType));
                 }
             }
             itemEntity.remove();

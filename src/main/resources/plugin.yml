@@ -5,6 +5,15 @@ main: WizardsGame.WizardsPlugin
 description: Wizards Minigame
 author: hareesun
 commands:
+  wizards:
+    description: Manage minigame.
+    permission: wizards.default
+    usage: /wizards join/leave/start/stop
+  wizteam:
+    description: Manage teams within the game.
+    permission: wizards.default
+    permission-message: You don't have permission to use this command.
+    usage: /wizteam <create|delete|join|leave|add|remove>
   toggleinfinitemana:
     description: Toggle infinite mana
     aliases: mana
@@ -29,11 +38,6 @@ commands:
     permission: op
     permission-message: You do not have permission!
     usage: /checkmana
-  wizteam:
-    description: Manage teams within the game.
-    permission: wizardsplugin.team
-    permission-message: You don't have permission to use this command.
-    usage: /wizteam <create|delete|join|leave|add|remove>
   fillChests:
     description: Fills chests in a specified area with spells and armor.
     usage: /fillChests
@@ -47,9 +51,6 @@ commands:
     permission: op
     permission-message: You do not have permission!
     usage: /map2
-  wizards:
-    description: Manage minigame.
-    usage: /wizards join/leave/start/stop
   setspawn:
     description: Sets spawnpoints for Wizards minigame.
     permission: op
@@ -66,8 +67,13 @@ commands:
     permission-message: You do not have permission!
     usage: /mapregen
 
-
-
+permissions:
+  wizards.default:
+    description: Allows access to team commands
+    default: true # available to all players by default
+  wizards.admin:
+    description: Admin commands
+    default: op
 
 #load: POSTWORLD
 

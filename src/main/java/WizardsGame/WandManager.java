@@ -78,6 +78,9 @@ public class WandManager {
                 case NAUTILUS_SHELL:
                     lore.add("§gKnock your enemies back with the power of fish!");
                     break;
+                case RABBIT_FOOT:
+                    lore.add("§gLeap forward with all your might.");
+                    break;
                 default:
                     lore.add("§gA basic wand with no special powers.");
                     break;
@@ -122,6 +125,8 @@ public class WandManager {
                 return "§e§lDragon Spit";
             case NAUTILUS_SHELL:
                 return "§e§lCod Shooter";
+            case RABBIT_FOOT:
+                return "§e§lLeap";
             default:
                 return "";
         }
@@ -135,6 +140,7 @@ public class WandManager {
         double radius = 0;
         double knockback = 0;
         double fishCount = 0;
+        double velocity = 0;
         int basic = 0;
 
         switch (material) {
@@ -207,6 +213,13 @@ public class WandManager {
                 knockback = Cast.getFishKnockback(playerId);
                 fishCount = Cast.getFishCount(playerId);
                 break;
+            case RABBIT_FOOT:
+                spellName = "Leap";
+                manaCost = (int) WizardsPlugin.LEAP_COST;
+//                damage = Cast.getLeapDamage(playerId);
+//                radius = Cast.getLeapRadius(playerId);
+                velocity = Cast.getLeapVelocity(playerId);
+                break;
             default:
                 spellName = "§i§lBasic Wand";
                 basic = 1;
@@ -226,6 +239,8 @@ public class WandManager {
             return("§cHeal: " + heal / 2 + " §c❤/s |" + " §cRadius: " + radius);
         }if (knockback > 0) {
             return("§cKnockback: " + knockback +" | " + " §cCount: " + fishCount);
+        }if (velocity > 0) {
+            return("§cVelocity: " + velocity);
         } else{
             return("");
         }
@@ -248,6 +263,7 @@ public class WandManager {
                         item.getType() == Material.MUSIC_DISC_5 ||
                         item.getType() == Material.HEART_OF_THE_SEA||
                         item.getType() == Material.AMETHYST_SHARD||
-                        item.getType() == Material.NAUTILUS_SHELL);
+                        item.getType() == Material.NAUTILUS_SHELL||
+                        item.getType() == Material.RABBIT_FOOT);
     }
 }

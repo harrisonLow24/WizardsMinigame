@@ -44,7 +44,7 @@ public class SpellMenu {
 
         // slots for each section
         int[] combatSlots = {18, 19, 20, 27, 28, 29}; // 38, 39, 40
-        int[] movementSlots = {24, 25, 26, 33, 34, 35}; // 42, 43, 44
+        int[] movementSlots = {24, 25, 26, 33, 34, 35, 42}; // 42, 43, 44
         int[] miscSlots = {22, 31};
 
 //        int[] dividerSlots = {3, 12, 21, 30, 39, 48, 5, 14, 23, 32, 41, 50};
@@ -155,7 +155,7 @@ public class SpellMenu {
             case Fiery_Wand, Mjölnir, Starfall_Barrage, Big_Man_Slam, Void_Orb, Dragon_Spit-> {
                 return SpellCategory.COMBAT;
             }
-            case Shrouded_Step, The_Great_Escape, Gust , Winged_Shield, VoidWalker, Recall -> {
+            case Shrouded_Step, The_Great_Escape, Gust , Winged_Shield, VoidWalker, Recall , Leap-> {
                 return SpellCategory.MOVEMENT;
             }
             case Heal_Cloud, Cod_Shooter-> {
@@ -175,6 +175,7 @@ public class SpellMenu {
         double radius = 0;
         double knockback = 0;
         double fishCount = 0;
+        double velocity = 0;
         int hasBoth = 0;
         String mana = "";
         double cooldown = 0;
@@ -290,7 +291,15 @@ public class SpellMenu {
                 desc = "§7Knock your enemies back with the power of fish.";
                 knockback = Cast.getFishKnockback(playerId);
                 fishCount = Cast.getFishCount(playerId);
-
+            }
+            case Leap -> {
+                spellName = "Leap";
+                mana = "§eMana: " + WizardsPlugin.LEAP_COST;
+                cooldown = Cooldown.getCooldownDuration(spellName);
+                desc = "§7Leap forward with all your might.";
+//                damage = Cast.getLeapDamage(playerId);
+                velocity = Cast.getLeapVelocity(playerId);
+                hasBoth = 1;
             }
         }
         if (a == 0) {
@@ -304,6 +313,8 @@ public class SpellMenu {
             details.add("§cHeal: " + heal / 2 + " §c❤/s |" + " §cRadius: " + radius);
         }if (knockback > 0) {
             details.add("§cKnockback: " + knockback +" | " + " §cCount: " + fishCount);
+        }if (velocity > 0) {
+            details.add("§cVelocity: " + velocity);
         }
             details.add(desc);
 

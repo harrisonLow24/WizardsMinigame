@@ -32,6 +32,7 @@ public class CooldownManager {
         cooldownDurations.put("Dragon Spit", 3 * 1000L);
         cooldownDurations.put("Cod Shooter", 3 * 1000L);
         cooldownDurations.put("Recall", 20 * 1000L);
+        cooldownDurations.put("Leap", 5 * 1000L);
     }
 
     // set cooldowns for a spell
