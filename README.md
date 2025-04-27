@@ -1,4 +1,5 @@
 # Wizards Plugin
+
 Tested on Minecraft 1.20.4, 1.21.1, and 1.21.4 Spigot
 
 Type /wizards to access the wizards menu    
